@@ -1,11 +1,14 @@
 import type { FC } from '../../../lib/teact/teact';
 import React, {
   memo, useEffect,
+  useMemo,
   useRef, useState,
 } from '../../../lib/teact/teact';
 import { getActions, withGlobal } from '../../../global';
 
-import type { ApiAttachBot, ApiChat, ApiUser } from '../../../api/types';
+import type {
+  ApiAttachBot, ApiBotAppSettings, ApiChat, ApiUser,
+} from '../../../api/types';
 import type { TabState, WebApp, WebAppModalStateType } from '../../../global/types';
 import type { ThemeKey } from '../../../types';
 import type { PopupOptions, WebAppInboundEvent, WebAppOutboundEvent } from '../../../types/webapp';
@@ -14,10 +17,12 @@ import { TME_LINK_PREFIX } from '../../../config';
 import { convertToApiChatType } from '../../../global/helpers';
 import { getWebAppKey } from '../../../global/helpers/bots';
 import {
-  selectCurrentChat, selectTabState, selectTheme, selectUser,
+  selectCurrentChat, selectTabState, selectTheme, selectUser, selectUserFullInfo,
+  selectWebApp,
 } from '../../../global/selectors';
 import buildClassName from '../../../util/buildClassName';
 import buildStyle from '../../../util/buildStyle';
+import download from '../../../util/download';
 import { extractCurrentThemeParams, validateHexColor } from '../../../util/themeStyle';
 import { callApi } from '../../../api/gramjs';
 import { REM } from '../../common/helpers/mediaDimensions';
@@ -25,7 +30,9 @@ import renderText from '../../common/helpers/renderText';
 
 import { getIsWebAppsFullscreenSupported } from '../../../hooks/useAppLayout';
 import useCurrentOrPrev from '../../../hooks/useCurrentOrPrev';
+import useEffectWithPrevDeps from '../../../hooks/useEffectWithPrevDeps';
 import useFlag from '../../../hooks/useFlag';
+import useLang from '../../../hooks/useLang';
 import useLastCallback from '../../../hooks/useLastCallback';
 import useOldLang from '../../../hooks/useOldLang';
 import useSyncEffect from '../../../hooks/useSyncEffect';
@@ -66,6 +73,7 @@ export type OwnProps = {
 type StateProps = {
   chat?: ApiChat;
   bot?: ApiUser;
+  botAppSettings?: ApiBotAppSettings;
   attachBot?: ApiAttachBot;
   theme?: ThemeKey;
   isPaymentModalOpen?: boolean;
@@ -110,6 +118,7 @@ const WebAppModalTabContent: FC<OwnProps & StateProps> = ({
   frameSize,
   isMultiTabSupported,
   onContextMenuButtonClick,
+  botAppSettings,
 }) => {
   const {
     closeActiveWebApp,
@@ -132,6 +141,7 @@ const WebAppModalTabContent: FC<OwnProps & StateProps> = ({
   const [popupParameters, setPopupParameters] = useState<PopupOptions | undefined>();
   const [isRequestingPhone, setIsRequestingPhone] = useState(false);
   const [isRequestingWriteAccess, setIsRequestingWriteAccess] = useState(false);
+  const [requestedFileDownload, setRequestedFileDownload] = useState<{ url: string; fileName: string } | undefined>();
   const [bottomBarColor, setBottomBarColor] = useState<string | undefined>();
   const {
     unlockPopupsAt, handlePopupOpened, handlePopupClosed,
@@ -162,11 +172,16 @@ const WebAppModalTabContent: FC<OwnProps & StateProps> = ({
 
   const [, setFullscreen, exitFullscreen] = useFullscreen(fullscreenElementRef, exitFullScreenCallback);
 
-  const activeWebApp = modal?.activeWebApp;
+  const activeWebApp = modal?.activeWebAppKey ? modal.openedWebApps[modal.activeWebAppKey] : undefined;
   const activeWebAppName = activeWebApp?.appName;
   const {
-    url, buttonText, headerColor, serverHeaderColorKey, serverHeaderColor, isBackButtonVisible,
+    url, buttonText, isBackButtonVisible,
   } = webApp || {};
+
+  const {
+    placeholderPath,
+  } = botAppSettings || {};
+
   const isCloseModalOpen = Boolean(webApp?.isCloseModalOpen);
   const isRemoveModalOpen = Boolean(webApp?.isRemoveModalOpen);
 
@@ -180,16 +195,42 @@ const WebAppModalTabContent: FC<OwnProps & StateProps> = ({
     updateWebApp({ key: webAppKey, update: updatedPartialWebApp });
   });
 
+  const themeParams = useMemo(() => {
+    return extractCurrentThemeParams();
+    // eslint-disable-next-line react-hooks-static-deps/exhaustive-deps
+  }, [theme]);
+
   useEffect(() => {
-    const themeParams = extractCurrentThemeParams();
     setBottomBarColor(themeParams.secondary_bg_color);
-    updateCurrentWebApp({ headerColor: themeParams.bg_color, backgroundColor: themeParams.bg_color });
-  }, []);
+  }, [themeParams]);
+
+  const themeBackgroundColor = themeParams.bg_color;
+  const [backgroundColorFromEvent, setBackgroundColorFromEvent] = useState<string | undefined>();
+  const backgroundColorFromSettings = theme === 'light' ? botAppSettings?.backgroundColor
+    : botAppSettings?.backgroundDarkColor;
+
+  useEffect(() => {
+    const color = backgroundColorFromEvent || backgroundColorFromSettings || themeBackgroundColor;
+
+    updateCurrentWebApp({ backgroundColor: color });
+  }, [themeBackgroundColor, backgroundColorFromEvent, backgroundColorFromSettings]);
+
+  const themeHeaderColor = themeParams.bg_color;
+  const [headerColorFromEvent, setHeaderColorFromEvent] = useState<string | undefined>();
+  const headerColorFromSettings = theme === 'light' ? botAppSettings?.headerColor
+    : botAppSettings?.headerDarkColor;
+
+  useEffect(() => {
+    const color = headerColorFromEvent || headerColorFromSettings || themeHeaderColor;
+
+    updateCurrentWebApp({ headerColor: color });
+  }, [themeHeaderColor, headerColorFromEvent, headerColorFromSettings]);
 
   // eslint-disable-next-line no-null/no-null
   const frameRef = useRef<HTMLIFrameElement>(null);
 
-  const lang = useOldLang();
+  const oldLang = useOldLang();
+  const lang = useLang();
   const isOpen = modal?.isModalOpen || false;
   const isSimple = Boolean(buttonText);
 
@@ -205,8 +246,8 @@ const WebAppModalTabContent: FC<OwnProps & StateProps> = ({
     if (isActive) registerReloadFrameCallback(reloadFrame);
   }, [reloadFrame, registerReloadFrameCallback, isActive]);
 
-  const isMainButtonVisible = mainButton?.isVisible && mainButton.text.trim().length > 0;
-  const isSecondaryButtonVisible = secondaryButton?.isVisible && secondaryButton.text.trim().length > 0;
+  const isMainButtonVisible = isLoaded && mainButton?.isVisible && mainButton.text.trim().length > 0;
+  const isSecondaryButtonVisible = isLoaded && secondaryButton?.isVisible && secondaryButton.text.trim().length > 0;
 
   const handleHideCloseModal = useLastCallback(() => {
     updateCurrentWebApp({ isCloseModalOpen: false });
@@ -249,32 +290,8 @@ const WebAppModalTabContent: FC<OwnProps & StateProps> = ({
     handleAppPopupClose();
   });
 
-  const calculateHeaderColor = useLastCallback(
-    (serverColorKey? : 'bg_color' | 'secondary_bg_color', serverColor? : string) => {
-      if (serverColorKey) {
-        const themeParams = extractCurrentThemeParams();
-        const key = serverColorKey;
-        const newColor = themeParams[key];
-        const color = validateHexColor(newColor) ? newColor : headerColor;
-        updateCurrentWebApp({ headerColor: color, serverHeaderColorKey: key });
-      }
-
-      if (serverColor) {
-        const color = validateHexColor(serverColor) ? serverColor : headerColor;
-        updateCurrentWebApp({ headerColor: color, serverHeaderColor: serverColor });
-      }
-    },
-  );
-
-  const updateHeaderColor = useLastCallback(
-    () => {
-      calculateHeaderColor(serverHeaderColorKey, serverHeaderColor);
-    },
-  );
-
   const sendThemeCallback = useLastCallback(() => {
     sendTheme();
-    updateHeaderColor();
   });
 
   // Notify view that theme changed
@@ -309,6 +326,30 @@ const WebAppModalTabContent: FC<OwnProps & StateProps> = ({
       sendFullScreenChangedCallback(false);
     }
   }, [isFullscreen]);
+
+  const visibilityChangedCallBack = useLastCallback((visibility: boolean) => {
+    sendEvent({
+      eventType: 'visibility_changed',
+      eventData: {
+        is_visible: visibility,
+      },
+    });
+  });
+
+  useEffect(() => {
+    if (isLoaded) {
+      visibilityChangedCallBack(Boolean(isActive));
+    }
+  }, [isActive, isLoaded]);
+
+  useEffectWithPrevDeps(([prevModalState]) => {
+    if (modalState === 'minimized') {
+      visibilityChangedCallBack(false);
+    }
+    if (modalState && prevModalState === 'minimized') {
+      visibilityChangedCallBack(true);
+    }
+  }, [modalState]);
 
   useSyncEffect(([prevIsPaymentModalOpen]) => {
     if (isPaymentModalOpen === prevIsPaymentModalOpen) return;
@@ -358,6 +399,20 @@ const WebAppModalTabContent: FC<OwnProps & StateProps> = ({
     });
   });
 
+  const handleRejectFileDownload = useLastCallback((shouldCloseActive?: boolean) => {
+    if (shouldCloseActive) {
+      setRequestedFileDownload(undefined);
+      handlePopupClosed();
+    }
+
+    sendEvent({
+      eventType: 'file_download_requested',
+      eventData: {
+        status: 'cancelled',
+      },
+    });
+  });
+
   const handleRejectWriteAccess = useLastCallback(() => {
     sendEvent({
       eventType: 'write_access_requested',
@@ -402,6 +457,41 @@ const WebAppModalTabContent: FC<OwnProps & StateProps> = ({
 
     setIsRequestingWriteAccess(!canWrite);
   }
+
+  async function handleCheckDownloadFile(fileUrl: string, fileName: string) {
+    const canDownload = await callApi('checkBotDownloadFileParams', {
+      bot: bot!,
+      url: fileUrl,
+      fileName,
+    });
+
+    if (!canDownload) {
+      sendEvent({
+        eventType: 'file_download_requested',
+        eventData: {
+          status: 'cancelled',
+        },
+      });
+      return;
+    }
+
+    setRequestedFileDownload({ url: fileUrl, fileName });
+    handlePopupOpened();
+  }
+
+  const handleDownloadFile = useLastCallback(() => {
+    if (!requestedFileDownload) return;
+    setRequestedFileDownload(undefined);
+    handlePopupClosed();
+
+    download(requestedFileDownload.url, requestedFileDownload.fileName);
+    sendEvent({
+      eventType: 'file_download_requested',
+      eventData: {
+        status: 'downloading',
+      },
+    });
+  });
 
   async function handleInvokeCustomMethod(requestId: string, method: string, parameters: string) {
     const result = await callApi('invokeWebViewCustomMethod', {
@@ -472,13 +562,12 @@ const WebAppModalTabContent: FC<OwnProps & StateProps> = ({
     }
 
     if (eventType === 'web_app_set_background_color') {
-      const themeParams = extractCurrentThemeParams();
-      const color = validateHexColor(eventData.color) ? eventData.color : themeParams.bg_color;
-      updateCurrentWebApp({ backgroundColor: color });
+      setBackgroundColorFromEvent(validateHexColor(eventData.color) ? eventData.color : undefined);
     }
 
     if (eventType === 'web_app_set_header_color') {
-      calculateHeaderColor(eventData.color_key, eventData.color);
+      const key = eventData.color_key;
+      setHeaderColorFromEvent(eventData.color || (key ? themeParams[key] : undefined));
     }
 
     if (eventType === 'web_app_set_bottom_bar_color') {
@@ -574,6 +663,14 @@ const WebAppModalTabContent: FC<OwnProps & StateProps> = ({
     if (eventType === 'web_app_invoke_custom_method') {
       const { method, params, req_id: requestId } = eventData;
       handleInvokeCustomMethod(requestId, method, JSON.stringify(params));
+    }
+
+    if (eventType === 'web_app_request_file_download') {
+      if (requestedFileDownload || unlockPopupsAt > Date.now()) {
+        handleRejectFileDownload();
+        return;
+      }
+      handleCheckDownloadFile(eventData.url, eventData.file_name);
     }
   }
 
@@ -738,7 +835,7 @@ const WebAppModalTabContent: FC<OwnProps & StateProps> = ({
     isBackButtonVisible && styles.stateBack,
   );
   const backButtonCaption = shouldShowAppNameInFullscreen ? activeWebAppName
-    : lang(isBackButtonVisible ? 'Back' : 'Close');
+    : oldLang(isBackButtonVisible ? 'Back' : 'Close');
 
   const hasHeaderElement = headerButtonCaptionRef?.current;
 
@@ -820,6 +917,32 @@ const WebAppModalTabContent: FC<OwnProps & StateProps> = ({
     );
   }
 
+  function renderDefaultPlaceholder() {
+    const className = buildClassName(styles.loadingPlaceholder, styles.defaultPlaceholderGrid, isLoaded && styles.hide);
+    return (
+      <div className={className}>
+        <div className={styles.placeholderSquare} />
+        <div className={styles.placeholderSquare} />
+        <div className={styles.placeholderSquare} />
+        <div className={styles.placeholderSquare} />
+      </div>
+    );
+  }
+
+  function renderPlaceholder() {
+    if (!placeholderPath) {
+      return renderDefaultPlaceholder();
+    }
+    return (
+      <svg
+        className={buildClassName(styles.loadingPlaceholder, isLoaded && styles.hide)}
+        viewBox="0 0 512 512"
+      >
+        <path className={styles.placeholderPath} d={placeholderPath} />
+      </svg>
+    );
+  }
+
   return (
     <div
       ref={containerRef}
@@ -830,7 +953,7 @@ const WebAppModalTabContent: FC<OwnProps & StateProps> = ({
       )}
     >
       {isFullscreen && getIsWebAppsFullscreenSupported() && renderFullscreenHeaderPanel()}
-      {!isMinimizedState && <Spinner className={buildClassName(styles.loadingSpinner, isLoaded && styles.hide)} />}
+      {!isMinimizedState && renderPlaceholder()}
       <iframe
         className={buildClassName(
           styles.frame,
@@ -894,22 +1017,6 @@ const WebAppModalTabContent: FC<OwnProps & StateProps> = ({
           </Button>
         </div>
       ) }
-      <ConfirmDialog
-        isOpen={isRequestingPhone}
-        onClose={handleRejectPhone}
-        title={lang('ShareYouPhoneNumberTitle')}
-        text={lang('AreYouSureShareMyContactInfoBot')}
-        confirmHandler={handleAcceptPhone}
-        confirmLabel={lang('ContactShare')}
-      />
-      <ConfirmDialog
-        isOpen={isRequestingWriteAccess}
-        onClose={handleRejectWriteAccess}
-        title={lang('lng_bot_allow_write_title')}
-        text={lang('lng_bot_allow_write')}
-        confirmHandler={handleAcceptWriteAccess}
-        confirmLabel={lang('lng_bot_allow_write_confirm')}
-      />
       {popupParameters && (
         <Modal
           isOpen={Boolean(popupParameters)}
@@ -932,7 +1039,7 @@ const WebAppModalTabContent: FC<OwnProps & StateProps> = ({
                 // eslint-disable-next-line react/jsx-no-bind
                 onClick={() => handleAppPopupClose(button.id)}
               >
-                {button.text || lang(DEFAULT_BUTTON_TEXT[button.type])}
+                {button.text || oldLang(DEFAULT_BUTTON_TEXT[button.type])}
               </Button>
             ))}
           </div>
@@ -940,19 +1047,50 @@ const WebAppModalTabContent: FC<OwnProps & StateProps> = ({
       )}
 
       <ConfirmDialog
+        isOpen={isRequestingPhone}
+        onClose={handleRejectPhone}
+        title={oldLang('ShareYouPhoneNumberTitle')}
+        text={oldLang('AreYouSureShareMyContactInfoBot')}
+        confirmHandler={handleAcceptPhone}
+        confirmLabel={oldLang('ContactShare')}
+      />
+      <ConfirmDialog
+        isOpen={isRequestingWriteAccess}
+        onClose={handleRejectWriteAccess}
+        title={oldLang('lng_bot_allow_write_title')}
+        text={oldLang('lng_bot_allow_write')}
+        confirmHandler={handleAcceptWriteAccess}
+        confirmLabel={oldLang('lng_bot_allow_write_confirm')}
+      />
+      <ConfirmDialog
+        isOpen={Boolean(requestedFileDownload)}
+        title={lang('BotDownloadFileTitle')}
+        textParts={lang('BotDownloadFileDescription', {
+          bot: bot?.firstName,
+          filename: requestedFileDownload?.fileName,
+        }, {
+          withNodes: true,
+          withMarkdown: true,
+        })}
+        confirmLabel={lang('BotDownloadFileButton')}
+        onClose={handleRejectFileDownload}
+        confirmHandler={handleDownloadFile}
+      />
+
+      <ConfirmDialog
         isOpen={isCloseModalOpen}
         onClose={handleHideCloseModal}
-        title={lang('lng_bot_close_warning_title')}
-        text={lang('lng_bot_close_warning')}
+        title={oldLang('lng_bot_close_warning_title')}
+        text={oldLang('lng_bot_close_warning')}
         confirmHandler={handleConfirmCloseModal}
         confirmIsDestructive
-        confirmLabel={lang('lng_bot_close_warning_sure')}
+        confirmLabel={oldLang('lng_bot_close_warning_sure')}
       />
       <ConfirmDialog
         isOpen={isRemoveModalOpen}
         onClose={handleHideRemoveModal}
-        title={lang('BotRemoveFromMenuTitle')}
-        textParts={renderText(lang('BotRemoveFromMenu', bot?.firstName), ['simple_markdown'])}
+        title={oldLang('BotRemoveFromMenuTitle')}
+        textParts={renderText(oldLang('BotRemoveFromMenu', bot?.firstName), ['simple_markdown'])}
         confirmHandler={handleRemoveAttachBot}
         confirmIsDestructive
       />
@@ -962,11 +1100,14 @@ const WebAppModalTabContent: FC<OwnProps & StateProps> = ({
 
 export default memo(withGlobal<OwnProps>(
   (global, { modal }): StateProps => {
-    const { botId: activeBotId } = modal?.activeWebApp || {};
+    const activeWebApp = modal?.activeWebAppKey ? selectWebApp(global, modal.activeWebAppKey) : undefined;
+    const { botId: activeBotId } = activeWebApp || {};
     const modalState = modal?.modalState;
 
     const attachBot = activeBotId ? global.attachMenu.bots[activeBotId] : undefined;
     const bot = activeBotId ? selectUser(global, activeBotId) : undefined;
+    const userFullInfo = activeBotId ? selectUserFullInfo(global, activeBotId) : undefined;
+    const botAppSettings = userFullInfo?.botInfo?.appSettings;
     const chat = selectCurrentChat(global);
     const theme = selectTheme(global);
     const { isPaymentModalOpen, status: regularPaymentStatus } = selectTabState(global).payment;
@@ -982,6 +1123,7 @@ export default memo(withGlobal<OwnProps>(
       isPaymentModalOpen: isPaymentModalOpen || Boolean(starsInputInvoice),
       paymentStatus,
       modalState,
+      botAppSettings,
     };
   },
 )(WebAppModalTabContent));

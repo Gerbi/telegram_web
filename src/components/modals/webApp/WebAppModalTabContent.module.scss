@@ -13,13 +13,48 @@
   z-index: 0;
 }
 
-.loading-spinner {
+.loadingPlaceholder {
+  width: 4rem;
   position: absolute;
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
 
   transition: opacity 0.25s ease-in-out;
+}
+
+@keyframes fadeOpacityBreath {
+  0% {
+    opacity: 0.4;
+  }
+
+  50% {
+    opacity: 0.2;
+  }
+
+  100% {
+    opacity: 0.4;
+  }
+}
+
+.placeholderPath {
+  animation: 2s linear -0.8s infinite fadeOpacityBreath;
+}
+
+.defaultPlaceholderGrid {
+  width: 4.5rem;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.25rem;
+  margin: 0 auto;
+  animation: 2s linear -0.8s infinite fadeOpacityBreath;
+}
+
+.placeholderSquare {
+  width: 100%;
+  aspect-ratio: 1;
+  background-color: black;
+  border-radius: 0.375rem;
 }
 
 .hide {
@@ -53,17 +88,27 @@
   margin: 0.5rem;
   transform: translateY(100%);
   opacity: 0;
-  transition-property: background-color, color, transform, margin-inline, flex-grow, opacity;
+  transition-property: background-color, color, transform, margin-inline, flex-grow, opacity, filter;
   transition-duration: 0.25s;
   transition-timing-function: ease-in-out;
 
   &.visible {
     transform: translateY(0);
     opacity: 1;
+
+    &:hover {
+      filter: brightness(0.9);
+    }
   }
 
   &.hidden {
     visibility: hidden;
+  }
+}
+
+.secondary-button.visible:hover {
+  :global(.theme-dark) & {
+    filter: brightness(1.5);
   }
 }
 
@@ -85,15 +130,29 @@
   }
 
   &.two-rows {
-    height: 8rem;
+    height: 7.75rem;
   }
 
   &.left-to-right {
     flex-direction: row;
+
+    .secondary-button {
+      margin-right: 0.25rem !important;
+    }
+    .main-button {
+      margin-left: 0.25rem !important;
+    }
   }
 
   &.right-to-left {
     flex-direction: row-reverse;
+
+    .secondary-button {
+      margin-left: 0.25rem !important;
+    }
+    .main-button {
+      margin-right: 0.25rem !important;
+    }
   }
 
   &.top-to-bottom,
@@ -109,9 +168,11 @@
   &.top-to-bottom {
     .secondary-button {
       top: 0rem;
+      margin-bottom: 0.25rem !important;
     }
     .main-button {
       bottom: 0rem;
+      margin-top: 0.25rem !important;
     }
   }
   &.bottom-to-top {

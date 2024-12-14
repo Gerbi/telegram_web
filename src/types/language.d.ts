@@ -1153,8 +1153,19 @@ export interface LangPair {
   'CloseMiniApps': undefined;
   'DoNotAskAgain': undefined;
   'PaymentInfoDone': undefined;
+  'VideoConversionTitle': undefined;
+  'VideoConversionText': undefined;
+  'VideoConversionDone': undefined;
+  'VideoConversionView': undefined;
   'BotSuggestedStatusTitle': undefined;
   'BotSuggestedStatusUpdated': undefined;
+  'BotDownloadFileTitle': undefined;
+  'BotDownloadFileButton': undefined;
+  'PrivacyGifts': undefined;
+  'PrivacyGiftsTitle': undefined;
+  'PrivacyGiftsInfo': undefined;
+  'PrivacyValueBots': undefined;
+  'CustomShareGiftsInfo': undefined;
 }
 
 export interface LangPairWithVariables<V extends unknown = LangVariable> {
@@ -1505,6 +1516,9 @@ export interface LangPairWithVariables<V extends unknown = LangVariable> {
   'SendPaidReaction': {
     'amount': V;
   };
+  'StarsPay': {
+    'amount': V;
+  };
   'StarsReactionTerms': {
     'link': V;
   };
@@ -1550,6 +1564,13 @@ export interface LangPairWithVariables<V extends unknown = LangVariable> {
   };
   'BotSuggestedStatus': {
     'bot': V;
+  };
+  'BotDownloadFileDescription': {
+    'bot': V;
+    'filename': V;
+  };
+  'StarsSubscribeBotButtonMonth': {
+    'amount': V;
   };
 }
 
@@ -1725,6 +1746,11 @@ export interface LangPairPluralWithVariables<V extends unknown = LangVariable> {
   };
   'StarsSubscribeText': {
     'chat': V;
+    'amount': V;
+  };
+  'StarsSubscribeBotText': {
+    'name': V;
+    'bot': V;
     'amount': V;
   };
 }

@@ -106,6 +106,7 @@ import type {
   ApiPrivacyKey,
   ApiPrivacySettings,
   AudioOrigin,
+  BotsPrivacyType,
   ChatCreationProgress,
   ChatMediaSearchParams,
   EmojiKeywords,
@@ -190,6 +191,7 @@ export type StarsTransactionHistory = Record<StarsTransactionType, {
 export type StarsSubscriptions = {
   list: ApiStarsSubscription[];
   nextOffset?: string;
+  isLoading?: boolean;
 };
 
 export type ConfettiStyle = 'poppers' | 'top-down';
@@ -695,7 +697,7 @@ export type TabState = {
   };
 
   webApps: {
-    activeWebApp?: WebApp;
+    activeWebAppKey?: string;
     openedOrderedKeys: string[];
     sessionKeys: string[];
     openedWebApps: Record<string, WebApp>;
@@ -1335,8 +1337,6 @@ export type WebApp = {
   isCloseModalOpen?: boolean;
   shouldConfirmClosing?: boolean;
   headerColor?: string;
-  serverHeaderColor?: string;
-  serverHeaderColorKey?: 'bg_color' | 'secondary_bg_color';
   backgroundColor?: string;
   isBackButtonVisible?: boolean;
   isSettingsButtonVisible?: boolean;
@@ -1491,6 +1491,7 @@ export interface ActionPayloads {
     isAllowList: boolean;
     updatedIds: string[];
     isPremiumAllowed?: true;
+    botsPrivacy: BotsPrivacyType;
   };
   loadNotificationExceptions: undefined;
   setThemeSettings: { theme: ThemeKey } & Partial<IThemeSettings>;

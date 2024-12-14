@@ -15,6 +15,7 @@ import type { WebAppOutboundEvent } from '../../../types/webapp';
 import { getWebAppKey } from '../../../global/helpers/bots';
 import {
   selectCurrentChat, selectTheme, selectUser,
+  selectWebApp,
 } from '../../../global/selectors';
 import buildClassName from '../../../util/buildClassName';
 import buildStyle from '../../../util/buildStyle';
@@ -103,8 +104,9 @@ const WebAppModal: FC<OwnProps & StateProps> = ({
   }
 
   const {
-    openedWebApps, activeWebApp, openedOrderedKeys, sessionKeys, isMoreAppsTabActive,
+    openedWebApps, activeWebAppKey, openedOrderedKeys, sessionKeys, isMoreAppsTabActive,
   } = modal || {};
+  const activeWebApp = activeWebAppKey ? openedWebApps?.[activeWebAppKey] : undefined;
   const {
     isBackButtonVisible, headerColor, backgroundColor, isSettingsButtonVisible,
   } = activeWebApp || {};
@@ -302,6 +304,10 @@ const WebAppModal: FC<OwnProps & StateProps> = ({
 
   const handleCollapseClick = useLastCallback(() => {
     changeWebAppModalState({ state: 'minimized' });
+  });
+
+  const handleFullscreenClick = useLastCallback(() => {
+    changeWebAppModalState({ state: 'fullScreen' });
   });
 
   const handleOpenMoreAppsTabClick = useLastCallback(() => {
@@ -589,6 +595,20 @@ const WebAppModal: FC<OwnProps & StateProps> = ({
         <Button
           className={buildClassName(
             styles.windowStateButton,
+            styles.fullscreenButton,
+            'no-drag',
+          )}
+          round
+          color="translucent"
+          size="tiny"
+          onClick={handleFullscreenClick}
+        >
+          <Icon className={styles.stateIcon} name="expand-modal" />
+        </Button>
+
+        <Button
+          className={buildClassName(
+            styles.windowStateButton,
             'no-drag',
           )}
           round
@@ -664,7 +684,8 @@ const WebAppModal: FC<OwnProps & StateProps> = ({
 
 export default memo(withGlobal<OwnProps>(
   (global, { modal }): StateProps => {
-    const { botId: activeBotId } = modal?.activeWebApp || {};
+    const activeWebApp = modal?.activeWebAppKey ? selectWebApp(global, modal.activeWebAppKey) : undefined;
+    const { botId: activeBotId } = activeWebApp || {};
 
     const attachBot = activeBotId ? global.attachMenu.bots[activeBotId] : undefined;
     const bot = activeBotId ? selectUser(global, activeBotId) : undefined;

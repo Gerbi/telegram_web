@@ -342,6 +342,7 @@ export interface ApiInvoice {
   currency: string;
   isTest?: boolean;
   isRecurring?: boolean;
+  subscriptionPeriod?: number;
   termsUrl?: string;
   maxTipAmount?: number;
   suggestedTipAmounts?: number[];
@@ -754,6 +755,7 @@ export interface ApiMessage {
   factCheck?: ApiFactCheck;
   effectId?: string;
   isInvertedMedia?: true;
+  isVideoProcessingPending?: true;
 }
 
 export interface ApiReactions {
