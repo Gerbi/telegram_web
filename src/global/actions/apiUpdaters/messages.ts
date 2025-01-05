@@ -2,10 +2,10 @@ import type {
   ApiChat, ApiMediaExtendedPreview, ApiMessage, ApiReactions,
   MediaContent,
 } from '../../../api/types';
-import type { ThreadId } from '../../../types';
+import type { ActiveEmojiInteraction, ThreadId } from '../../../types';
 import type { RequiredGlobalActions } from '../../index';
 import type {
-  ActionReturnType, ActiveEmojiInteraction, GlobalState, RequiredGlobalState,
+  ActionReturnType, GlobalState, RequiredGlobalState,
 } from '../../types';
 import { MAIN_THREAD_ID } from '../../../api/types';
 
@@ -166,7 +166,7 @@ addActionHandler('apiUpdate', (global, actions, update): ActionReturnType => {
       setGlobal(global);
 
       // Reload dialogs if chat is not present in the list
-      if (!isLocal && !selectIsChatListed(global, chatId)) {
+      if (!isLocal && !chat?.isNotJoined && !selectIsChatListed(global, chatId)) {
         actions.loadTopChats();
       }
 
@@ -444,8 +444,9 @@ addActionHandler('apiUpdate', (global, actions, update): ActionReturnType => {
         lastReadInboxMessageId: message.id,
       });
 
+      const chat = selectChat(global, chatId);
       // Reload dialogs if chat is not present in the list
-      if (!selectIsChatListed(global, chatId)) {
+      if (!chat?.isNotJoined && !selectIsChatListed(global, chatId)) {
         actions.loadTopChats();
       }
 

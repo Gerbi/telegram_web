@@ -1,6 +1,7 @@
 import type {
   ApiAttachment,
   ApiChat,
+  ApiDraft,
   ApiError,
   ApiInputMessageReplyInfo,
   ApiInputReplyInfo,
@@ -19,10 +20,10 @@ import type {
 import type { MessageKey } from '../../../util/keys/messageKey';
 import type { RequiredGlobalActions } from '../../index';
 import type {
-  ActionReturnType, ApiDraft, GlobalState, TabArgs, WebPageMediaSize,
+  ActionReturnType, GlobalState, TabArgs,
 } from '../../types';
 import { MAIN_THREAD_ID, MESSAGE_DELETED } from '../../../api/types';
-import { LoadMoreDirection, type ThreadId } from '../../../types';
+import { LoadMoreDirection, type ThreadId, type WebPageMediaSize } from '../../../types';
 
 import {
   GIF_MIME_TYPE,
@@ -61,6 +62,7 @@ import {
   isMessageLocal,
   isServiceNotificationMessage,
   isUserBot,
+  splitMessagesForForwarding,
 } from '../../helpers';
 import { isApiPeerUser } from '../../helpers/peers';
 import {
@@ -98,6 +100,7 @@ import {
 } from '../../reducers';
 import { updateTabState } from '../../reducers/tabs';
 import {
+  selectCanForwardMessage,
   selectChat,
   selectChatFullInfo,
   selectChatLastMessageId,
@@ -1145,23 +1148,29 @@ addActionHandler('forwardMessages', (global, actions, payload): ActionReturnType
   const lastMessageId = selectChatLastMessageId(global, toChat.id);
 
   const [realMessages, serviceMessages] = partition(messages, (m) => !isServiceNotificationMessage(m));
-  if (realMessages.length) {
+  const forwardableRealMessages = realMessages.filter((message) => selectCanForwardMessage(global, message));
+  if (forwardableRealMessages.length) {
+    const messageBatches = global.config?.maxForwardedCount
+      ? splitMessagesForForwarding(forwardableRealMessages, global.config.maxForwardedCount)
+      : [forwardableRealMessages];
     (async () => {
       await rafPromise(); // Wait one frame for any previous `sendMessage` to be processed
-      callApi('forwardMessages', {
-        fromChat,
-        toChat,
-        toThreadId,
-        messages: realMessages,
-        isSilent,
-        scheduledAt,
-        sendAs,
-        withMyScore,
-        noAuthors,
-        noCaptions,
-        isCurrentUserPremium,
-        wasDrafted: Boolean(draft),
-        lastMessageId,
+      messageBatches.forEach((batch) => {
+        callApi('forwardMessages', {
+          fromChat,
+          toChat,
+          toThreadId,
+          messages: batch,
+          isSilent,
+          scheduledAt,
+          sendAs,
+          withMyScore,
+          noAuthors,
+          noCaptions,
+          isCurrentUserPremium,
+          wasDrafted: Boolean(draft),
+          lastMessageId,
+        });
       });
     })();
   }

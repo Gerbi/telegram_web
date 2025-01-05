@@ -16,12 +16,22 @@ export const processDeepLink = (url: string): boolean => {
       case 'privateMessageLink':
         handlePrivateMessageLink(parsedLink, actions);
         return true;
+      case 'publicMessageLink': {
+        actions.openChatByUsername({
+          username: parsedLink.username,
+          threadId: parsedLink.threadId,
+          messageId: parsedLink.messageId,
+          commentId: parsedLink.commentId,
+        });
+        return true;
+      }
       case 'publicUsernameOrBotLink': {
         const choose = parseChooseParameter(parsedLink.choose);
 
         actions.openChatByUsername({
           username: parsedLink.username,
           startParam: parsedLink.start,
+          ref: parsedLink.ref,
           text: parsedLink.text,
           startApp: parsedLink.startApp,
           mode: parsedLink.mode,
@@ -29,6 +39,12 @@ export const processDeepLink = (url: string): boolean => {
           attach: parsedLink.attach,
           choose,
           originalParts: [parsedLink.username, parsedLink.appName],
+        });
+        return true;
+      }
+      case 'privateChannelLink': {
+        actions.openPrivateChannel({
+          id: parsedLink.channelId,
         });
         return true;
       }
@@ -42,6 +58,12 @@ export const processDeepLink = (url: string): boolean => {
         return true;
       case 'premiumMultigiftLink':
         actions.openGiftRecipientPicker();
+        return true;
+      case 'chatBoostLink':
+        actions.processBoostParameters({
+          usernameOrId: (parsedLink.username || parsedLink.id)!,
+          isPrivate: Boolean(parsedLink.id),
+        });
         return true;
       default:
         break;
@@ -71,7 +93,6 @@ export const processDeepLink = (url: string): boolean => {
     openChatWithDraft,
     checkChatlistInvite,
     openStoryViewerByUsername,
-    processBoostParameters,
     checkGiftCode,
     openStarsBalanceModal,
   } = actions;
@@ -83,7 +104,6 @@ export const processDeepLink = (url: string): boolean => {
         appname, startapp, mode, story, text,
       } = params;
 
-      const hasBoost = params.hasOwnProperty('boost');
       const threadId = Number(thread) || Number(topic) || undefined;
 
       if (domain !== 'telegrampassport') {
@@ -100,8 +120,6 @@ export const processDeepLink = (url: string): boolean => {
             username: domain,
             inviteHash: voicechat || livestream,
           });
-        } else if (hasBoost) {
-          processBoostParameters({ usernameOrId: domain });
         } else if (phone) {
           openChatByPhoneNumber({
             phoneNumber: phone,
@@ -181,14 +199,6 @@ export const processDeepLink = (url: string): boolean => {
       break;
     }
 
-    case 'boost': {
-      const { channel, domain } = params;
-      const isPrivate = Boolean(channel);
-
-      processBoostParameters({ usernameOrId: channel || domain, isPrivate });
-      break;
-    }
-
     case 'giftcode': {
       const { slug } = params;
       checkGiftCode({ slug });
@@ -210,15 +220,10 @@ export function formatShareText(url?: string, text?: string, title?: string): Ap
 function handlePrivateMessageLink(link: PrivateMessageLink, actions: ReturnType<typeof getActions>) {
   const {
     focusMessage,
-    processBoostParameters,
   } = actions;
   const {
-    isBoost, channelId, messageId, threadId,
+    channelId, messageId, threadId,
   } = link;
-  if (isBoost) {
-    processBoostParameters({ usernameOrId: channelId, isPrivate: true });
-    return;
-  }
   focusMessage({
     chatId: toChannelId(channelId),
     threadId,

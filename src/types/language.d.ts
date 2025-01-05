@@ -408,6 +408,8 @@ export interface LangPair {
   'PasscodeControllerChangeTitle': undefined;
   'FilterNew': undefined;
   'FilterEdit': undefined;
+  'FilterDelete': undefined;
+  'FilterShare': undefined;
   'AutoDeleteConfirm': undefined;
   'LogOutTitle': undefined;
   'AccDescrGoBack': undefined;
@@ -850,6 +852,7 @@ export interface LangPair {
   'StickerPackErrorNotFound': undefined;
   'ContactsPhoneNumberNotRegistred': undefined;
   'NoUsernameFound': undefined;
+  'PrivateChannelInaccessible': undefined;
   'HiddenName': undefined;
   'ChannelPersmissionDeniedSendMessagesForever': undefined;
   'ChannelPersmissionDeniedSendMessagesDefaultRestrictedText': undefined;
@@ -1145,6 +1148,7 @@ export interface LangPair {
   'StarGiftAvailability': undefined;
   'StarsSubscribeInfoLinkText': undefined;
   'StarsSubscribeInfoLink': undefined;
+  'StarsBalance': undefined;
   'OpenApp': undefined;
   'PopularApps': undefined;
   'SearchApps': undefined;
@@ -1166,6 +1170,36 @@ export interface LangPair {
   'PrivacyGiftsInfo': undefined;
   'PrivacyValueBots': undefined;
   'CustomShareGiftsInfo': undefined;
+  'AllChatsSearchContext': undefined;
+  'PrivateChatsSearchContext': undefined;
+  'GroupChatsSearchContext': undefined;
+  'ChannelsSearchContext': undefined;
+  'SearchTabChats': undefined;
+  'SearchTabChannels': undefined;
+  'SearchTabApps': undefined;
+  'SearchTabMedia': undefined;
+  'SearchTabLinks': undefined;
+  'SearchTabFiles': undefined;
+  'SearchTabMusic': undefined;
+  'SearchTabVoice': undefined;
+  'SearchTabMessages': undefined;
+  'StarsTransactionsAll': undefined;
+  'StarsTransactionsIncoming': undefined;
+  'StarsTransactionsOutgoing': undefined;
+  'ProfileTabSavedDialogs': undefined;
+  'ProfileTabStories': undefined;
+  'ProfileTabStoriesArchive': undefined;
+  'ProfileTabGifts': undefined;
+  'ProfileTabSubscribers': undefined;
+  'ProfileTabMembers': undefined;
+  'ProfileTabBotPreview': undefined;
+  'ProfileTabMedia': undefined;
+  'ProfileTabFiles': undefined;
+  'ProfileTabLinks': undefined;
+  'ProfileTabMusic': undefined;
+  'ProfileTabVoice': undefined;
+  'ProfileTabSharedGroups': undefined;
+  'ProfileTabSimilarChannels': undefined;
 }
 
 export interface LangPairWithVariables<V extends unknown = LangVariable> {
@@ -1572,6 +1606,13 @@ export interface LangPairWithVariables<V extends unknown = LangVariable> {
   'StarsSubscribeBotButtonMonth': {
     'amount': V;
   };
+  'SearchContextCaption': {
+    'type': V;
+  };
+  'FolderLinkTitleDescription': {
+    'folder': V;
+    'chats': V;
+  };
 }
 
 export interface LangPairPlural {
@@ -1752,6 +1793,9 @@ export interface LangPairPluralWithVariables<V extends unknown = LangVariable> {
     'name': V;
     'bot': V;
     'amount': V;
+  };
+  'FolderLinkTitleDescriptionChats': {
+    'count': V;
   };
 }
 export type RegularLangKey = keyof LangPair;

@@ -9,9 +9,11 @@ import { getActions, withGlobal } from '../../../global';
 import type {
   ApiAttachBot, ApiBotAppSettings, ApiChat, ApiUser,
 } from '../../../api/types';
-import type { TabState, WebApp, WebAppModalStateType } from '../../../global/types';
+import type { TabState } from '../../../global/types';
 import type { ThemeKey } from '../../../types';
-import type { PopupOptions, WebAppInboundEvent, WebAppOutboundEvent } from '../../../types/webapp';
+import type {
+  PopupOptions, WebApp, WebAppInboundEvent, WebAppModalStateType, WebAppOutboundEvent,
+} from '../../../types/webapp';
 
 import { TME_LINK_PREFIX } from '../../../config';
 import { convertToApiChatType } from '../../../global/helpers';
@@ -21,11 +23,9 @@ import {
   selectWebApp,
 } from '../../../global/selectors';
 import buildClassName from '../../../util/buildClassName';
-import buildStyle from '../../../util/buildStyle';
 import download from '../../../util/download';
 import { extractCurrentThemeParams, validateHexColor } from '../../../util/themeStyle';
 import { callApi } from '../../../api/gramjs';
-import { REM } from '../../common/helpers/mediaDimensions';
 import renderText from '../../common/helpers/renderText';
 
 import { getIsWebAppsFullscreenSupported } from '../../../hooks/useAppLayout';
@@ -65,9 +65,9 @@ export type OwnProps = {
   registerSendEventCallback: (callback: (event: WebAppOutboundEvent) => void) => void;
   registerReloadFrameCallback: (callback: (url: string) => void) => void;
   onContextMenuButtonClick: (e: React.MouseEvent) => void;
-  isDragging?: boolean;
-  frameSize?: { width: number; height: number };
+  isTransforming?: boolean;
   isMultiTabSupported? : boolean;
+  modalHeight: number;
 };
 
 type StateProps = {
@@ -113,12 +113,12 @@ const WebAppModalTabContent: FC<OwnProps & StateProps> = ({
   paymentStatus,
   registerSendEventCallback,
   registerReloadFrameCallback,
-  isDragging,
+  isTransforming,
   modalState,
-  frameSize,
   isMultiTabSupported,
   onContextMenuButtonClick,
   botAppSettings,
+  modalHeight,
 }) => {
   const {
     closeActiveWebApp,
@@ -700,10 +700,11 @@ const WebAppModalTabContent: FC<OwnProps & StateProps> = ({
     setTimeout(() => {
       sendViewport();
       sendSafeArea();
-    }, ANIMATION_WAIT);
+    }, isTransforming ? 0 : ANIMATION_WAIT);
   }, [shouldShowSecondaryButton, shouldHideSecondaryButton,
     shouldShowMainButton, shouldShowMainButton,
-    secondaryButton?.position, sendViewport, sendSafeArea]);
+    secondaryButton?.position, sendViewport, isTransforming, modalHeight,
+    sendSafeArea]);
 
   const isVerticalLayout = secondaryButtonCurrentPosition === 'top' || secondaryButtonCurrentPosition === 'bottom';
   const isHorizontalLayout = !isVerticalLayout;
@@ -798,16 +799,7 @@ const WebAppModalTabContent: FC<OwnProps & StateProps> = ({
     }
   }, [setShouldDecreaseWebFrameSize, shouldShowSecondaryButton, shouldShowMainButton]);
 
-  const frameWidth = frameSize?.width || 0;
-  let frameHeight = frameSize?.height || 0;
-  if (shouldDecreaseWebFrameSize) { frameHeight -= 4 * REM; }
-  const frameStyle = frameSize ? buildStyle(
-    `left: ${0}px;`,
-    `top: ${0}px;`,
-    `width: ${frameWidth}px;`,
-    `height: ${frameHeight}px;`,
-    isDragging ? 'pointer-events: none;' : '',
-  ) : isDragging ? 'pointer-events: none;' : '';
+  const frameStyle = isTransforming ? 'pointer-events: none;' : '';
 
   const handleBackClick = useLastCallback(() => {
     if (isBackButtonVisible) {

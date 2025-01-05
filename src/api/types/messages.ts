@@ -1,5 +1,4 @@
-import type { WebPageMediaSize } from '../../global/types';
-import type { ThreadId } from '../../types';
+import type { ThreadId, WebPageMediaSize } from '../../types';
 import type { ApiWebDocument } from './bots';
 import type { ApiGroupCall, PhoneCallAction } from './calls';
 import type { ApiChat, ApiPeerColor } from './chats';
@@ -479,6 +478,7 @@ export interface ApiAction {
   | 'chatCreate'
   | 'topicCreate'
   | 'suggestProfilePhoto'
+  | 'updateProfilePhoto'
   | 'joinedChannel'
   | 'chatBoost'
   | 'receipt'
@@ -756,6 +756,7 @@ export interface ApiMessage {
   effectId?: string;
   isInvertedMedia?: true;
   isVideoProcessingPending?: true;
+  areReactionsPossible?: true;
 }
 
 export interface ApiReactions {
@@ -1009,6 +1010,7 @@ export type ApiTranscription = {
 
 export type ApiMessageSearchType = 'text' | 'media' | 'documents' | 'links' | 'audio' | 'voice' | 'profilePhoto';
 export type ApiGlobalMessageSearchType = 'text' | 'channels' | 'media' | 'documents' | 'links' | 'audio' | 'voice';
+export type ApiMessageSearchContext = 'all' | 'users' | 'groups' | 'channels';
 
 export type ApiReportReason = 'spam' | 'violence' | 'pornography' | 'childAbuse'
 | 'copyright' | 'geoIrrelevant' | 'fake' | 'illegalDrugs' | 'personalDetails' | 'other';

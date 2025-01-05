@@ -1,11 +1,11 @@
 import { Api as GramJs } from '../../../lib/gramjs';
 
-import type { ApiDraft } from '../../../global/types';
 import type {
   ApiAction,
   ApiAttachment,
   ApiChat,
   ApiContact,
+  ApiDraft,
   ApiFactCheck,
   ApiFormattedText,
   ApiGroupCall,
@@ -216,6 +216,7 @@ export function buildApiMessageWithChatId(
   const senderBoosts = mtpMessage.fromBoostsApplied;
   const factCheck = mtpMessage.factcheck && buildApiFactCheck(mtpMessage.factcheck);
   const isVideoProcessingPending = mtpMessage.videoProcessingPending;
+  const areReactionsPossible = mtpMessage.reactionsArePossible;
 
   const isInvertedMedia = mtpMessage.invertMedia;
 
@@ -242,6 +243,7 @@ export function buildApiMessageWithChatId(
     editDate: mtpMessage.editDate,
     isMediaUnread,
     hasUnreadMention: mtpMessage.mentioned && isMediaUnread,
+    areReactionsPossible,
     isMentioned: mtpMessage.mentioned,
     ...(groupedId && {
       groupedId,
@@ -372,7 +374,8 @@ function buildApiMessageActionStarGift(action: GramJs.MessageActionStarGift) : A
     isNameHidden: Boolean(nameHidden),
     isSaved: Boolean(saved),
     isConverted: Boolean(converted),
-    gift: buildApiStarGift(gift),
+    // ToDo: Use `!` temporarily to support layer 196
+    gift: buildApiStarGift(gift)!,
     message: message && buildApiFormattedText(message),
     starsToConvert: convertStars?.toJSNumber(),
   };
@@ -438,6 +441,7 @@ function buildAction(
       text = 'Notification.ChangedGroupPhoto';
       translationValues.push('%action_origin%');
     }
+    type = 'updateProfilePhoto';
   } else if (action instanceof GramJs.MessageActionChatDeletePhoto) {
     if (isChannelPost) {
       text = 'Channel.MessagePhotoRemoved';
@@ -705,7 +709,7 @@ function buildAction(
     amount = action.amount.toJSNumber();
     stars = action.stars.toJSNumber();
     transactionId = action.transactionId;
-  } else if (action instanceof GramJs.MessageActionStarGift) {
+  } else if (action instanceof GramJs.MessageActionStarGift && action.gift instanceof GramJs.StarGift) {
     type = 'starGift';
     if (isOutgoing) {
       text = 'ActionGiftOutbound';

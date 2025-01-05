@@ -1,8 +1,7 @@
 import BigInt from 'big-integer';
 import { Api as GramJs } from '../../../lib/gramjs';
 
-import type { WebPageMediaSize } from '../../../global/types';
-import type { ThreadId } from '../../../types';
+import type { ThreadId, WebPageMediaSize } from '../../../types';
 import type {
   ApiAttachment,
   ApiChat,
@@ -13,6 +12,7 @@ import type {
   ApiInputReplyInfo,
   ApiMessage,
   ApiMessageEntity,
+  ApiMessageSearchContext,
   ApiMessageSearchType,
   ApiNewPoll,
   ApiOnProgress,
@@ -1257,7 +1257,7 @@ export async function searchMessagesInChat({
 }
 
 export async function searchMessagesGlobal({
-  query, offsetRate = 0, offsetPeer, offsetId, limit, type = 'text', minDate, maxDate,
+  query, offsetRate = 0, offsetPeer, offsetId, limit, type = 'text', minDate, maxDate, context = 'all',
 }: {
   query: string;
   offsetRate?: number;
@@ -1265,6 +1265,7 @@ export async function searchMessagesGlobal({
   offsetId?: number;
   limit: number;
   type?: ApiGlobalMessageSearchType;
+  context?: ApiMessageSearchContext;
   minDate?: number;
   maxDate?: number;
 }): Promise<SearchResults | undefined> {
@@ -1302,7 +1303,9 @@ export async function searchMessagesGlobal({
     offsetRate,
     offsetPeer: peer,
     offsetId,
-    broadcastsOnly: type === 'channels' || undefined,
+    broadcastsOnly: type === 'channels' || context === 'channels' || undefined,
+    groupsOnly: context === 'groups' || undefined,
+    usersOnly: context === 'users' || undefined,
     limit,
     filter,
     minDate,
@@ -1964,7 +1967,10 @@ function handleMultipleLocalMessagesUpdate(
     return true;
   });
 
-  handleGramJsUpdate(otherUpdates);
+  // Illegal monkey patching. Easier than creating mock update object
+  update.updates = otherUpdates;
+
+  handleGramJsUpdate(update);
 }
 
 function handleLocalMessageUpdate(

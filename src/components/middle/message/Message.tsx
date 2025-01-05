@@ -28,10 +28,16 @@ import type {
   ApiTypeStory,
   ApiUser,
 } from '../../../api/types';
-import type { ActiveEmojiInteraction, ChatTranslatedMessages, MessageListType } from '../../../global/types';
 import type { ObserveFn } from '../../../hooks/useIntersectionObserver';
 import type {
-  FocusDirection, IAlbum, ISettings, ScrollTargetPosition, ThreadId,
+  ActiveEmojiInteraction,
+  ChatTranslatedMessages,
+  FocusDirection,
+  IAlbum,
+  ISettings,
+  MessageListType,
+  ScrollTargetPosition,
+  ThreadId,
 } from '../../../types';
 import type { Signal } from '../../../util/signals';
 import type { OnIntersectPinnedMessage } from '../hooks/usePinnedMessage';
@@ -48,7 +54,7 @@ import {
   getMessageHtmlId,
   getMessageSingleCustomEmoji,
   getMessageSingleRegularEmoji,
-  getSenderTitle,
+  getPeerTitle,
   hasMessageText,
   hasMessageTtl,
   isAnonymousForwardsChat,
@@ -296,7 +302,6 @@ type StateProps = {
   canTranscribeVoice?: boolean;
   viaBusinessBot?: ApiUser;
   effect?: ApiAvailableEffect;
-  availableStars?: number;
   poll?: ApiPoll;
 };
 
@@ -418,7 +423,6 @@ const Message: FC<OwnProps & StateProps> = ({
   canTranscribeVoice,
   viaBusinessBot,
   effect,
-  availableStars,
   poll,
   onIntersectPinnedMessage,
 }) => {
@@ -614,7 +618,6 @@ const Message: FC<OwnProps & StateProps> = ({
   );
 
   const {
-    handleAvatarClick,
     handleSenderClick,
     handleViaBotClick,
     handleReplyClick,
@@ -828,19 +831,19 @@ const Message: FC<OwnProps & StateProps> = ({
     replyStory,
   );
 
-  useFocusMessage(
-    ref,
+  useFocusMessage({
+    elementRef: ref,
     chatId,
     isFocused,
     focusDirection,
     noFocusHighlight,
     isResizingContainer,
     isJustAdded,
-    Boolean(focusedQuote),
+    isQuote: Boolean(focusedQuote),
     scrollTargetPosition,
-  );
+  });
 
-  const viaBusinessBotTitle = viaBusinessBot ? getSenderTitle(lang, viaBusinessBot) : undefined;
+  const viaBusinessBotTitle = viaBusinessBot ? getPeerTitle(lang, viaBusinessBot) : undefined;
 
   const canShowPostAuthor = !message.senderId;
   const signature = viaBusinessBotTitle || (canShowPostAuthor && message.postAuthorTitle)
@@ -970,19 +973,6 @@ const Message: FC<OwnProps & StateProps> = ({
     contentWidth, noMediaCorners, style, reactionsMaxWidth,
   } = sizeCalculations;
 
-  function renderAvatar() {
-    const hiddenName = (!avatarPeer && forwardInfo) ? forwardInfo.hiddenUserName : undefined;
-
-    return (
-      <Avatar
-        size={isMobile ? 'small-mobile' : 'small'}
-        peer={avatarPeer}
-        text={hiddenName}
-        onClick={avatarPeer ? handleAvatarClick : undefined}
-      />
-    );
-  }
-
   function renderMessageText(isForAnimation?: boolean) {
     if (!textMessage) return undefined;
     return (
@@ -1062,7 +1052,6 @@ const Message: FC<OwnProps & StateProps> = ({
         noRecentReactors={isChannel}
         tags={tags}
         isCurrentUserPremium={isPremium}
-        availableStars={availableStars}
       />
     );
   }
@@ -1497,11 +1486,11 @@ const Message: FC<OwnProps & StateProps> = ({
     let senderTitle;
     let senderColor;
     if (senderPeer && !(isCustomShape && viaBotId)) {
-      senderTitle = getSenderTitle(lang, senderPeer);
+      senderTitle = getPeerTitle(lang, senderPeer);
     } else if (forwardInfo?.hiddenUserName) {
       senderTitle = forwardInfo.hiddenUserName;
     } else if (storyData && originSender) {
-      senderTitle = getSenderTitle(lang, originSender!);
+      senderTitle = getPeerTitle(lang, originSender!);
     }
     const senderEmojiStatus = senderPeer && 'emojiStatus' in senderPeer && senderPeer.emojiStatus;
     const senderIsPremium = senderPeer && 'isPremium' in senderPeer && senderPeer.isPremium;
@@ -1626,7 +1615,6 @@ const Message: FC<OwnProps & StateProps> = ({
           )}
         </div>
       )}
-      {withAvatar && renderAvatar()}
       <div
         className={buildClassName('message-content-wrapper',
           contentClassName.includes('text') && 'can-select-text',
@@ -1701,7 +1689,6 @@ const Message: FC<OwnProps & StateProps> = ({
             observeIntersection={observeIntersectionForPlaying}
             noRecentReactors={isChannel}
             tags={tags}
-            availableStars={availableStars}
           />
         )}
       </div>
@@ -1852,7 +1839,6 @@ export default memo(withGlobal<OwnProps>(
 
     const effect = effectId ? global.availableEffectById[effectId] : undefined;
 
-    const { balance: availableStars } = global.stars || {};
     const poll = selectPollFromMessage(global, message);
 
     return {
@@ -1941,7 +1927,6 @@ export default memo(withGlobal<OwnProps>(
       canTranscribeVoice,
       viaBusinessBot,
       effect,
-      availableStars,
       poll,
     };
   },

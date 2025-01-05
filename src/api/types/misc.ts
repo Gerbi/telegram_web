@@ -1,9 +1,10 @@
 import type { TeactNode } from '../../lib/teact/teact';
 
-import type { ApiLimitType, ApiPremiumSection, CallbackAction } from '../../global/types';
+import type { CallbackAction } from '../../global/types';
 import type { IconName } from '../../types/icons';
 import type { LangFnParameters } from '../../util/localization';
 import type { ApiDocument, ApiPhoto, ApiReaction } from './messages';
+import type { ApiPremiumSection, ApiStarsSubscriptionPricing } from './payments';
 import type { ApiUser } from './users';
 
 export interface ApiInitialArgs {
@@ -176,11 +177,6 @@ export type ApiChatInviteInfo = {
   subscriptionPricing?: ApiStarsSubscriptionPricing;
 };
 
-export type ApiStarsSubscriptionPricing = {
-  period: number;
-  amount: number;
-};
-
 export type ApiChatInviteImporter = {
   userId: string;
   date: number;
@@ -243,6 +239,7 @@ export interface ApiAppConfig {
   isStarsGiftEnabled?: boolean;
   starGiftMaxMessageLength?: number;
   starGiftMaxConvertPeriod?: number;
+  starRefStartPrefixes?: string[];
 }
 
 export interface ApiConfig {
@@ -252,6 +249,9 @@ export interface ApiConfig {
   maxGroupSize: number;
   autologinToken?: string;
   isTestServer?: boolean;
+  maxMessageLength: number;
+  editTimeLimit: number;
+  maxForwardedCount: number;
 }
 
 export type ApiPeerColorSet = string[];
@@ -303,7 +303,7 @@ type ApiUrlAuthResultDefault = {
 
 export type ApiUrlAuthResult = ApiUrlAuthResultRequest | ApiUrlAuthResultAccepted | ApiUrlAuthResultDefault;
 
-export interface ApiCollectionInfo {
+export interface ApiCollectibleInfo {
   amount: number;
   currency: string;
   cryptoAmount: number;
@@ -320,3 +320,27 @@ export interface ApiPeerPhotos {
   nextOffset?: number;
   isLoading?: boolean;
 }
+
+export type ApiLimitType =
+  | 'uploadMaxFileparts'
+  | 'stickersFaved'
+  | 'savedGifs'
+  | 'dialogFiltersChats'
+  | 'dialogFilters'
+  | 'dialogFolderPinned'
+  | 'captionLength'
+  | 'channels'
+  | 'channelsPublic'
+  | 'aboutLength'
+  | 'chatlistInvites'
+  | 'chatlistJoined'
+  | 'recommendedChannels'
+  | 'savedDialogsPinned';
+
+export type ApiLimitTypeWithModal = Exclude<ApiLimitType, (
+  'captionLength' | 'aboutLength' | 'stickersFaved' | 'savedGifs' | 'recommendedChannels'
+)>;
+
+export type ApiLimitTypeForPromo = Exclude<ApiLimitType,
+'uploadMaxFileparts' | 'chatlistInvites' | 'chatlistJoined' | 'savedDialogsPinned'
+>;
