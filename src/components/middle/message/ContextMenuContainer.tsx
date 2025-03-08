@@ -32,7 +32,6 @@ import {
   getIsDownloading,
   getMessageDownloadableMedia,
   getMessageVideo,
-  getPrivateChatUserId,
   getUserFullName,
   hasMessageTtl,
   isActionMessage,
@@ -73,6 +72,7 @@ import {
   selectUser,
   selectUserStatus,
 } from '../../../global/selectors';
+import buildClassName from '../../../util/buildClassName';
 import { copyTextToClipboard } from '../../../util/clipboard';
 import { getSelectionAsFormattedText } from './helpers/getSelectionAsFormattedText';
 import { isSelectionRangeInsideMessage } from './helpers/isSelectionRangeInsideMessage';
@@ -97,6 +97,7 @@ export type OwnProps = {
   noReplies?: boolean;
   detectedLanguage?: string;
   repliesThreadInfo?: ApiThreadInfo;
+  className?: string;
   onClose: NoneToVoidFunction;
   onCloseAnimationEnd: NoneToVoidFunction;
 };
@@ -153,7 +154,7 @@ type StateProps = {
   isChannel?: boolean;
   canReplyInChat?: boolean;
   isWithPaidReaction?: boolean;
-  contactUserFullName?: string;
+  userFullName?: string;
   canGift?: boolean;
 };
 
@@ -218,10 +219,11 @@ const ContextMenuContainer: FC<OwnProps & StateProps> = ({
   isInSavedMessages,
   canReplyInChat,
   isWithPaidReaction,
+  userFullName,
+  canGift,
+  className,
   onClose,
   onCloseAnimationEnd,
-  contactUserFullName,
-  canGift,
 }) => {
   const {
     openThread,
@@ -363,9 +365,11 @@ const ContextMenuContainer: FC<OwnProps & StateProps> = ({
 
     const selectionText = getSelectionAsFormattedText(selectionRange);
 
+    const messageText = message.content.text!.text!.replace(/\u00A0/g, ' ');
+
     setCanQuoteSelection(
       selectionText.text.trim().length > 0
-      && message.content.text!.text!.includes(selectionText.text),
+      && messageText.includes(selectionText.text),
     );
   }, [
     selectionRange, selectionRange?.collapsed, selectionRange?.startOffset, selectionRange?.endOffset,
@@ -380,7 +384,14 @@ const ContextMenuContainer: FC<OwnProps & StateProps> = ({
   const handleDelete = useLastCallback(() => {
     setIsMenuOpen(false);
     closeMenu();
-    openDeleteMessageModal({ isSchedule: messageListType === 'scheduled', album, message });
+    const messageIds = album?.messages
+      ? album.messages.map(({ id }) => id)
+      : [message.id];
+    openDeleteMessageModal({
+      chatId: message.chatId,
+      messageIds,
+      isSchedule: messageListType === 'scheduled',
+    });
   });
 
   const closePinModal = useLastCallback(() => {
@@ -615,7 +626,7 @@ const ContextMenuContainer: FC<OwnProps & StateProps> = ({
   scheduledMaxDate.setFullYear(scheduledMaxDate.getFullYear() + 1);
 
   return (
-    <div ref={containerRef} className="ContextMenuContainer">
+    <div ref={containerRef} className={buildClassName('ContextMenuContainer', className)}>
       <MessageContextMenu
         isReactionPickerOpen={isReactionPickerOpen}
         availableReactions={availableReactions}
@@ -698,7 +709,7 @@ const ContextMenuContainer: FC<OwnProps & StateProps> = ({
         onTranslate={handleTranslate}
         onShowOriginal={handleShowOriginal}
         onSelectLanguage={handleSelectLanguage}
-        contactUserFullName={contactUserFullName}
+        userFullName={userFullName}
         canGift={canGift}
       />
       <PinMessageModal
@@ -729,9 +740,8 @@ export default memo(withGlobal<OwnProps>(
     const chat = selectChat(global, message.chatId);
     const isPrivate = chat && isUserId(chat.id);
     const chatFullInfo = !isPrivate ? selectChatFullInfo(global, message.chatId) : undefined;
-    const contactUserFullName = chat && isUserId(chat.id)
-      ? getUserFullName(selectUser(global, getPrivateChatUserId(chat)!))
-      : undefined;
+    const user = selectUser(global, message.chatId);
+    const userFullName = user && getUserFullName(user);
 
     const {
       seenByExpiresAt, seenByMaxChatMembers, maxUniqueReactions, readDateExpiresAt,
@@ -883,7 +893,7 @@ export default memo(withGlobal<OwnProps>(
       isWithPaidReaction: chatFullInfo?.isPaidReactionAvailable,
       poll,
       story,
-      contactUserFullName,
+      userFullName,
       canGift,
     };
   },

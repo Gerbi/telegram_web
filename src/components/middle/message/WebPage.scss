@@ -48,6 +48,10 @@
     margin: 0;
     transition: background-color 0.2s ease-in;
 
+    &.with-gift {
+      line-height: 1;
+    }
+
     &.interactive {
       cursor: var(--custom-cursor, pointer);
 
@@ -55,11 +59,16 @@
         background-color: var(--background-active-color);
       }
     }
+
+    .site-title, .site-name {
+      font-weight: var(--font-weight-normal);
+    }
   }
 
   .WebPage--content {
     position: relative;
 
+    &.is-gift,
     &.is-story {
       display: flex;
       flex-direction: column-reverse;
@@ -83,6 +92,12 @@
       background-color: transparent !important;
       opacity: 0.85;
     }
+  }
+
+  .with-gift &--quick-button {
+    border-top: inherit;
+    margin-top: 0.0625rem;
+    margin-bottom: -0.125rem;
   }
 
   &-text {

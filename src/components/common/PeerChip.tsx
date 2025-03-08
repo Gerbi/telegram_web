@@ -33,10 +33,11 @@ type OwnProps<T = undefined> = {
   canClose?: boolean;
   isCloseNonDestructive?: boolean;
   className?: string;
-  fluid?: boolean;
   withPeerColors?: boolean;
+  withEmojiStatus?: boolean;
   clickArg?: T;
   onClick?: (arg: T) => void;
+  itemClassName?: string;
 };
 
 type StateProps = {
@@ -56,10 +57,11 @@ const PeerChip = <T,>({
   mockPeer,
   customPeer,
   className,
-  fluid,
   isSavedMessages,
   withPeerColors,
+  withEmojiStatus,
   onClick,
+  itemClassName,
 }: OwnProps<T> & StateProps) => {
   const lang = useOldLang();
 
@@ -91,7 +93,9 @@ const PeerChip = <T,>({
     );
 
     titleText = getPeerTitle(lang, anyPeer) || title;
-    titleElement = title || <FullNameTitle peer={anyPeer} isSavedMessages={isSavedMessages} withEmojiStatus />;
+    titleElement = title || (
+      <FullNameTitle peer={anyPeer} isSavedMessages={isSavedMessages} withEmojiStatus={withEmojiStatus} />
+    );
   }
 
   const fullClassName = buildClassName(
@@ -100,7 +104,7 @@ const PeerChip = <T,>({
     isMinimized && styles.minimized,
     canClose && styles.closeable,
     isCloseNonDestructive && styles.nonDestructive,
-    fluid && styles.fluid,
+    !onClick && styles.notClickable,
     withPeerColors && getPeerColorClass(customPeer || peer),
     className,
   );
@@ -114,7 +118,7 @@ const PeerChip = <T,>({
     >
       {iconElement}
       {!isMinimized && (
-        <div className={styles.name} dir="auto">
+        <div className={buildClassName(styles.name, itemClassName)} dir="auto">
           {titleElement}
         </div>
       )}

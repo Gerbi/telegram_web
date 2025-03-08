@@ -31,7 +31,6 @@ import {
   getMessageStatefulContent,
   getPeerTitle,
   isChatChannel,
-  isJoinedChannelMessage,
 } from '../../helpers';
 import { getMessageSummaryText } from '../../helpers/messageSummary';
 import { renderMessageSummaryHtml } from '../../helpers/renderMessageSummaryHtml';
@@ -187,7 +186,7 @@ addActionHandler('replyToNextMessage', (global, actions, payload): ActionReturnT
 
 addActionHandler('openAudioPlayer', (global, actions, payload): ActionReturnType => {
   const {
-    chatId, threadId, messageId, origin, volume, playbackRate, isMuted,
+    chatId, threadId, messageId, origin, volume, playbackRate, isMuted, timestamp,
     tabId = getCurrentTabId(),
   } = payload;
 
@@ -197,6 +196,7 @@ addActionHandler('openAudioPlayer', (global, actions, payload): ActionReturnType
       chatId,
       threadId,
       messageId,
+      timestamp,
       origin: origin ?? tabState.audioPlayer.origin,
       volume: volume ?? tabState.audioPlayer.volume,
       playbackRate: playbackRate || tabState.audioPlayer.playbackRate || global.audioPlayer.lastPlaybackRate,
@@ -345,13 +345,6 @@ addActionHandler('focusLastMessage', (global, actions, payload): ActionReturnTyp
       lastMessageId = pinnedMessageIds[pinnedMessageIds.length - 1];
     } else {
       lastMessageId = selectChatLastMessageId(global, chatId);
-
-      const chatMessages = selectChatMessages(global, chatId);
-      // Workaround for scroll to local message 'you joined this channel'
-      const lastChatMessage = Object.values(chatMessages).reverse()[0];
-      if (lastMessageId && isJoinedChannelMessage(lastChatMessage) && lastChatMessage.id > lastMessageId) {
-        lastMessageId = lastChatMessage.id;
-      }
     }
   } else if (isSavedDialog) {
     lastMessageId = selectChatLastMessageId(global, String(threadId), 'saved');
@@ -412,7 +405,7 @@ addActionHandler('focusMessage', (global, actions, payload): ActionReturnType =>
   const {
     chatId, threadId = MAIN_THREAD_ID, messageListType = 'thread', noHighlight, groupedId, groupedChatId,
     replyMessageId, isResizingContainer, shouldReplaceHistory, noForumTopicPanel, quote, scrollTargetPosition,
-    tabId = getCurrentTabId(),
+    timestamp, tabId = getCurrentTabId(),
   } = payload;
 
   let { messageId } = payload;
@@ -422,6 +415,11 @@ addActionHandler('focusMessage', (global, actions, payload): ActionReturnType =>
     actions.showNotification({ message: oldTranslate('Conversation.ErrorInaccessibleMessage'), tabId });
     return undefined;
   }
+
+  const onMessageReady = timestamp
+    ? () => actions.openMediaFromTimestamp({
+      chatId, threadId, messageId, timestamp, tabId,
+    }) : undefined;
 
   if (groupedId !== undefined) {
     const ids = selectForwardedMessageIdsByGroupId(global, groupedChatId!, groupedId);
@@ -480,6 +478,7 @@ addActionHandler('focusMessage', (global, actions, payload): ActionReturnType =>
       noForumTopicPanel,
       tabId,
     });
+    onMessageReady?.();
     return undefined;
   }
 
@@ -511,6 +510,7 @@ addActionHandler('focusMessage', (global, actions, payload): ActionReturnType =>
     threadId,
     tabId,
     shouldForceRender: true,
+    onLoaded: onMessageReady,
   });
   return undefined;
 });
@@ -1037,17 +1037,16 @@ function copyTextForMessages(global: GlobalState, chatId: string, messageIds: nu
 
 addActionHandler('openDeleteMessageModal', (global, actions, payload): ActionReturnType => {
   const {
-    message, isSchedule, album,
+    chatId, messageIds, isSchedule,
     tabId = getCurrentTabId(),
   } = payload;
 
   global = getGlobal();
-
   global = updateTabState(global, {
     deleteMessageModal: {
+      chatId,
+      messageIds,
       isSchedule,
-      album,
-      message,
     },
   }, tabId);
   setGlobal(global);
@@ -1076,5 +1075,21 @@ addActionHandler('closeAboutAdsModal', (global, actions, payload): ActionReturnT
 
   return updateTabState(global, {
     aboutAdsModal: undefined,
+  }, tabId);
+});
+
+addActionHandler('closePreparedInlineMessageModal', (global, actions, payload): ActionReturnType => {
+  const { tabId = getCurrentTabId() } = payload || {};
+
+  return updateTabState(global, {
+    preparedMessageModal: undefined,
+  }, tabId);
+});
+
+addActionHandler('closeSharePreparedMessageModal', (global, actions, payload): ActionReturnType => {
+  const { tabId = getCurrentTabId() } = payload || {};
+
+  return updateTabState(global, {
+    sharePreparedMessageModal: undefined,
   }, tabId);
 });

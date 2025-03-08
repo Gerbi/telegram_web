@@ -45,6 +45,7 @@ const SuggestedStatusModal = ({ modal, currentUser, bot }: OwnProps & StateProps
     return {
       ...currentUser,
       emojiStatus: {
+        type: 'regular',
         documentId: renderingModal.customEmojiId,
       },
     } satisfies ApiUser;
@@ -93,8 +94,7 @@ const SuggestedStatusModal = ({ modal, currentUser, bot }: OwnProps & StateProps
 
     setEmojiStatus({
       referrerWebAppKey: renderingModal.webAppKey,
-      emojiStatusId: renderingModal.customEmojiId,
-      expires,
+      emojiStatus: { type: 'regular', documentId: renderingModal.customEmojiId, until: expires },
     });
     closeSuggestedStatusModal();
   });
@@ -123,6 +123,7 @@ const SuggestedStatusModal = ({ modal, currentUser, bot }: OwnProps & StateProps
       {mockPeerWithStatus && (
         <PeerChip
           mockPeer={mockPeerWithStatus}
+          withEmojiStatus
         />
       )}
       <Button size="smaller" onClick={handleSetStatus}>

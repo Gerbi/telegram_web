@@ -36,6 +36,7 @@ import useOldLang from '../../../hooks/useOldLang';
 import { useFullscreenStatus } from '../../../hooks/window/useFullscreen';
 import useLeftHeaderButtonRtlForumTransition from './hooks/useLeftHeaderButtonRtlForumTransition';
 
+import Icon from '../../common/icons/Icon';
 import PeerChip from '../../common/PeerChip';
 import StoryToggler from '../../story/StoryToggler';
 import Button from '../../ui/Button';
@@ -116,11 +117,13 @@ const LeftMainHeader: FC<OwnProps & StateProps> = ({
 
   const oldLang = useOldLang();
   const lang = useLang();
-  const { isMobile, isDesktop } = useAppLayout();
+  const { isMobile } = useAppLayout();
 
   const [isBotMenuOpen, markBotMenuOpen, unmarkBotMenuOpen] = useFlag();
 
+  const areContactsVisible = content === LeftColumnContent.Contacts;
   const hasMenu = content === LeftColumnContent.ChatList;
+
   const selectedSearchDate = useMemo(() => {
     return searchDate
       ? formatDateToString(new Date(searchDate * 1000))
@@ -189,11 +192,11 @@ const LeftMainHeader: FC<OwnProps & StateProps> = ({
     lockScreen();
   });
 
-  const isSearchFocused = (!isDesktop && !isMessageListOpen) && (
-    Boolean(globalSearchChatId)
+  const isSearchRelevant = Boolean(globalSearchChatId)
     || content === LeftColumnContent.GlobalSearch
-    || content === LeftColumnContent.Contacts
-  );
+    || content === LeftColumnContent.Contacts;
+
+  const isSearchFocused = isMobile ? !isMessageListOpen && isSearchRelevant : isSearchRelevant;
 
   useEffect(() => (isSearchFocused ? captureEscKeyListener(() => onReset()) : undefined), [isSearchFocused, onReset]);
 
@@ -215,6 +218,9 @@ const LeftMainHeader: FC<OwnProps & StateProps> = ({
   const headerRef = useRef<HTMLDivElement>(null);
   useElectronDrag(headerRef);
 
+  const withStoryToggler = !isSearchFocused
+    && !selectedSearchDate && !globalSearchChatId && !areContactsVisible;
+
   const searchContent = useMemo(() => {
     return (
       <>
@@ -222,7 +228,6 @@ const LeftMainHeader: FC<OwnProps & StateProps> = ({
           <PeerChip
             icon="calendar"
             title={selectedSearchDate}
-            fluid
             canClose
             isMinimized={Boolean(globalSearchChatId)}
             className="left-search-picker-item"
@@ -236,7 +241,6 @@ const LeftMainHeader: FC<OwnProps & StateProps> = ({
             className="left-search-picker-item"
             peerId={globalSearchChatId}
             onClick={setGlobalSearchChatId}
-            fluid
             canClose
             isMinimized
             clickArg={CLEAR_CHAT_SEARCH_PARAM}
@@ -293,7 +297,9 @@ const LeftMainHeader: FC<OwnProps & StateProps> = ({
           onSpinnerClick={connectionStatusPosition === 'minimized' ? toggleConnectionStatus : undefined}
         >
           {searchContent}
-          <StoryToggler canShow={!isSearchFocused && !selectedSearchDate && !globalSearchChatId} />
+          <StoryToggler
+            canShow={withStoryToggler}
+          />
         </SearchInput>
         {isCurrentUserPremium && <StatusButton />}
         {hasPasscode && (
@@ -306,7 +312,7 @@ const LeftMainHeader: FC<OwnProps & StateProps> = ({
             onClick={handleLockScreen}
             className={buildClassName(!isCurrentUserPremium && 'extra-spacing')}
           >
-            <i className="icon icon-lock" />
+            <Icon name="lock" />
           </Button>
         )}
         <ShowTransition

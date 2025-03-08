@@ -1,5 +1,6 @@
 import BigInt from 'big-integer';
 import { Api as GramJs } from '../../../lib/gramjs';
+import { RPCError } from '../../../lib/gramjs/errors';
 
 import type { ThreadId, WebPageMediaSize } from '../../../types';
 import type {
@@ -23,11 +24,15 @@ import type {
   ApiSticker,
   ApiStory,
   ApiStorySkipped,
+  ApiUser,
   ApiUserStatus,
   ApiVideo,
   MediaContent,
 } from '../../types';
-import { MAIN_THREAD_ID, MESSAGE_DELETED } from '../../types';
+import {
+  MAIN_THREAD_ID,
+  MESSAGE_DELETED,
+} from '../../types';
 
 import {
   API_GENERAL_ID_LIMIT,
@@ -41,7 +46,6 @@ import {
   SUPPORTED_PHOTO_CONTENT_TYPES,
   SUPPORTED_VIDEO_CONTENT_TYPES,
 } from '../../../config';
-import { getEmojiOnlyCountForMessage } from '../../../global/helpers/getEmojiOnlyCountForMessage';
 import { fetchFile } from '../../../util/files';
 import { compact, split } from '../../../util/iteratees';
 import { getMessageKey } from '../../../util/keys/messageKey';
@@ -65,6 +69,7 @@ import {
   buildApiThreadInfo,
   buildLocalForwardedMessage,
   buildLocalMessage,
+  buildPreparedInlineMessage,
   buildUploadingMedia,
 } from '../apiBuilders/messages';
 import { getApiChatIdFromMtpPeer } from '../apiBuilders/peers';
@@ -89,7 +94,7 @@ import {
 import {
   deserializeBytes,
   resolveMessageApiChatId,
-} from '../helpers';
+} from '../helpers/misc';
 import { sendApiUpdate } from '../updates/apiUpdateEmitter';
 import { processMessageAndUpdateThreadInfo } from '../updates/entityProcessor';
 import { processAffectedHistory, updateChannelState } from '../updates/updateManager';
@@ -153,7 +158,7 @@ export async function fetchMessages({
       abortControllerThreadId: threadId,
     });
   } catch (err: any) {
-    if (err.message === 'CHANNEL_PRIVATE') {
+    if (err.errorMessage === 'CHANNEL_PRIVATE') {
       sendApiUpdate({
         '@type': 'updateChat',
         id: chat.id,
@@ -421,7 +426,7 @@ export function sendMessage(
       });
       if (update) handleLocalMessageUpdate(localMessage, update);
     } catch (error: any) {
-      if (error.message === 'PRIVACY_PREMIUM_REQUIRED') {
+      if (error.errorMessage === 'PRIVACY_PREMIUM_REQUIRED') {
         sendApiUpdate({ '@type': 'updateRequestUserUpdate', id: chat.id });
       }
 
@@ -623,7 +628,6 @@ export async function editMessage({
   const messageUpdate: Partial<ApiMessage> = {
     ...message,
     content: newContent,
-    emojiOnlyCount: getEmojiOnlyCountForMessage(newContent, message.groupedId),
     isInvertedMedia,
   };
 
@@ -831,6 +835,37 @@ export async function deleteMessages({
     ids: messageIds,
     ...(isChannel && { chatId: chat.id }),
   });
+}
+
+export async function deleteParticipantHistory({
+  chat, peer, isRepeat = false,
+}: {
+  chat: ApiChat; peer: ApiPeer; isRepeat?: boolean;
+}) {
+  const result = await invokeRequest(
+    new GramJs.channels.DeleteParticipantHistory({
+      channel: buildInputEntity(chat.id, chat.accessHash) as GramJs.InputChannel,
+      participant: buildInputPeer(peer.id, peer.accessHash),
+    }),
+  );
+
+  if (!result) {
+    return;
+  }
+
+  processAffectedHistory(chat, result);
+
+  if (!isRepeat) {
+    sendApiUpdate({
+      '@type': 'deleteParticipantHistory',
+      chatId: chat.id,
+      peerId: peer.id,
+    });
+  }
+
+  if (result.offset) {
+    await deleteParticipantHistory({ chat, peer, isRepeat: true });
+  }
 }
 
 export function deleteScheduledMessages({
@@ -1121,6 +1156,18 @@ export function fetchPaidReactionPrivacy() {
   return invokeRequest(new GramJs.messages.GetPaidReactionPrivacy(), { shouldReturnTrue: true });
 }
 
+export function reportMessagesDelivery({
+  chat, messageIds,
+}: {
+  chat: ApiChat;
+  messageIds: number[];
+}) {
+  return invokeRequest(new GramJs.messages.ReportMessagesDelivery({
+    peer: buildInputPeer(chat.id, chat.accessHash),
+    id: messageIds,
+  }));
+}
+
 export async function fetchDiscussionMessage({
   chat, messageId,
 }: {
@@ -1403,7 +1450,7 @@ export async function fetchWebPagePreview({
     entities: textWithEntities.entities,
   }));
 
-  return preview && buildWebPage(preview);
+  return preview && buildWebPage(preview.media);
 }
 
 export async function sendPollVote({
@@ -1677,10 +1724,13 @@ export async function fetchSeenBy({ chat, messageId }: { chat: ApiChat; messageI
 
 export async function fetchSendAs({
   chat,
+  isForPaidReactions,
 }: {
+  isForPaidReactions?: true;
   chat: ApiChat;
 }) {
   const result = await invokeRequest(new GramJs.channels.GetSendAs({
+    forPaidReactions: isForPaidReactions,
     peer: buildInputPeer(chat.id, chat.accessHash),
   }), {
     shouldIgnoreErrors: true,
@@ -1691,9 +1741,7 @@ export async function fetchSendAs({
     return undefined;
   }
 
-  return {
-    sendAs: result.peers.map(buildApiSendAsPeerId),
-  };
+  return result.peers.map(buildApiSendAsPeerId);
 }
 
 export function saveDefaultSendAs({
@@ -1774,8 +1822,8 @@ export async function reportSponsoredMessage({
     }
 
     return buildApiSponsoredMessageReportResult(result);
-  } catch (err) {
-    if (err instanceof Error && err.message === 'PREMIUM_ACCOUNT_REQUIRED') {
+  } catch (err: unknown) {
+    if (err instanceof RPCError && err.errorMessage === 'PREMIUM_ACCOUNT_REQUIRED') {
       return {
         type: 'premiumRequired' as const,
       };
@@ -2134,4 +2182,19 @@ export async function exportMessageLink({
   }));
 
   return result?.link;
+}
+
+export async function fetchPreparedInlineMessage({
+  bot, id,
+}: {
+  bot: ApiUser;
+  id: string;
+}) {
+  const result = await invokeRequest(new GramJs.messages.GetPreparedInlineMessage({
+    bot: buildInputEntity(bot.id, bot.accessHash) as GramJs.InputUser,
+    id,
+  }));
+  if (!result) return undefined;
+
+  return buildPreparedInlineMessage(result);
 }

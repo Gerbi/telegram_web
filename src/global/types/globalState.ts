@@ -11,9 +11,11 @@ import type {
   ApiConfig,
   ApiCountry,
   ApiCountryCode,
+  ApiEmojiStatusType,
   ApiGroupCall,
   ApiLanguage,
   ApiMessage,
+  ApiPaidReactionPrivacyType,
   ApiPeerColors,
   ApiPeerPhotos,
   ApiPeerStories,
@@ -27,7 +29,7 @@ import type {
   ApiSavedReactionTag,
   ApiSession,
   ApiSponsoredMessage,
-  ApiStarGift,
+  ApiStarGiftRegular,
   ApiStarsAmount,
   ApiStarTopupOption,
   ApiStealthMode,
@@ -40,13 +42,13 @@ import type {
   ApiUser,
   ApiUserCommonChats,
   ApiUserFullInfo,
-  ApiUserGifts,
   ApiUserStatus,
   ApiVideo,
   ApiWallpaper,
   ApiWebSession,
 } from '../../api/types';
 import type {
+  BotAppPermissions,
   ChatListType,
   ChatTranslatedMessages,
   EmojiKeywords,
@@ -54,7 +56,10 @@ import type {
   IThemeSettings,
   NotifyException,
   PerformanceType,
+  Point,
   ServiceNotification,
+  SimilarBotsInfo,
+  Size,
   StarGiftCategory,
   StarsSubscriptions,
   StarsTransactionHistory,
@@ -64,9 +69,11 @@ import type {
   TopicsInfo,
   WebPageMediaSize,
 } from '../../types';
+import type { RegularLangFnParameters } from '../../util/localization';
 import type { TabState } from './tabState';
 
 export type GlobalState = {
+  cacheVersion: number;
   isInited: boolean;
   config?: ApiConfig;
   appConfig?: ApiAppConfig;
@@ -104,13 +111,8 @@ export type GlobalState = {
   twoFaSettings: {
     hint?: string;
     isLoading?: boolean;
-    error?: string;
+    errorKey?: RegularLangFnParameters;
     waitingEmailCodeLength?: number;
-  };
-
-  monetizationInfo: {
-    isLoading?: boolean;
-    error?: string;
   };
 
   attachmentSettings: {
@@ -141,7 +143,7 @@ export type GlobalState = {
   authPhoneNumber?: string;
   authIsLoading?: boolean;
   authIsLoadingQrCode?: boolean;
-  authError?: string;
+  authErrorKey?: RegularLangFnParameters;
   authRememberMe?: boolean;
   authNearestCountry?: string;
   authIsCodeViaApp?: boolean;
@@ -171,9 +173,12 @@ export type GlobalState = {
     fullInfoById: Record<string, ApiUserFullInfo>;
     previewMediaByBotId: Record<string, ApiBotPreviewMedia[]>;
     commonChatsById: Record<string, ApiUserCommonChats>;
-    giftsById: Record<string, ApiUserGifts>;
+    botAppPermissionsById: Record<string, BotAppPermissions>;
   };
-  profilePhotosById: Record<string, ApiPeerPhotos>;
+
+  peers: {
+    profilePhotosById: Record<string, ApiPeerPhotos>;
+  };
 
   chats: {
     // TODO Replace with `Partial<Record>` to properly handle missing keys
@@ -211,20 +216,22 @@ export type GlobalState = {
     forDiscussionIds?: string[];
     // Obtained from GetFullChat / GetFullChannel
     fullInfoById: Record<string, ApiChatFullInfo>;
-    similarChannelsById: Record<
-    string,
-    {
-      shouldShowInChat: boolean;
-      similarChannelIds: string[];
-      count: number;
-    }
-    >;
+    similarChannelsById: Partial<Record<string, {
+      isExpanded: boolean;
+      similarChannelIds?: string[];
+      count?: number;
+    }>>;
+
+    similarBotsById: Record<string, SimilarBotsInfo>;
   };
 
   messages: {
     byChatId: Record<string, {
       byId: Record<number, ApiMessage>;
       threadsById: Record<ThreadId, Thread>;
+    }>;
+    playbackByChatId: Record<string, {
+      byId: Record<number, number>;
     }>;
     sponsoredByChatId: Record<string, ApiSponsoredMessage>;
     pollById: Record<string, ApiPoll>;
@@ -290,8 +297,10 @@ export type GlobalState = {
     };
   };
   availableEffectById: Record<string, ApiAvailableEffect>;
-  starGiftsById: Record<string, ApiStarGift>;
-  starGiftCategoriesByName: Record<StarGiftCategory, string[]>;
+  starGifts?: {
+    byId: Record<string, ApiStarGiftRegular>;
+    idsByCategory: Record<StarGiftCategory, string[]>;
+  };
 
   stickers: {
     setsById: Record<string, ApiStickerSet>;
@@ -328,9 +337,6 @@ export type GlobalState = {
       stickers: ApiSticker[];
       emojis: ApiSticker[];
     };
-    starGifts: {
-      stickers: Record<string, ApiSticker>;
-    };
   };
 
   customEmojis: {
@@ -360,6 +366,11 @@ export type GlobalState = {
   defaultStatusIconsId?: string;
   premiumGifts?: ApiStickerSet;
   emojiKeywords: Record<string, EmojiKeywords | undefined>;
+
+  collectibleEmojiStatuses?: {
+    statuses: ApiEmojiStatusType[];
+    hash?: string;
+  };
 
   gifs: {
     saved: {
@@ -402,8 +413,11 @@ export type GlobalState = {
     privacy: Partial<Record<ApiPrivacyKey, ApiPrivacySettings>>;
     notifyExceptions?: Record<number, NotifyException>;
     lastPremiumBandwithNotificationDate?: number;
-    paidReactionPrivacy?: boolean;
+    paidReactionPrivacy?: ApiPaidReactionPrivacyType;
     languages?: ApiLanguage[];
+    botVerificationShownPeerIds: string[];
+    miniAppsCachedPosition?: Point;
+    miniAppsCachedSize?: Size;
   };
 
   push?: {

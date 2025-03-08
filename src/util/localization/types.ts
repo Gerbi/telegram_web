@@ -1,6 +1,7 @@
 import type { TeactNode } from '../../lib/teact/teact';
 
 import type {
+  ApiLanguage,
   LangPackStringValue,
   LangPackStringValueDeleted,
   LangPackStringValuePlural,
@@ -10,6 +11,7 @@ import type { TextFilter } from '../../components/common/helpers/renderText';
 import type {
   LangPairPluralWithVariables,
   LangPairWithVariables,
+  LangVariable,
   PluralLangKey,
   PluralLangKeyWithVariables,
   RegularLangKey,
@@ -54,7 +56,9 @@ type RegularLangFnParametersWithoutVariables = {
 type RegularLangFnParametersWithVariables<T = LangPairWithVariables> = {
   [K in keyof T]: {
     key: K;
-    variables: T[K];
+    variables: {
+      [key in keyof T[K]]: LangVariable | RegularLangFnParameters;
+    };
     options?: LangFnOptions;
   }
 }[keyof T];
@@ -68,12 +72,14 @@ type RegularLangFnPluralParameters = {
 type RegularLangFnPluralParametersWithVariables<T = LangPairPluralWithVariables> = {
   [K in keyof T]: {
     key: K;
-    variables: T[K];
+    variables: {
+      [key in keyof T[K]]: LangVariable | RegularLangFnParameters;
+    };
     options: LangFnOptionsWithPlural;
   }
 }[keyof T];
 
-type RegularLangFnParameters =
+export type RegularLangFnParameters =
 | RegularLangFnParametersWithoutVariables
 | RegularLangFnParametersWithVariables
 | RegularLangFnPluralParameters
@@ -107,7 +113,7 @@ type AdvancedLangFnPluralParametersWithVariables<T = LangPairPluralWithNodes> = 
   }
 }[keyof T];
 
-type AdvancedLangFnParameters =
+export type AdvancedLangFnParameters =
 | AdvancedLangFnParametersWithoutVariables
 | AdvancedLangFnParametersWithVariables
 | AdvancedLangFnPluralParameters
@@ -143,16 +149,21 @@ export type LangFn = {
   ): TeactNode;
 
   with: (params: LangFnParameters) => TeactNode;
+  withRegular: (params: RegularLangFnParameters) => string;
+  withAdvanced: (params: AdvancedLangFnParameters) => TeactNode;
   region: (code: string) => string | undefined;
   conjunction: (list: string[]) => string;
   disjunction: (list: string[]) => string;
   number: (value: number) => string;
+  internalFormatters: LangFormatters;
   isRtl?: boolean;
   code: string;
   pluralCode: string;
+  languageInfo: ApiLanguage;
 };
 
-type ListFormat = Pick<Intl.ListFormat, 'format'>;
+// Allow basic polyfill
+type ListFormat = Pick<Intl.ListFormat, 'format' | 'formatToParts'>;
 
 export type LangFormatters = {
   pluralRules: Intl.PluralRules;

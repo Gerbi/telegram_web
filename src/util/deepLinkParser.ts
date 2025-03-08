@@ -2,12 +2,15 @@ import type { ThreadId } from '../types';
 
 import { RE_TG_LINK, RE_TME_LINK } from '../config';
 import { toChannelId } from '../global/helpers';
-import { ensureProtocol } from './ensureProtocol';
+import { ensureProtocol } from './browser/url';
+import { parseTimestampDuration } from './dates/timestamp';
 import { isUsernameValid } from './username';
+import { IS_BAD_URL_PARSER } from './windowEnvironment';
 
 export type DeepLinkMethod = 'resolve' | 'login' | 'passport' | 'settings' | 'join' | 'addstickers' | 'addemoji' |
 'setlanguage' | 'addtheme' | 'confirmphone' | 'socks' | 'proxy' | 'privatepost' | 'bg' | 'share' | 'msg' | 'msg_url' |
-'invoice' | 'addlist' | 'boost' | 'giftcode' | 'message' | 'premium_offer' | 'premium_multigift' | 'stars_topup';
+'invoice' | 'addlist' | 'boost' | 'giftcode' | 'message' | 'premium_offer' | 'premium_multigift' | 'stars_topup'
+| 'nft';
 
 interface PublicMessageLink {
   type: 'publicMessageLink';
@@ -16,7 +19,7 @@ interface PublicMessageLink {
   isSingle: boolean;
   threadId?: ThreadId;
   commentId?: number;
-  mediaTimestamp?: string;
+  timestamp?: number;
 }
 
 export interface PrivateMessageLink {
@@ -26,7 +29,7 @@ export interface PrivateMessageLink {
   isSingle: boolean;
   threadId?: ThreadId;
   commentId?: number;
-  mediaTimestamp?: string;
+  timestamp?: number;
 }
 
 interface ShareLink {
@@ -95,6 +98,11 @@ interface PremiumMultigiftLink {
   referrer: string;
 }
 
+interface GiftUniqueLink {
+  type: 'giftUniqueLink';
+  slug: string;
+}
+
 type DeepLink =
   TelegramPassportLink |
   LoginCodeLink |
@@ -107,7 +115,8 @@ type DeepLink =
   BusinessChatLink |
   PremiumReferrerLink |
   PremiumMultigiftLink |
-  ChatBoostLink;
+  ChatBoostLink |
+  GiftUniqueLink;
 
 type BuilderParams<T extends DeepLink> = Record<keyof Omit<T, 'type'>, string | undefined>;
 type BuilderReturnType<T extends DeepLink> = T | undefined;
@@ -148,8 +157,8 @@ function parseDeepLink(url: string) {
     return parseHttpLink(urlParsed);
   }
   if (correctUrl.startsWith('tg:')) {
-    // Chrome parse url with tg: protocol incorrectly
-    const urlParsed = new URL(correctUrl.replace(/^tg:/, 'http:'));
+    const urlToParse = IS_BAD_URL_PARSER ? correctUrl.replace(/^tg:\/\//, 'https://') : correctUrl;
+    const urlParsed = new URL(urlToParse);
     return parseTgLink(urlParsed);
   }
   return undefined;
@@ -173,7 +182,7 @@ function parseTgLink(url: URL) {
         single,
         threadId: thread,
         commentId: comment,
-        mediaTimestamp: t,
+        timestamp: t,
       });
     }
     case 'privateMessageLink': {
@@ -186,7 +195,7 @@ function parseTgLink(url: URL) {
         single,
         threadId: thread,
         commentId: comment,
-        mediaTimestamp: t,
+        timestamp: t,
       });
     }
     case 'shareLink':
@@ -228,6 +237,8 @@ function parseTgLink(url: URL) {
       return buildPremiumMultigiftLink({ referrer: queryParams.ref });
     case 'chatBoostLink':
       return buildChatBoostLink({ username: queryParams.domain, id: queryParams.channel });
+    case 'giftUniqueLink':
+      return buildGiftUniqueLink({ slug: queryParams.slug });
     default:
       break;
   }
@@ -266,7 +277,7 @@ function parseHttpLink(url: URL) {
         single,
         threadId: thread,
         commentId: comment,
-        mediaTimestamp: t,
+        timestamp: t,
       });
     }
     case 'privateMessageLink': {
@@ -292,7 +303,7 @@ function parseHttpLink(url: URL) {
         single,
         threadId: thread,
         commentId: comment,
-        mediaTimestamp: t,
+        timestamp: t,
       });
     }
     case 'shareLink': {
@@ -330,6 +341,12 @@ function parseHttpLink(url: URL) {
         id: isPrivateChannel ? pathParams[1] : undefined,
       });
     }
+    case 'giftUniqueLink': {
+      const slug = pathParams.slice(1).join('/');
+      return buildGiftUniqueLink({
+        slug,
+      });
+    }
     default:
       break;
   }
@@ -354,6 +371,7 @@ function getHttpDeepLinkType(
     if (method === 'login') return 'loginCodeLink';
     if (method === 'm') return 'businessChatLink';
     if (method === 'boost') return 'chatBoostLink';
+    if (method === 'nft') return 'giftUniqueLink';
     if (method === 'c') {
       if (queryParams.boost !== undefined) return 'chatBoostLink';
       return 'privateChannelLink';
@@ -369,6 +387,7 @@ function getHttpDeepLinkType(
     if (isUsernameValid(pathParams[0]) && pathParams.slice(1).every(isNumber)) {
       return 'publicMessageLink';
     }
+    if (method === 'nft') return 'giftUniqueLink';
   } else if (len === 4) {
     if (method === 'c' && pathParams.slice(1).every(isNumber)) {
       return 'privateMessageLink';
@@ -423,6 +442,8 @@ function getTgDeepLinkType(
       return 'premiumMultigiftLink';
     case 'boost':
       return 'chatBoostLink';
+    case 'nft':
+      return 'giftUniqueLink';
     default:
       break;
   }
@@ -443,7 +464,7 @@ function buildShareLink(params: BuilderParams<ShareLink>): BuilderReturnType<Sha
 
 function buildPublicMessageLink(params: PublicMessageLinkBuilderParams): BuilderReturnType<PublicMessageLink> {
   const {
-    messageId, threadId, commentId, username, single, mediaTimestamp,
+    messageId, threadId, commentId, username, single, timestamp,
   } = params;
   if (!username || !isUsernameValid(username)) {
     return undefined;
@@ -464,13 +485,13 @@ function buildPublicMessageLink(params: PublicMessageLinkBuilderParams): Builder
     isSingle: single === '',
     threadId: threadId ? Number(threadId) : undefined,
     commentId: commentId ? Number(commentId) : undefined,
-    mediaTimestamp,
+    timestamp: timestamp ? parseTimestampDuration(timestamp) : undefined,
   };
 }
 
 function buildPrivateMessageLink(params: PrivateMessageLinkBuilderParams): BuilderReturnType<PrivateMessageLink> {
   const {
-    messageId, threadId, commentId, channelId, single, mediaTimestamp,
+    messageId, threadId, commentId, channelId, single, timestamp,
   } = params;
   if (!channelId || !isNumber(channelId)) {
     return undefined;
@@ -486,12 +507,12 @@ function buildPrivateMessageLink(params: PrivateMessageLinkBuilderParams): Build
   }
   return {
     type: 'privateMessageLink',
-    channelId,
+    channelId: toChannelId(channelId),
     messageId: Number(messageId),
     isSingle: single === '',
     threadId: threadId ? Number(threadId) : undefined,
     commentId: commentId ? Number(commentId) : undefined,
-    mediaTimestamp,
+    timestamp: timestamp ? parseTimestampDuration(timestamp) : undefined,
   };
 }
 
@@ -624,6 +645,21 @@ function buildBusinessChatLink(params: BuilderParams<BusinessChatLink>): Builder
 
   return {
     type: 'businessChatLink',
+    slug,
+  };
+}
+
+function buildGiftUniqueLink(params: BuilderParams<GiftUniqueLink>): BuilderReturnType<GiftUniqueLink> {
+  const {
+    slug,
+  } = params;
+
+  if (!slug) {
+    return undefined;
+  }
+
+  return {
+    type: 'giftUniqueLink',
     slug,
   };
 }

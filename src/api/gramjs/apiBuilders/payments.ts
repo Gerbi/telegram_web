@@ -19,7 +19,6 @@ import type {
   ApiPrepaidGiveaway,
   ApiPrepaidStarsGiveaway,
   ApiReceipt,
-  ApiStarGift,
   ApiStarGiveawayOption,
   ApiStarsAmount,
   ApiStarsGiveawayWinnerOption,
@@ -27,13 +26,13 @@ import type {
   ApiStarsTransaction,
   ApiStarsTransactionPeer,
   ApiStarTopupOption,
-  ApiUserStarGift,
   BoughtPaidMedia,
 } from '../../types';
 
-import { addWebDocumentToLocalDb } from '../helpers';
+import { addWebDocumentToLocalDb } from '../helpers/localDb';
 import { buildApiStarsSubscriptionPricing } from './chats';
-import { buildApiFormattedText, buildApiMessageEntity } from './common';
+import { buildApiMessageEntity } from './common';
+import { buildApiStarGift } from './gifts';
 import { omitVirtualClassFields } from './helpers';
 import { buildApiDocument, buildApiWebDocument, buildMessageMediaContent } from './messageContent';
 import { buildApiPeerId, getApiChatIdFromMtpPeer } from './peers';
@@ -536,7 +535,7 @@ export function buildApiStarsTransactionPeer(peer: GramJs.TypeStarsTransactionPe
 export function buildApiStarsTransaction(transaction: GramJs.StarsTransaction): ApiStarsTransaction {
   const {
     date, id, peer, stars, description, photo, title, refund, extendedMedia, failed, msgId, pending, gift, reaction,
-    subscriptionPeriod, stargift, giveawayPostId, starrefCommissionPermille,
+    subscriptionPeriod, stargift, giveawayPostId, starrefCommissionPermille, stargiftUpgrade,
   } = transaction;
 
   if (photo) {
@@ -547,7 +546,6 @@ export function buildApiStarsTransaction(transaction: GramJs.StarsTransaction): 
     .filter(Boolean) as BoughtPaidMedia[];
 
   const starRefCommision = starrefCommissionPermille ? starrefCommissionPermille / 10 : undefined;
-  const supportedStarGift = (stargift instanceof GramJs.StarGift) ? stargift : undefined;
 
   return {
     id,
@@ -565,9 +563,10 @@ export function buildApiStarsTransaction(transaction: GramJs.StarsTransaction): 
     extendedMedia: boughtExtendedMedia,
     subscriptionPeriod,
     isReaction: reaction,
-    starGift: supportedStarGift && buildApiStarGift(supportedStarGift),
+    starGift: stargift && buildApiStarGift(stargift),
     giveawayPostId,
     starRefCommision,
+    isGiftUpgrade: stargiftUpgrade,
   };
 }
 
@@ -607,45 +606,5 @@ export function buildApiStarTopupOption(option: GramJs.TypeStarsTopupOption): Ap
     currency,
     stars: stars.toJSNumber(),
     isExtended: extended,
-  };
-}
-
-export function buildApiStarGift(startGift: GramJs.TypeStarGift): ApiStarGift | undefined {
-  const isTypeSupported = startGift instanceof GramJs.StarGift;
-  if (!isTypeSupported) return undefined;
-  const {
-    id, limited, sticker, stars, availabilityRemains, availabilityTotal, convertStars, firstSaleDate, lastSaleDate,
-    soldOut,
-  } = startGift;
-
-  return {
-    id: id.toString(),
-    isLimited: limited,
-    stickerId: sticker.id.toString(),
-    stars: stars.toJSNumber(),
-    availabilityRemains,
-    availabilityTotal,
-    starsToConvert: convertStars.toJSNumber(),
-    firstSaleDate,
-    lastSaleDate,
-    isSoldOut: soldOut,
-  };
-}
-
-export function buildApiUserStarGift(userStarGift: GramJs.UserStarGift): ApiUserStarGift {
-  const {
-    gift, date, convertStars, fromId, message, msgId, nameHidden, unsaved,
-  } = userStarGift;
-
-  return {
-    // ToDo: Use `!` temporarily to support layer 196
-    gift: buildApiStarGift(gift)!,
-    date,
-    starsToConvert: convertStars?.toJSNumber(),
-    fromId: fromId && buildApiPeerId(fromId, 'user'),
-    message: message && buildApiFormattedText(message),
-    messageId: msgId,
-    isNameHidden: nameHidden,
-    isUnsaved: unsaved,
   };
 }

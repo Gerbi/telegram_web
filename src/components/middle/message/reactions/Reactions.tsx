@@ -182,7 +182,7 @@ const Reactions: FC<OwnProps> = ({
       className={buildClassName(
         'Reactions',
         isOutside && 'is-outside',
-        withServiceReactions && 'with-service-reactions',
+        withServiceReactions && 'is-service',
       )}
       style={maxWidth ? `max-width: ${maxWidth}px` : undefined}
       dir={lang.isRtl ? 'rtl' : 'ltr'}
@@ -215,6 +215,7 @@ const Reactions: FC<OwnProps> = ({
             containerId={messageKey}
             isOwnMessage={message.isOutgoing}
             recentReactors={recentReactors}
+            isOutside={isOutside}
             reaction={reaction}
             onClick={handleClick}
             onPaidClick={handlePaidClick}

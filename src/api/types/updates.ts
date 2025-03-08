@@ -7,6 +7,7 @@ import type {
   VideoState,
 } from '../../lib/secret-sauce';
 import type { ThreadId } from '../../types';
+import type { RegularLangFnParameters } from '../../util/localization';
 import type { ApiBotMenuButton } from './bots';
 import type {
   ApiGroupCall, ApiPhoneCall,
@@ -23,6 +24,7 @@ import type {
   ApiFormattedText,
   ApiMediaExtendedPreview,
   ApiMessage,
+  ApiPaidReactionPrivacyType,
   ApiPhoto,
   ApiPoll,
   ApiQuickReply,
@@ -39,7 +41,7 @@ import type { ApiStarsAmount } from './payments';
 import type { ApiPrivacyKey, LangPackStringValue, PrivacyVisibility } from './settings';
 import type { ApiStealthMode, ApiStory, ApiStorySkipped } from './stories';
 import type {
-  ApiEmojiStatus, ApiUser, ApiUserFullInfo, ApiUserStatus,
+  ApiEmojiStatusType, ApiUser, ApiUserFullInfo, ApiUserStatus,
 } from './users';
 
 export type ApiUpdateReady = {
@@ -84,7 +86,7 @@ export type ApiUpdateSession = {
 
 export type ApiUpdateAuthorizationError = {
   '@type': 'updateAuthorizationError';
-  message: string;
+  errorKey: RegularLangFnParameters;
 };
 
 export type ApiUpdateConnectionState = {
@@ -350,6 +352,12 @@ export type ApiUpdateDeleteHistory = {
   chatId: string;
 };
 
+export type ApiDeleteParticipantHistory = {
+  '@type': 'deleteParticipantHistory';
+  chatId: string;
+  peerId: string;
+};
+
 export type ApiUpdateDeleteSavedHistory = {
   '@type': 'deleteSavedHistory';
   chatId: string;
@@ -412,7 +420,7 @@ export type ApiUpdateUserStatus = {
 export type ApiUpdateUserEmojiStatus = {
   '@type': 'updateUserEmojiStatus';
   userId: string;
-  emojiStatus?: ApiEmojiStatus;
+  emojiStatus?: ApiEmojiStatusType;
 };
 
 export type ApiUpdateRecentEmojiStatuses = {
@@ -490,12 +498,7 @@ export type ApiUpdateSavedGifs = {
 
 export type ApiUpdateTwoFaError = {
   '@type': 'updateTwoFaError';
-  message: string;
-};
-
-export type ApiUpdatePasswordError = {
-  '@type': 'updatePasswordError';
-  error: string;
+  messageKey: RegularLangFnParameters;
 };
 
 export type ApiUpdateNotifySettings = {
@@ -787,7 +790,7 @@ export type ApiUpdateEntities = {
 
 export type ApiUpdatePaidReactionPrivacy = {
   '@type': 'updatePaidReactionPrivacy';
-  isPrivate: boolean;
+  private: ApiPaidReactionPrivacyType;
 };
 
 export type ApiUpdateLangPackTooLong = {
@@ -810,15 +813,16 @@ export type ApiUpdate = (
   ApiUpdateChatListType | ApiUpdateChatFolder | ApiUpdateChatFoldersOrder | ApiUpdateRecommendedChatFolders |
   ApiUpdateNewMessage | ApiUpdateMessage | ApiUpdateThreadInfo | ApiUpdateCommonBoxMessages |
   ApiUpdateDeleteMessages | ApiUpdateMessagePoll | ApiUpdateMessagePollVote | ApiUpdateDeleteHistory |
-  ApiUpdateMessageSendSucceeded | ApiUpdateMessageSendFailed | ApiUpdateServiceNotification |
-  ApiDeleteContact | ApiUpdateUser | ApiUpdateUserStatus | ApiUpdateUserFullInfo | ApiUpdateVideoProcessingPending |
+  ApiDeleteParticipantHistory | ApiUpdateMessageSendSucceeded | ApiUpdateMessageSendFailed |
+  ApiUpdateServiceNotification | ApiDeleteContact | ApiUpdateUser | ApiUpdateUserStatus |
+  ApiUpdateUserFullInfo | ApiUpdateVideoProcessingPending |
   ApiUpdateAvatar | ApiUpdateMessageImage | ApiUpdateDraftMessage |
   ApiUpdateError | ApiUpdateResetContacts | ApiUpdateStartEmojiInteraction |
   ApiUpdateFavoriteStickers | ApiUpdateStickerSet | ApiUpdateStickerSets | ApiUpdateStickerSetsOrder |
   ApiUpdateRecentStickers | ApiUpdateSavedGifs | ApiUpdateNewScheduledMessage | ApiUpdateMoveStickerSetToTop |
   ApiUpdateScheduledMessageSendSucceeded | ApiUpdateScheduledMessage | ApiUpdateStarPaymentStateCompleted |
   ApiUpdateDeleteScheduledMessages | ApiUpdateResetMessages | ApiUpdateMessageTranslations |
-  ApiUpdateTwoFaError | ApiUpdatePasswordError | ApiUpdateTwoFaStateWaitCode | ApiUpdateWebViewResultSent |
+  ApiUpdateTwoFaError | ApiUpdateTwoFaStateWaitCode | ApiUpdateWebViewResultSent |
   ApiUpdateNotifySettings | ApiUpdateNotifyExceptions | ApiUpdatePeerBlocked | ApiUpdatePrivacy |
   ApiUpdateServerTimeOffset | ApiUpdateMessageReactions | ApiUpdateSavedReactionTags |
   ApiUpdateGroupCallParticipants | ApiUpdateGroupCallConnection | ApiUpdateGroupCall | ApiUpdateGroupCallStreams |

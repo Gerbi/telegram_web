@@ -21,7 +21,7 @@ import useHistoryBack from '../../../../hooks/useHistoryBack';
 import useOldLang from '../../../../hooks/useOldLang';
 import usePreviousDeprecated from '../../../../hooks/usePreviousDeprecated';
 
-import AnimatedIcon from '../../../common/AnimatedIcon';
+import AnimatedIconWithPreview from '../../../common/AnimatedIconWithPreview';
 import Icon from '../../../common/icons/Icon';
 import Button from '../../../ui/Button';
 import Draggable from '../../../ui/Draggable';
@@ -198,7 +198,7 @@ const SettingsFoldersMain: FC<OwnProps & StateProps> = ({
   return (
     <div className="settings-content no-border custom-scroll">
       <div className="settings-content-header">
-        <AnimatedIcon
+        <AnimatedIconWithPreview
           size={STICKER_SIZE_FOLDER_SETTINGS}
           tgsUrl={LOCAL_TGS_URLS.FoldersAll}
           className="settings-content-icon"
@@ -310,10 +310,10 @@ const SettingsFoldersMain: FC<OwnProps & StateProps> = ({
                       entities: folder.title.entities,
                       noCustomEmojiPlayback: folder.noTitleAnimations,
                     })}
-                    {isBlocked && <i className="icon icon-lock-badge settings-folders-blocked-icon" />}
+                    {isBlocked && <Icon name="lock-badge" className="settings-folders-blocked-icon" />}
                   </span>
                   <span className="subtitle">
-                    {folder.isChatList && <i className="icon icon-link mr-1" />}
+                    {folder.isChatList && <Icon name="link" className="mr-1" />}
                     {folder.subtitle}
                   </span>
                 </ListItem>

@@ -16,7 +16,7 @@ import useOldLang from '../../hooks/useOldLang';
 import useShowTransition from '../../hooks/useShowTransition';
 
 import Icon from '../common/icons/Icon';
-import Button from './Button';
+import Button, { type OwnProps as ButtonProps } from './Button';
 import Portal from './Portal';
 
 import './Modal.scss';
@@ -33,6 +33,7 @@ export type OwnProps = {
   isSlim?: boolean;
   hasCloseButton?: boolean;
   hasAbsoluteCloseButton?: boolean;
+  absoluteCloseButtonColor?: ButtonProps['color'];
   noBackdrop?: boolean;
   noBackdropClose?: boolean;
   children: React.ReactNode;
@@ -41,6 +42,7 @@ export type OwnProps = {
   dialogRef?: React.RefObject<HTMLDivElement>;
   isLowStackPriority?: boolean;
   dialogContent?: React.ReactNode;
+  ignoreFreeze?: boolean;
   onClose: () => void;
   onCloseAnimationEnd?: () => void;
   onEnter?: () => void;
@@ -57,6 +59,7 @@ const Modal: FC<OwnProps> = ({
   header,
   hasCloseButton,
   hasAbsoluteCloseButton,
+  absoluteCloseButtonColor = 'translucent',
   noBackdrop,
   noBackdropClose,
   children,
@@ -137,7 +140,7 @@ const Modal: FC<OwnProps> = ({
       <Button
         className={buildClassName(hasAbsoluteCloseButton && 'modal-absolute-close-button')}
         round
-        color="translucent"
+        color={absoluteCloseButtonColor}
         size="smaller"
         ariaLabel={lang('Close')}
         onClick={onClose}

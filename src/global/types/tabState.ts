@@ -30,9 +30,13 @@ import type {
   ApiPremiumGiftCodeOption,
   ApiPremiumPromo,
   ApiPremiumSection,
+  ApiPreparedInlineMessage,
   ApiReactionWithPaid,
   ApiReceiptRegular,
+  ApiSavedGifts,
+  ApiSavedStarGift,
   ApiStarGift,
+  ApiStarGiftAttribute,
   ApiStarGiveawayOption,
   ApiStarsSubscription,
   ApiStarsTransaction,
@@ -40,10 +44,11 @@ import type {
   ApiSticker,
   ApiTypePrepaidGiveaway,
   ApiTypeStoryView,
-  ApiUserStarGift,
+  ApiUser,
   ApiVideo,
   ApiWebPage,
 } from '../../api/types';
+import type { ApiEmojiStatusCollectible } from '../../api/types/users';
 import type { FoldersActions } from '../../hooks/reducers/useFoldersReducer';
 import type { ReducerAction } from '../../hooks/useReducer';
 import type {
@@ -55,8 +60,8 @@ import type {
   ChatRequestedTranslations,
   ConfettiStyle,
   FocusDirection,
+  GiftProfileFilterOptions,
   GlobalSearchContent,
-  IAlbum,
   IAnchorPosition,
   InlineBotSettings,
   ManagementProgress,
@@ -80,6 +85,7 @@ import type {
 } from '../../types';
 import type { WebApp, WebAppModalStateType } from '../../types/webapp';
 import type { SearchResultKey } from '../../util/keys/searchResultKey';
+import type { RegularLangFnParameters } from '../../util/localization';
 import type { CallbackAction } from './actions';
 
 export type TabState = {
@@ -194,9 +200,17 @@ export type TabState = {
 
   shouldPlayEffectInComposer?: true;
 
+  recoveryEmail?: string;
+
   inlineBots: {
     isLoading: boolean;
     byUsername: Record<string, false | InlineBotSettings>;
+  };
+
+  savedGifts: {
+    giftsByPeerId: Record<string, ApiSavedGifts>;
+    filter: GiftProfileFilterOptions;
+    transitionKey?: number;
   };
 
   globalSearch: {
@@ -308,6 +322,7 @@ export type TabState = {
     playbackRate: number;
     isMuted: boolean;
     isHidden?: boolean;
+    timestamp?: number;
   };
 
   audioPlayer: {
@@ -318,6 +333,7 @@ export type TabState = {
     volume: number;
     playbackRate: number;
     isPlaybackRateActive?: boolean;
+    timestamp?: number;
     isMuted: boolean;
   };
 
@@ -375,8 +391,8 @@ export type TabState = {
     receipt?: ApiReceiptRegular;
     error?: {
       field?: string;
-      message?: string;
-      description?: string;
+      messageKey?: RegularLangFnParameters;
+      descriptionKey?: RegularLangFnParameters;
     };
     isPaymentModalOpen?: boolean;
     isExtendedMedia?: boolean;
@@ -484,6 +500,18 @@ export type TabState = {
     isQuiz?: boolean;
   };
 
+  preparedMessageModal?: {
+    message: ApiPreparedInlineMessage;
+    webAppKey: string;
+    botId: string;
+  };
+
+  sharePreparedMessageModal?: {
+    webAppKey: string;
+    message: ApiPreparedInlineMessage;
+    filter: ApiChatType[];
+  };
+
   webApps: {
     activeWebAppKey?: string;
     openedOrderedKeys: string[];
@@ -508,6 +536,16 @@ export type TabState = {
     bot: ApiAttachBot;
     filter: ApiChatType[];
     startParam?: string;
+  };
+
+  emojiStatusAccessModal?: {
+    bot: ApiUser;
+    webAppKey: string;
+  };
+
+  locationAccessModal?: {
+    bot: ApiUser;
+    webAppKey: string;
   };
 
   confetti?: {
@@ -561,9 +599,9 @@ export type TabState = {
   };
 
   deleteMessageModal?: {
-    message?: ApiMessage;
+    chatId: string;
+    messageIds: number[];
     isSchedule?: boolean;
-    album?: IAlbum;
     onConfirm?: NoneToVoidFunction;
   };
 
@@ -590,9 +628,8 @@ export type TabState = {
   };
 
   giftModal?: {
-    isCompleted?: boolean;
-    forUserId: string;
-    gifts: ApiPremiumGiftCodeOption[];
+    forPeerId: string;
+    gifts?: ApiPremiumGiftCodeOption[];
   };
 
   limitReachedModal?: {
@@ -698,8 +735,28 @@ export type TabState = {
   };
 
   giftInfoModal?: {
-    userId?: string;
-    gift: ApiUserStarGift | ApiStarGift;
+    peerId?: string;
+    gift: ApiSavedStarGift | ApiStarGift;
+  };
+
+  giftTransferModal?: {
+    gift: ApiSavedStarGift;
+  };
+
+  giftUpgradeModal?: {
+    sampleAttributes: ApiStarGiftAttribute[];
+    recipientId?: string;
+    gift?: ApiSavedStarGift;
+  };
+
+  giftWithdrawModal?: {
+    gift: ApiSavedStarGift;
+    isLoading?: boolean;
+    errorKey?: RegularLangFnParameters;
+  };
+
+  giftStatusInfoModal?: {
+    emojiStatus: ApiEmojiStatusCollectible;
   };
 
   suggestedStatusModal?: {
@@ -708,4 +765,13 @@ export type TabState = {
     customEmojiId: string;
     duration?: number;
   };
+
+  monetizationVerificationModal?: {
+    chatId: string;
+    isLoading?: boolean;
+    errorKey?: RegularLangFnParameters;
+  };
+
+  isWaitingForStarGiftUpgrade?: true;
+  isWaitingForStarGiftTransfer?: true;
 };

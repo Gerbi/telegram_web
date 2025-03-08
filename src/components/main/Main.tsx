@@ -230,6 +230,7 @@ const Main = ({
     openThread,
     toggleLeftColumn,
     loadRecentEmojiStatuses,
+    loadUserCollectibleStatuses,
     updatePageTitle,
     loadTopReactions,
     loadRecentReactions,
@@ -245,6 +246,7 @@ const Main = ({
     loadAvailableEffects,
     loadTopBotApps,
     loadPaidReactionPrivacy,
+    loadPasswordInfo,
   } = getActions();
 
   if (DEBUG && !DEBUG_isLogged) {
@@ -333,6 +335,8 @@ const Main = ({
       loadAuthorizations();
       loadTopBotApps();
       loadPaidReactionPrivacy();
+      loadPasswordInfo();
+      loadUserCollectibleStatuses();
     }
   }, [isMasterTab, isSynced]);
 

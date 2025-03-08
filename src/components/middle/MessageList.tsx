@@ -38,6 +38,7 @@ import {
   selectCurrentMessageIds,
   selectFirstUnreadId,
   selectFocusedMessageId,
+  selectIsChatProtected,
   selectIsChatWithSelf,
   selectIsCurrentUserPremium,
   selectIsInSelectMode,
@@ -56,7 +57,7 @@ import { orderBy } from '../../util/iteratees';
 import { isLocalMessageId } from '../../util/keys/messageKey';
 import resetScroll from '../../util/resetScroll';
 import { debounce, onTickEnd } from '../../util/schedulers';
-import { getOffsetToContainer } from '../../util/scroll';
+import getOffsetToContainer from '../../util/visibility/getOffsetToContainer';
 import { groupMessages } from './helpers/groupMessages';
 import { preventMessageInputBlur } from './helpers/preventMessageInputBlur';
 
@@ -124,6 +125,7 @@ type StateProps = {
   currentUserId: string;
   areAdsEnabled?: boolean;
   channelJoinInfo?: ApiChatFullInfo['joinInfo'];
+  isChatProtected?: boolean;
 };
 
 const MESSAGE_REACTIONS_POLLING_INTERVAL = 20 * 1000;
@@ -178,6 +180,7 @@ const MessageList: FC<OwnProps & StateProps> = ({
   isContactRequirePremium,
   areAdsEnabled,
   channelJoinInfo,
+  isChatProtected,
   onIntersectPinnedMessage,
   onScrollDownToggle,
   onNotchToggle,
@@ -261,7 +264,7 @@ const MessageList: FC<OwnProps & StateProps> = ({
       }
 
       const { shouldAppendJoinMessage, shouldAppendJoinMessageAfterCurrent } = (() => {
-        if (!channelJoinInfo) return undefined;
+        if (!channelJoinInfo || type !== 'thread') return undefined;
         if (prevMessage
           && prevMessage.date < channelJoinInfo.joinedDate && channelJoinInfo.joinedDate <= message.date) {
           return { shouldAppendJoinMessage: true, shouldAppendJoinMessageAfterCurrent: false };
@@ -290,11 +293,10 @@ const MessageList: FC<OwnProps & StateProps> = ({
           isOutgoing: false,
           content: {
             action: {
-              type: 'joinedChannel',
               mediaType: 'action',
-              text: '',
-              translationValues: [],
-              targetChatId: message.chatId,
+              type: 'channelJoined',
+              inviterId: channelJoinInfo?.inviterId,
+              isViaRequest: channelJoinInfo?.isViaRequest || undefined,
             },
           },
         } satisfies ApiMessage);
@@ -654,6 +656,7 @@ const MessageList: FC<OwnProps & StateProps> = ({
     isScrolled && 'scrolled',
     !isReady && 'is-animating',
     hasOpenChatButton && 'saved-dialog',
+    isChatProtected && 'hide-on-print',
   );
 
   const hasMessages = (messageIds && messageGroups) || lastMessage;
@@ -796,6 +799,7 @@ export default memo(withGlobal<OwnProps>(
       isForum: chat.isForum,
       isEmptyThread,
       currentUserId,
+      isChatProtected: selectIsChatProtected(global, chatId),
       ...(withLastMessageWhenPreloading && { lastMessage }),
     };
   },

@@ -17,7 +17,7 @@ import type {
   ApiPhoto,
   ApiReaction,
   ApiReactionWithPaid,
-  ApiStarGift,
+  ApiStarGiftRegular,
   ApiStarsSubscription,
   ApiStarsTransaction,
   ApiStickerSet,
@@ -300,6 +300,7 @@ export enum MediaViewerOrigin {
   Album,
   ScheduledAlbum,
   SearchResult,
+  ChannelAvatar,
   SuggestedAvatar,
   StarsTransaction,
   PreviewMedia,
@@ -375,6 +376,7 @@ export type ProfileTabType =
   | 'stories'
   | 'storiesArchive'
   | 'similarChannels'
+  | 'similarBots'
   | 'dialogs'
   | 'gifts';
 export type SharedMediaType = 'media' | 'documents' | 'links' | 'audio' | 'voice';
@@ -416,6 +418,7 @@ export enum ProfileState {
   Profile,
   SharedMedia,
   MemberList,
+  GiftList,
   StoryList,
   SavedDialogs,
 }
@@ -560,10 +563,11 @@ export type StarsSubscriptions = {
 export type ConfettiStyle = 'poppers' | 'top-down';
 
 export type StarGiftInfo = {
-  userId: string;
-  gift: ApiStarGift;
+  peerId: string;
+  gift: ApiStarGiftRegular;
   shouldHideName?: boolean;
   message?: ApiFormattedText;
+  shouldUpgrade?: boolean;
 };
 
 export interface TabThread {
@@ -619,6 +623,11 @@ export type ChatRequestedTranslations = {
   manualMessages?: Record<number, string>;
 };
 
+export type SimilarBotsInfo = {
+  similarBotsIds?: string[];
+  count: number;
+};
+
 export type ConfettiParams = OptionalCombine<{
   style?: ConfettiStyle;
   withStars?: boolean;
@@ -629,10 +638,33 @@ export type ConfettiParams = OptionalCombine<{
   height?: number;
 }>;
 
+export interface Size {
+  width: number;
+  height: number;
+}
+
+export interface Point {
+  x: number;
+  y: number;
+}
+
 export type WebPageMediaSize = 'large' | 'small';
 
-export type StarGiftCategory = number | 'all' | 'limited';
+export type StarGiftCategory = number | 'all' | 'limited' | 'stock';
 
 export type CallSound = (
   'join' | 'allowTalk' | 'leave' | 'connecting' | 'incoming' | 'end' | 'connect' | 'busy' | 'ringing'
 );
+
+export type BotAppPermissions = {
+  geolocation?: boolean;
+};
+
+export type GiftProfileFilterOptions = {
+  sortType: 'byDate' | 'byValue';
+  shouldIncludeUnlimited: boolean;
+  shouldIncludeLimited: boolean;
+  shouldIncludeUnique: boolean;
+  shouldIncludeDisplayed: boolean;
+  shouldIncludeHidden: boolean;
+};

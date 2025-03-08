@@ -2,7 +2,7 @@ import type { TeactNode } from '../../lib/teact/teact';
 
 import type { CallbackAction } from '../../global/types';
 import type { IconName } from '../../types/icons';
-import type { LangFnParameters } from '../../util/localization';
+import type { RegularLangFnParameters } from '../../util/localization';
 import type { ApiDocument, ApiPhoto, ApiReaction } from './messages';
 import type { ApiPremiumSection, ApiStarsSubscriptionPricing } from './payments';
 import type { ApiUser } from './users';
@@ -101,9 +101,9 @@ export interface ApiWebSession {
 
 export interface ApiSessionData {
   mainDcId: number;
-  isTest?: true;
   keys: Record<number, string | number[]>;
   hashes: Record<number, string | number[]>;
+  isTest?: true;
 }
 
 export type ApiNotifyException = {
@@ -116,10 +116,10 @@ export type ApiNotifyException = {
 export type ApiNotification = {
   localId: string;
   containerSelector?: string;
-  title?: string | LangFnParameters;
-  message: TeactNode | LangFnParameters;
+  title?: string | RegularLangFnParameters;
+  message: TeactNode | RegularLangFnParameters;
   cacheBreaker?: string;
-  actionText?: string | LangFnParameters;
+  actionText?: string | RegularLangFnParameters;
   action?: CallbackAction | CallbackAction[];
   className?: string;
   duration?: number;
@@ -175,6 +175,7 @@ export type ApiChatInviteInfo = {
   subscriptionFormId?: string;
   canRefulfillSubscription?: boolean;
   subscriptionPricing?: ApiStarsSubscriptionPricing;
+  botVerification?: ApiBotVerification;
 };
 
 export type ApiChatInviteImporter = {
@@ -240,6 +241,7 @@ export interface ApiAppConfig {
   starGiftMaxMessageLength?: number;
   starGiftMaxConvertPeriod?: number;
   starRefStartPrefixes?: string[];
+  tonExplorerUrl?: string;
 }
 
 export interface ApiConfig {
@@ -319,6 +321,12 @@ export interface ApiPeerPhotos {
   count: number;
   nextOffset?: number;
   isLoading?: boolean;
+}
+
+export interface ApiBotVerification {
+  botId: string;
+  iconId: string;
+  description: string;
 }
 
 export type ApiLimitType =
