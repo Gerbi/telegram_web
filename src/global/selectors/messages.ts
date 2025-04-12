@@ -73,7 +73,7 @@ import {
   selectIsChatWithSelf,
   selectRequestedChatTranslationLanguage,
 } from './chats';
-import { selectPeer } from './peers';
+import { selectPeer, selectPeerPaidMessagesStars } from './peers';
 import { selectPeerStory } from './stories';
 import { selectIsStickerFavorite } from './symbols';
 import { selectTabState } from './tabs';
@@ -400,8 +400,9 @@ export function selectOutgoingStatus<T extends GlobalState>(
 export function selectSender<T extends GlobalState>(global: T, message: ApiMessage): ApiPeer | undefined {
   const { senderId } = message;
   const chat = selectChat(global, message.chatId);
+  const currentUser = selectUser(global, global.currentUserId!);
   if (!senderId) {
-    return chat;
+    return message.isOutgoing ? currentUser : chat;
   }
 
   if (chat && isChatChannel(chat) && !chat.areProfilesShown) return chat;
@@ -1330,12 +1331,21 @@ export function selectShouldSchedule<T extends GlobalState>(
   return selectCurrentMessageList(global, tabId)?.type === 'scheduled';
 }
 
+export function selectCanSchedule<T extends GlobalState>(
+  global: T,
+  ...[tabId = getCurrentTabId()]: TabArgs<T>
+) {
+  const chatId = selectCurrentMessageList(global, tabId)?.chatId;
+  const paidMessagesStars = chatId ? selectPeerPaidMessagesStars(global, chatId) : undefined;
+  return !paidMessagesStars;
+}
+
 export function selectCanScheduleUntilOnline<T extends GlobalState>(global: T, id: string) {
   const isChatWithSelf = selectIsChatWithSelf(global, id);
   const chatBot = selectBot(global, id);
-  return Boolean(
-    !isChatWithSelf && !chatBot && isUserId(id) && selectUserStatus(global, id)?.wasOnline,
-  );
+  const paidMessagesStars = selectPeerPaidMessagesStars(global, id);
+  return Boolean(!paidMessagesStars
+    && !isChatWithSelf && !chatBot && isUserId(id) && selectUserStatus(global, id)?.wasOnline);
 }
 
 export function selectCustomEmojis(message: ApiMessage) {

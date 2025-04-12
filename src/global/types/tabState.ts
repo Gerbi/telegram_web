@@ -210,7 +210,6 @@ export type TabState = {
   savedGifts: {
     giftsByPeerId: Record<string, ApiSavedGifts>;
     filter: GiftProfileFilterOptions;
-    transitionKey?: number;
   };
 
   globalSearch: {
@@ -279,6 +278,8 @@ export type TabState = {
     byChatId: Record<string, ManagementState>;
   };
 
+  isPaymentMessageConfirmDialogOpen: boolean;
+
   storyViewer: {
     isRibbonShown?: boolean;
     isArchivedRibbonShown?: boolean;
@@ -293,6 +294,7 @@ export type TabState = {
     // Used for better switch animation between peers.
     lastViewedByPeerIds?: Record<string, number>;
     isPrivacyModalOpen?: boolean;
+    isPaymentConfirmDialogOpen?: boolean;
     isStealthModalOpen?: boolean;
     viewModal?: {
       storyId: number;
@@ -510,6 +512,11 @@ export type TabState = {
     webAppKey: string;
     message: ApiPreparedInlineMessage;
     filter: ApiChatType[];
+    pendingSendArgs?: {
+      peerId: string;
+      threadId?: ThreadId;
+      starsForSendMessage?: number;
+    };
   };
 
   webApps: {
@@ -630,6 +637,10 @@ export type TabState = {
   giftModal?: {
     forPeerId: string;
     gifts?: ApiPremiumGiftCodeOption[];
+  };
+  chatRefundModal?: {
+    userId: string;
+    starsToRefund: number;
   };
 
   limitReachedModal?: {

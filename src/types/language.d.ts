@@ -136,6 +136,8 @@ export interface LangPair {
   'Code': undefined;
   'Open': undefined;
   'LoginHeaderPassword': undefined;
+  'BotShareMessageShare': undefined;
+  'BotShareMessage': undefined;
   'LoginEnterPasswordDescription': undefined;
   'StartText': undefined;
   'LoginPhonePlaceholder': undefined;
@@ -222,6 +224,10 @@ export interface LangPair {
   'WalletAddressCopied': undefined;
   'Copy': undefined;
   'DeleteAndStop': undefined;
+  'ChatNonContactUserSubtitle': undefined;
+  'ChatNonContactUserGroups': undefined;
+  'ContactInfoRegistration': undefined;
+  'ContactInfoNotVerified': undefined;
   'DeleteForAll': undefined;
   'DeleteSingleMessagesTitle': undefined;
   'AreYouSureDeleteSingleMessage': undefined;
@@ -483,8 +489,6 @@ export interface LangPair {
   'SetAdditionalPasswordInfo': undefined;
   'EditAdminTransferSetPassword': undefined;
   'BotOpenPageTitle': undefined;
-  'BotShareMessageShare': undefined;
-  'BotShareMessage': undefined;
   'FilterDeleteAlert': undefined;
   'RequestToJoinChannelSentDescription': undefined;
   'RequestToJoinGroupSentDescription': undefined;
@@ -961,6 +965,7 @@ export interface LangPair {
   'WeekdaySaturday': undefined;
   'WeekdaySunday': undefined;
   'WeekdayToday': undefined;
+  'Today': undefined;
   'WeekdayYesterday': undefined;
   'User': undefined;
   'SecretChat': undefined;
@@ -1010,6 +1015,7 @@ export interface LangPair {
   'VoipIncoming': undefined;
   'LiveLocationUpdatedJustNow': undefined;
   'RightNow': undefined;
+  'JustNowAgo': undefined;
   'AudioPause': undefined;
   'AudioPlay': undefined;
   'ToggleUserNotifications': undefined;
@@ -1087,6 +1093,17 @@ export interface LangPair {
   'AriaOpenBotMenu': undefined;
   'AriaOpenSymbolMenu': undefined;
   'AriaComposerOpenScheduled': undefined;
+  'AriaComposerBotKeyboard': undefined;
+  'AriaComposerSilentPostingEnable': undefined;
+  'AriaComposerSilentPostingDisable': undefined;
+  'ComposerSilentPostingEnabledTootlip': undefined;
+  'ComposerSilentPostingDisabledTootlip': undefined;
+  'ComposerPlaceholder': undefined;
+  'ComposerPlaceholderBroadcast': undefined;
+  'ComposerPlaceholderBroadcastSilent': undefined;
+  'ComposerPlaceholderTopicGeneral': undefined;
+  'ComposerStoryPlaceholderLocked': undefined;
+  'ComposerPlaceholderNoText': undefined;
   'AriaComposerCancelVoice': undefined;
   'PreviewEditMessage': undefined;
   'FileDropZoneTitle': undefined;
@@ -1183,6 +1200,8 @@ export interface LangPair {
   'GiftInfoConvertDescription2': undefined;
   'GiftInfoSavedHide': undefined;
   'GiftInfoSavedShow': undefined;
+  'GiftActionShow': undefined;
+  'GiftActionHide': undefined;
   'GiftInfoTonLinkText': undefined;
   'GiftInfoAvailability': undefined;
   'GiftInfoFirstSale': undefined;
@@ -1303,6 +1322,7 @@ export interface LangPair {
   'ViewButtonStory': undefined;
   'ViewButtonBoost': undefined;
   'ViewButtonStickerset': undefined;
+  'ViewButtonEmojiset': undefined;
   'ViewButtonGiftUnique': undefined;
   'AuthContinueOnThisLanguage': undefined;
   'Share': undefined;
@@ -1404,7 +1424,32 @@ export interface LangPair {
   'PeerPersonalAccount': undefined;
   'PeerChannel': undefined;
   'WebAppCollapse': undefined;
+  'GiftPremiumPayWithStarsAcc': undefined;
+  'GetMoreStarsLinkText': undefined;
+  'StarsGiftCompleted': undefined;
   'GiftSent': undefined;
+  'PrivacyDescriptionMessagesContactsAndPremium': undefined;
+  'PrivacyChargeForMessages': undefined;
+  'PrivacyDescriptionChargeForMessages': undefined;
+  'RemoveFeeTitle': undefined;
+  'ExceptionTitlePrivacyChargeForMessages': undefined;
+  'ExceptionDescriptionPrivacyChargeForMessages': undefined;
+  'SectionTitleStarsForForMessages': undefined;
+  'SubtitlePrivacyAddUsers': undefined;
+  'PrivacyPaidMessagesValue': undefined;
+  'ButtonBuyStars': undefined;
+  'TitleConfirmPayment': undefined;
+  'ToastTitleMessageSent': undefined;
+  'ButtonUndo': undefined;
+  'ConfirmRemoveMessageFee': undefined;
+  'StoryTooltipGifSent': undefined;
+  'StoryTooltipStickerSent': undefined;
+  'StoryTooltipReactionSent': undefined;
+  'StarsNeededTextSendPaidMessages': undefined;
+  'PaidMessageTransactionTotal': undefined;
+  'DescriptionRestrictedMedia': undefined;
+  'DescriptionScheduledPaidMediaNotAllowed': undefined;
+  'DescriptionScheduledPaidMessagesNotAllowed': undefined;
 }
 
 export interface LangPairWithVariables<V extends unknown = LangVariable> {
@@ -1520,11 +1565,17 @@ export interface LangPairWithVariables<V extends unknown = LangVariable> {
   'WebAppAddToAttachmentText': {
     'bot': V;
   };
+  'WebAppShareMessageInfo': {
+    'user': V;
+  };
   'BotPermissionGameAlert': {
     'bot': V;
   };
   'BotOpenPageMessage': {
     'bot': V;
+  };
+  'BotSharedToOne': {
+    'peer': V;
   };
   'NewContactPhoneHiddenText': {
     'user': V;
@@ -1550,9 +1601,6 @@ export interface LangPairWithVariables<V extends unknown = LangVariable> {
   };
   'ConversationOpenBotLinkAllowMessages': {
     'bot': V;
-  };
-  'WebAppShareMessageInfo': {
-    'user': V;
   };
   'BlockUserTitle': {
     'user': V;
@@ -1701,8 +1749,14 @@ export interface LangPairWithVariables<V extends unknown = LangVariable> {
   'LiveLocationUpdatedTodayAt': {
     'time': V;
   };
+  'AtDateAgo': {
+    'date': V;
+  };
   'MediaViewDownloading': {
     'count': V;
+  };
+  'ComposerPlaceholderTopic': {
+    'topic': V;
   };
   'ChannelManagementLinkDiscussion': {
     'group': V;
@@ -1768,6 +1822,14 @@ export interface LangPairWithVariables<V extends unknown = LangVariable> {
   'GiftInfoPeerConvertDescription': {
     'peer': V;
     'amount': V;
+  };
+  'UserUpdatedName': {
+    'user': V;
+    'time': V;
+  };
+  'UserUpdatedPhoto': {
+    'user': V;
+    'time': V;
   };
   'GiftInfoSaved': {
     'link': V;
@@ -2223,8 +2285,75 @@ export interface LangPairWithVariables<V extends unknown = LangVariable> {
   'UniqueStatusWearTitle': {
     'gift': V;
   };
-  'BotSharedToOne': {
+  'GiftPremiumStarsPrice': {
+    'stars': V;
+  };
+  'GiftPremiumPayWithStars': {
+    'stars': V;
+  };
+  'GiftPremiumDescriptionYourBalance': {
+    'stars': V;
+    'link': V;
+  };
+  'SectionDescriptionStarsForForMessages': {
+    'percent': V;
+    'amount': V;
+  };
+  'SubtitlePrivacyUsersCount': {
+    'count': V;
+  };
+  'FirstMessageInPaidMessagesChat': {
+    'user': V;
+    'amount': V;
+  };
+  'ComposerPlaceholderPaidMessage': {
+    'amount': V;
+  };
+  'ComposerPlaceholderPaidReply': {
+    'amount': V;
+  };
+  'ConfirmationModalPaymentForOneMessage': {
+    'user': V;
+    'amount': V;
+  };
+  'ConfirmationModalPaymentForMessages': {
+    'user': V;
+    'price': V;
+    'amount': V;
+    'count': V;
+  };
+  'ButtonPayForMessage': {
+    'count': V;
+  };
+  'ToastTitleMessagesSent': {
+    'count': V;
+  };
+  'ToastMessageSent': {
+    'amount': V;
+  };
+  'ActionPaidOneMessageOutgoing': {
+    'amount': V;
+  };
+  'ActionPaidOneMessageIncoming': {
+    'amount': V;
+    'user': V;
+  };
+  'PaneMessagePaidMessageCharge': {
     'peer': V;
+    'amount': V;
+  };
+  'ConfirmDialogMessageRemoveFee': {
+    'peer': V;
+  };
+  'ConfirmDialogRemoveFeeRefundStars': {
+    'amount': V;
+  };
+  'DescriptionGiftPaidMessage': {
+    'user': V;
+    'amount': V;
+  };
+  'PaidMessageTransactionDescription': {
+    'percent': V;
   };
 }
 
@@ -2364,6 +2493,15 @@ export interface LangPairPluralWithVariables<V extends unknown = LangVariable> {
   'Minutes': {
     'count': V;
   };
+  'MinutesAgo': {
+    'count': V;
+  };
+  'HoursAgo': {
+    'count': V;
+  };
+  'DaysAgo': {
+    'count': V;
+  };
   'PreviewForwardedMessage': {
     'count': V;
   };
@@ -2405,6 +2543,9 @@ export interface LangPairPluralWithVariables<V extends unknown = LangVariable> {
   };
   'GiftWithdrawWait': {
     'days': V;
+  };
+  'ChatGroups': {
+    'count': V;
   };
   'StarsAmountText': {
     'amount': V;
@@ -2488,6 +2629,9 @@ export interface LangPairPluralWithVariables<V extends unknown = LangVariable> {
   };
   'ActionBoostApply': {
     'from': V;
+    'count': V;
+  };
+  'PaidMessageTransaction': {
     'count': V;
   };
 }

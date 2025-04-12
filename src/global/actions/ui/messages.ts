@@ -29,10 +29,10 @@ import {
   getMediaHash,
   getMessageDownloadableMedia,
   getMessageStatefulContent,
-  getPeerTitle,
   isChatChannel,
 } from '../../helpers';
 import { getMessageSummaryText } from '../../helpers/messageSummary';
+import { getPeerTitle } from '../../helpers/peers';
 import { renderMessageSummaryHtml } from '../../helpers/renderMessageSummaryHtml';
 import { addActionHandler, getGlobal, setGlobal } from '../../index';
 import {
@@ -71,6 +71,7 @@ import {
   selectThreadInfo,
   selectViewportIds,
 } from '../../selectors';
+import { getPeerStarsForMessage } from '../api/messages';
 
 import { getIsMobile } from '../../../hooks/useAppLayout';
 
@@ -1092,4 +1093,39 @@ addActionHandler('closeSharePreparedMessageModal', (global, actions, payload): A
   return updateTabState(global, {
     sharePreparedMessageModal: undefined,
   }, tabId);
+});
+
+addActionHandler('updateSharePreparedMessageModalSendArgs', async (global, actions, payload): Promise<void> => {
+  const { args, tabId = getCurrentTabId() } = payload || {};
+  const tabState = selectTabState(global, tabId);
+
+  if (!tabState.sharePreparedMessageModal) {
+    return;
+  }
+
+  if (!args) {
+    global = updateTabState(global, {
+      sharePreparedMessageModal: {
+        ...tabState.sharePreparedMessageModal,
+        pendingSendArgs: undefined,
+      },
+    }, tabId);
+    setGlobal(global);
+    return;
+  }
+
+  const starsForSendMessage = await getPeerStarsForMessage(global, args.peerId);
+
+  global = getGlobal();
+  global = updateTabState(global, {
+    sharePreparedMessageModal: {
+      ...tabState.sharePreparedMessageModal,
+      pendingSendArgs: {
+        peerId: args.peerId,
+        threadId: args.threadId,
+        starsForSendMessage,
+      },
+    },
+  }, tabId);
+  setGlobal(global);
 });

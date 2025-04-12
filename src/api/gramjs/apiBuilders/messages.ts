@@ -163,6 +163,7 @@ export function buildApiMessageFromNotification(
     chatId: SERVICE_NOTIFICATIONS_USER_ID,
     date: notification.inboxDate || currentDate,
     content,
+    isInvertedMedia: notification.invertMedia,
     isOutgoing: false,
   };
 }
@@ -266,6 +267,7 @@ export function buildApiMessageWithChatId(
     isInvertedMedia,
     isVideoProcessingPending,
     reportDeliveryUntilDate: mtpMessage.reportDeliveryUntilDate,
+    paidMessageStars: mtpMessage.paidMessageStars?.toJSNumber(),
   };
 }
 
@@ -391,6 +393,8 @@ export function buildLocalMessage(
   story?: ApiStory | ApiStorySkipped,
   isInvertedMedia?: true,
   effectId?: string,
+  isPending?: true,
+  messagePriceInStars?: number,
 ) {
   const localId = getNextLocalMessageId(lastMessageId);
   const media = attachment && buildUploadingMedia(attachment);
@@ -426,11 +430,13 @@ export function buildLocalMessage(
     isForwardingAllowed: true,
     isInvertedMedia,
     effectId,
+    ...(isPending && { sendingState: 'messageSendingStatePending' }),
+    ...(messagePriceInStars && { paidMessageStars: messagePriceInStars }),
   } satisfies ApiMessage;
 
   const emojiOnlyCount = getEmojiOnlyCountForMessage(message.content, message.groupedId);
 
-  const finalMessage = {
+  const finalMessage : ApiMessage = {
     ...message,
     ...(emojiOnlyCount && { emojiOnlyCount }),
   };

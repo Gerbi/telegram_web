@@ -312,9 +312,9 @@ function createTranslationFn(): LangFn {
     }
     return processTranslation(key, variables as Record<string, string | number>, options);
   }) as LangFn;
-  fn.code = language?.langCode || FORMATTERS_FALLBACK_LANG;
+  fn.rawCode = language?.langCode || FORMATTERS_FALLBACK_LANG;
   fn.isRtl = language?.isRtl;
-  fn.pluralCode = language?.pluralCode || FORMATTERS_FALLBACK_LANG;
+  fn.code = language?.pluralCode || FORMATTERS_FALLBACK_LANG;
   fn.with = (({ key, variables, options }: LangFnParameters) => {
     if (options && areAdvancedLangFnOptions(options)) {
       return processTranslationAdvanced(key, variables as Record<string, TeactNode | undefined>, options);
@@ -429,7 +429,7 @@ function processTranslationAdvanced(
             if (value === undefined) return result;
 
             const preparedValue = Number.isFinite(value) ? formatters!.number.format(value as number) : value;
-            return replaceInStringsWithTeact(result, `{${key}}`, preparedValue);
+            return replaceInStringsWithTeact(result, `{${key}}`, renderText(preparedValue));
           }, [part] as TeactNode[]);
         },
       });
@@ -440,7 +440,7 @@ function processTranslationAdvanced(
     if (value === undefined) return result;
 
     const preparedValue = Number.isFinite(value) ? formatters!.number.format(value as number) : value;
-    return replaceInStringsWithTeact(result, `{${key}}`, preparedValue);
+    return replaceInStringsWithTeact(result, `{${key}}`, renderText(preparedValue));
   }, tempResult);
 }
 

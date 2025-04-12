@@ -4,12 +4,13 @@ import { withGlobal } from '../../../../global';
 import type { ApiMessage, ApiPeer } from '../../../../api/types';
 import type { ApiMessageActionStarGift } from '../../../../api/types/messageActions';
 
-import { getPeerTitle, isChatChannel } from '../../../../global/helpers';
-import { isApiPeerChat } from '../../../../global/helpers/peers';
+import { isChatChannel } from '../../../../global/helpers';
+import { getPeerTitle, isApiPeerChat } from '../../../../global/helpers/peers';
 import {
   selectCanPlayAnimatedEmojis,
   selectPeer,
   selectSender,
+  selectUser,
 } from '../../../../global/selectors';
 import buildClassName from '../../../../util/buildClassName';
 import { formatStarsAsText } from '../../../../util/localization/format';
@@ -175,10 +176,11 @@ const StarGiftAction = ({
 
 export default memo(withGlobal<OwnProps>(
   (global, { message, action }): StateProps => {
+    const currentUser = selectUser(global, global.currentUserId!);
     const canPlayAnimatedEmojis = selectCanPlayAnimatedEmojis(global);
     const messageSender = selectSender(global, message);
     const giftSender = action.fromId ? selectPeer(global, action.fromId) : undefined;
-    const messageRecipient = selectPeer(global, message.chatId);
+    const messageRecipient = message.isOutgoing ? selectPeer(global, message.chatId) : currentUser;
     const giftRecipient = action.peerId ? selectPeer(global, action.peerId) : undefined;
 
     return {

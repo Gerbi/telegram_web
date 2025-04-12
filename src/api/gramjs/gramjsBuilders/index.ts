@@ -488,6 +488,9 @@ export function buildInputPrivacyKey(privacyKey: ApiPrivacyKey) {
 
     case 'gifts':
       return new GramJs.InputPrivacyKeyStarGiftsAutoSave();
+
+    case 'noPaidMessages':
+      return new GramJs.InputPrivacyKeyNoPaidMessages();
   }
 
   return undefined;
@@ -673,6 +676,17 @@ export function buildInputInvoice(invoice: ApiRequestInputInvoice) {
       const purpose = buildInputStorePaymentPurpose(invoice.purpose);
       return new GramJs.InputInvoiceStars({
         purpose,
+      });
+    }
+
+    case 'premiumGiftStars': {
+      const {
+        user, message, months,
+      } = invoice;
+      return new GramJs.InputInvoicePremiumGiftStars({
+        months,
+        userId: buildInputEntity(user.id, user.accessHash) as GramJs.InputUser,
+        message: message && buildInputTextWithEntities(message),
       });
     }
 

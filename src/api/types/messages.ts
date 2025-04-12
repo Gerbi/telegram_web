@@ -8,8 +8,8 @@ import type { ApiPeerColor } from './chats';
 import type { ApiMessageAction } from './messageActions';
 import type {
   ApiLabeledPrice,
-  ApiStarGiftUnique,
 } from './payments';
+import type { ApiStarGiftUnique } from './stars';
 import type {
   ApiMessageStoryData, ApiStory, ApiWebPageStickerData, ApiWebPageStoryData,
 } from './stories';
@@ -585,6 +585,7 @@ export interface ApiMessage {
   isVideoProcessingPending?: true;
   areReactionsPossible?: true;
   reportDeliveryUntilDate?: number;
+  paidMessageStars?: number;
 }
 
 export interface ApiReactions {

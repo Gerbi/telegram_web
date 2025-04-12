@@ -19,6 +19,7 @@ export const IS_TEST = process.env.APP_ENV === 'test';
 export const IS_PERF = process.env.APP_ENV === 'perf';
 export const IS_BETA = process.env.APP_ENV === 'staging';
 export const IS_PACKAGED_ELECTRON = process.env.IS_PACKAGED_ELECTRON;
+export const PAID_MESSAGES_PURPOSE = 'paid_messages';
 
 export const DEBUG = process.env.APP_ENV !== 'production';
 export const DEBUG_MORE = false;
@@ -121,6 +122,10 @@ export const TOP_CHAT_MESSAGES_PRELOAD_LIMIT = 20;
 
 export const SPONSORED_MESSAGE_CACHE_MS = 300000; // 5 min
 
+export const DEFAULT_CHARGE_FOR_MESSAGES = 250;
+export const MINIMUM_CHARGE_FOR_MESSAGES = 1;
+export const DEFAULT_MAXIMUM_CHARGE_FOR_MESSAGES = 10000;
+
 export const DEFAULT_VOLUME = 1;
 export const DEFAULT_PLAYBACK_RATE = 1;
 export const PLAYBACK_RATE_FOR_AUDIO_MIN_DURATION = 20 * 60; // 20 min
@@ -154,6 +159,7 @@ export const EDITABLE_STORY_INPUT_CSS_SELECTOR = `#${EDITABLE_STORY_INPUT_ID}`;
 export const CUSTOM_APPENDIX_ATTRIBUTE = 'data-has-custom-appendix';
 export const MESSAGE_CONTENT_CLASS_NAME = 'message-content';
 export const MESSAGE_CONTENT_SELECTOR = '.message-content';
+export const VIEW_TRANSITION_CLASS_NAME = 'active-view-transition';
 
 export const RESIZE_HANDLE_CLASS_NAME = 'resizeHandle';
 export const RESIZE_HANDLE_SELECTOR = `.${RESIZE_HANDLE_CLASS_NAME}`;
@@ -176,6 +182,7 @@ export const TMP_CHAT_ID = '0';
 export const ANIMATION_END_DELAY = 100;
 export const ANIMATION_WAVE_MIN_INTERVAL = 200;
 export const MESSAGE_APPEARANCE_DELAY = 10;
+export const PAID_SEND_DELAY = 5000;
 
 export const SCROLL_MIN_DURATION = 300;
 export const SCROLL_MAX_DURATION = 600;
@@ -202,7 +209,7 @@ export const STICKER_SIZE_AUTH_MOBILE = 120;
 export const STICKER_SIZE_PICKER = 72;
 export const EMOJI_SIZE_PICKER = 36;
 export const COMPOSER_EMOJI_SIZE_PICKER = 32;
-export const STICKER_SIZE_GENERAL_SETTINGS = 48;
+export const STICKER_SIZE_GENERAL_SETTINGS = 40;
 export const STICKER_SIZE_PICKER_HEADER = 32;
 export const STICKER_PICKER_MAX_SHARED_COVERS = 20;
 export const STICKER_SIZE_SEARCH = 72;

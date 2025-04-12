@@ -122,6 +122,7 @@ export const INITIAL_GLOBAL_STATE: GlobalState = {
     similarChannelsById: {},
     similarBotsById: {},
     topicsInfoById: {},
+    notifyExceptionById: {},
     loadingParameters: {
       active: {},
       archived: {},
@@ -270,6 +271,7 @@ export const INITIAL_GLOBAL_STATE: GlobalState = {
       shouldSuggestStickers: true,
       shouldSuggestCustomEmoji: true,
       shouldSkipWebAppCloseConfirmation: false,
+      shouldPaidMessageAutoApprove: false,
       shouldUpdateStickerSetOrder: true,
       language: 'en',
       timeFormat: '24h',
@@ -277,6 +279,7 @@ export const INITIAL_GLOBAL_STATE: GlobalState = {
       isConnectionStatusMinimized: true,
       shouldArchiveAndMuteNewNonContact: false,
       shouldNewNonContactPeersRequirePremium: false,
+      nonContactPeersPaidStars: 0,
       shouldHideReadMarks: false,
       canTranslate: false,
       canTranslateChats: true,
@@ -297,7 +300,6 @@ export const INITIAL_GLOBAL_STATE: GlobalState = {
     },
     performance: INITIAL_PERFORMANCE_STATE_MAX,
     privacy: {},
-    notifyExceptions: {},
     botVerificationShownPeerIds: [],
   },
 
@@ -423,4 +425,6 @@ export const INITIAL_TAB_STATE: TabState = {
   requestedTranslations: {
     byChatId: {},
   },
+
+  isPaymentMessageConfirmDialogOpen: false,
 };

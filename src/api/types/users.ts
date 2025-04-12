@@ -1,10 +1,10 @@
 import type { API_CHAT_TYPES } from '../../config';
 import type { ApiBotInfo } from './bots';
 import type { ApiBusinessIntro, ApiBusinessLocation, ApiBusinessWorkHours } from './business';
-import type { ApiPeerColor } from './chats';
+import type { ApiPeerColor, ApiPeerSettings } from './chats';
 import type { ApiDocument, ApiPhoto } from './messages';
 import type { ApiBotVerification } from './misc';
-import type { ApiSavedStarGift } from './payments';
+import type { ApiSavedStarGift } from './stars';
 
 export interface ApiUser {
   id: string;
@@ -38,6 +38,7 @@ export interface ApiUser {
   hasMainMiniApp?: boolean;
   botActiveUsers?: number;
   botVerificationIconId?: string;
+  paidMessagesStars?: number;
 }
 
 export interface ApiUserFullInfo {
@@ -50,7 +51,6 @@ export interface ApiUserFullInfo {
   fallbackPhoto?: ApiPhoto;
   personalPhoto?: ApiPhoto;
   noVoiceMessages?: boolean;
-  premiumGifts?: ApiPremiumGiftOption[];
   isTranslationDisabled?: true;
   areAdsEnabled?: boolean;
   hasPinnedStories?: boolean;
@@ -66,6 +66,8 @@ export interface ApiUserFullInfo {
   isBotAccessEmojiGranted?: boolean;
   hasScheduledMessages?: boolean;
   botVerification?: ApiBotVerification;
+  paidMessagesStars?: number;
+  settings?: ApiPeerSettings;
 }
 
 export type ApiFakeType = 'fake' | 'scam';
@@ -125,13 +127,6 @@ export type ApiAttachBot = OptionalCombine<ApiAttachBotBase, ApiAttachBotForMenu
 export interface ApiAttachBotIcon {
   name: string;
   document: ApiDocument;
-}
-
-export interface ApiPremiumGiftOption {
-  months: number;
-  currency: string;
-  amount: number;
-  botUrl: string;
 }
 
 export type ApiEmojiStatusType = ApiEmojiStatus | ApiEmojiStatusCollectible;
