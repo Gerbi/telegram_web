@@ -92,6 +92,9 @@ export interface GramJsAppConfig extends LimitsConfig {
   stars_paid_message_commission_permille?: number;
   stars_paid_message_amount_max?: number;
   stargifts_pinned_to_top_limit?: number;
+  freeze_since_date?: number;
+  freeze_until_date?: number;
+  freeze_appeal_url?: string;
 }
 
 function buildEmojiSounds(appConfig: GramJsAppConfig) {
@@ -159,6 +162,7 @@ export function buildAppConfig(json: GramJs.TypeJSONValue, hash: number): ApiApp
       chatlistJoined: getLimit(appConfig, 'chatlist_joined_limit', 'chatlistJoined'),
       recommendedChannels: getLimit(appConfig, 'recommended_channels_limit', 'recommendedChannels'),
       savedDialogsPinned: getLimit(appConfig, 'saved_dialogs_pinned_limit', 'savedDialogsPinned'),
+      moreAccounts: DEFAULT_LIMITS.moreAccounts,
     },
     hash,
     areStoriesHidden: appConfig.stories_all_hidden,
@@ -184,5 +188,8 @@ export function buildAppConfig(json: GramJs.TypeJSONValue, hash: number): ApiApp
     starRefStartPrefixes: appConfig.starref_start_param_prefixes,
     tonExplorerUrl: appConfig.ton_blockchain_explorer_url,
     savedGiftPinLimit: appConfig.stargifts_pinned_to_top_limit,
+    freezeSinceDate: appConfig.freeze_since_date,
+    freezeUntilDate: appConfig.freeze_until_date,
+    freezeAppealUrl: appConfig.freeze_appeal_url,
   };
 }

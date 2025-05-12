@@ -8,6 +8,7 @@ import type {
   ApiChatlistInvite,
   ApiChatReactions,
   ApiChatType,
+  ApiDisallowedGiftsSettings,
   ApiDraft,
   ApiExportedInvite,
   ApiFormattedText,
@@ -57,6 +58,7 @@ import type { FoldersActions } from '../../hooks/reducers/useFoldersReducer';
 import type { ReducerAction } from '../../hooks/useReducer';
 import type { P2pMessage } from '../../lib/secret-sauce';
 import type {
+  AccountSettings,
   AudioOrigin,
   CallSound,
   ChatListType,
@@ -64,7 +66,6 @@ import type {
   GiftProfileFilterOptions,
   GlobalSearchContent,
   IAnchorPosition,
-  ISettings,
   IThemeSettings,
   LoadMoreDirection,
   ManagementScreens,
@@ -92,6 +93,7 @@ import type {
 } from '../../types';
 import type { WebApp, WebAppModalStateType, WebAppOutboundEvent } from '../../types/webapp';
 import type { DownloadableMedia } from '../helpers';
+import type { SharedState } from './sharedState';
 import type { TabState } from './tabState';
 
 export type WithTabId = { tabId?: number };
@@ -172,7 +174,8 @@ export interface ActionPayloads {
   closeChatInviteModal: WithTabId | undefined;
 
   // settings
-  setSettingOption: Partial<ISettings> | undefined;
+  setSettingOption: Partial<AccountSettings> | undefined;
+  setSharedSettingOption: Partial<SharedState['settings']> | undefined;
   updatePerformanceSettings: Partial<PerformanceType>;
   loadPasswordInfo: undefined;
   clearTwoFaError: undefined;
@@ -502,21 +505,24 @@ export interface ActionPayloads {
   loadSponsoredMessages: {
     peerId: string;
   };
-  viewSponsoredMessage: {
-    peerId: string;
+  viewSponsored: {
+    randomId: string;
   };
-  clickSponsoredMessage: {
-    peerId: string;
+  clickSponsored: {
+    randomId: string;
     isMedia?: boolean;
     isFullscreen?: boolean;
   };
-  reportSponsoredMessage: {
-    peerId: string;
+  reportSponsored: {
+    peerId?: string;
     randomId: string;
     option?: string;
   } & WithTabId;
   openAboutAdsModal: {
-    chatId: string;
+    randomId: string;
+    canReport?: boolean;
+    sponsorInfo?: string;
+    additionalInfo?: string;
   } & WithTabId;
   closeAboutAdsModal: WithTabId | undefined;
   openPreparedInlineMessageModal: {
@@ -540,7 +546,7 @@ export interface ActionPayloads {
   openPreviousReportModal: WithTabId | undefined;
   closeReportAdModal: WithTabId | undefined;
   closeReportModal: WithTabId | undefined;
-  hideSponsoredMessages: WithTabId | undefined;
+  hideSponsored: WithTabId | undefined;
   loadSendAs: {
     chatId: string;
   };
@@ -954,6 +960,7 @@ export interface ActionPayloads {
     shouldReplaceHistory?: boolean;
     noForumTopicPanel?: boolean;
     quote?: string;
+    quoteOffset?: number;
     scrollTargetPosition?: ScrollTargetPosition;
     timestamp?: number;
   } & WithTabId;
@@ -1023,6 +1030,8 @@ export interface ActionPayloads {
   changeSessionTtl: {
     days: number;
   };
+  openFrozenAccountModal: WithTabId | undefined;
+  closeFrozenAccountModal: WithTabId | undefined;
 
   // Chats
   loadPeerSettings: {
@@ -1049,6 +1058,10 @@ export interface ActionPayloads {
     chatId: string;
     isEnabled: boolean;
   };
+  updatePaidMessagesPrice: {
+    chatId: string;
+    paidMessagesStars: number;
+  } & WithTabId;
 
   updateChat: {
     chatId: string;
@@ -1710,6 +1723,7 @@ export interface ActionPayloads {
   startBotFatherConversation: {
     param: string;
   } & WithTabId;
+  loadBotFreezeAppeal: undefined;
   checkUsername: {
     username: string;
   } & WithTabId;
@@ -1767,6 +1781,7 @@ export interface ActionPayloads {
     fromChatId: string;
     messageId?: number;
     quoteText?: ApiFormattedText;
+    quoteOffset?: number;
   } & WithTabId;
 
   // Forwards
@@ -2319,6 +2334,8 @@ export interface ActionPayloads {
     shouldHideReadMarks?: boolean;
     shouldNewNonContactPeersRequirePremium?: boolean;
     nonContactPeersPaidStars?: number | null;
+    shouldDisplayGiftsButton?: boolean;
+    disallowedGifts?: ApiDisallowedGiftsSettings;
   };
 
   // Premium

@@ -19,10 +19,10 @@ import {
   FRESH_AUTH_PERIOD,
   SAVED_FOLDER_ID,
 } from '../../../config';
+import { IS_APP, IS_MAC_OS } from '../../../util/browser/windowEnvironment';
 import buildClassName from '../../../util/buildClassName';
 import { getOrderKey, getPinnedChatsCount } from '../../../util/folderManager';
 import { getServerTime } from '../../../util/serverTime';
-import { IS_APP, IS_MAC_OS } from '../../../util/windowEnvironment';
 
 import usePeerStoriesPolling from '../../../hooks/polling/usePeerStoriesPolling';
 import useTopOverscroll from '../../../hooks/scroll/useTopOverscroll';
@@ -32,7 +32,6 @@ import { useHotkeys } from '../../../hooks/useHotkeys';
 import useInfiniteScroll from '../../../hooks/useInfiniteScroll';
 import { useIntersectionObserver } from '../../../hooks/useIntersectionObserver';
 import useLastCallback from '../../../hooks/useLastCallback';
-import useShowTransition from '../../../hooks/useShowTransition';
 import useOrderDiff from './hooks/useOrderDiff';
 
 import InfiniteScroll from '../../ui/InfiniteScroll';
@@ -40,6 +39,7 @@ import Loading from '../../ui/Loading';
 import Archive from './Archive';
 import Chat from './Chat';
 import EmptyFolder from './EmptyFolder';
+import FrozenAccountNotification from './FrozenAccountNotification';
 import UnconfirmedSession from './UnconfirmedSession';
 
 type OwnProps = {
@@ -54,6 +54,7 @@ type OwnProps = {
   foldersDispatch?: FolderEditDispatch;
   onSettingsScreenSelect?: (screen: SettingsScreens) => void;
   onLeftColumnContentChange?: (content: LeftColumnContent) => void;
+  isAccountFrozen?: boolean;
 };
 
 const INTERSECTION_THROTTLE = 200;
@@ -72,12 +73,14 @@ const ChatList: FC<OwnProps> = ({
   foldersDispatch,
   onSettingsScreenSelect,
   onLeftColumnContentChange,
+  isAccountFrozen,
 }) => {
   const {
     openChat,
     openNextChat,
     closeForumPanel,
     toggleStoryRibbon,
+    openFrozenAccountModal,
   } = getActions();
   // eslint-disable-next-line no-null/no-null
   const containerRef = useRef<HTMLDivElement>(null);
@@ -92,6 +95,7 @@ const ChatList: FC<OwnProps> = ({
   );
 
   const shouldDisplayArchive = isAllFolder && canDisplayArchive && archiveSettings;
+  const shouldShowFrozenAccountNotification = isAccountFrozen && isAllFolder;
 
   const orderedIds = useFolderManagerForOrderedIds(resolvedFolderId);
   usePeerStoriesPolling(orderedIds);
@@ -99,6 +103,7 @@ const ChatList: FC<OwnProps> = ({
   const chatsHeight = (orderedIds?.length || 0) * CHAT_HEIGHT_PX;
   const archiveHeight = shouldDisplayArchive
     ? archiveSettings?.isMinimized ? ARCHIVE_MINIMIZED_HEIGHT : CHAT_HEIGHT_PX : 0;
+  const frozenNotificationHeight = shouldShowFrozenAccountNotification ? 68 : 0;
 
   const { orderDiffById, getAnimationType } = useOrderDiff(orderedIds);
 
@@ -109,20 +114,12 @@ const ChatList: FC<OwnProps> = ({
     const current = sessionsArray.find((session) => session.isCurrent);
     if (!current || getServerTime() - current.dateCreated < FRESH_AUTH_PERIOD) return false;
 
-    return isAllFolder && sessionsArray.some((session) => session.isUnconfirmed);
-  }, [isAllFolder, sessions]);
+    return !isAccountFrozen && isAllFolder && sessionsArray.some((session) => session.isUnconfirmed);
+  }, [isAllFolder, sessions, isAccountFrozen]);
 
   useEffect(() => {
     if (!shouldShowUnconfirmedSessions) setUnconfirmedSessionHeight(0);
   }, [shouldShowUnconfirmedSessions]);
-
-  const {
-    ref: sessionRef,
-    shouldRender,
-  } = useShowTransition({
-    isOpen: shouldShowUnconfirmedSessions,
-    withShouldRender: true,
-  });
 
   // Support <Alt>+<Up/Down> to navigate between chats
   useHotkeys(useMemo(() => (isActive && orderedIds?.length ? {
@@ -183,6 +180,10 @@ const ChatList: FC<OwnProps> = ({
     closeForumPanel();
   });
 
+  const handleFrozenAccountNotificationClick = useLastCallback(() => {
+    openFrozenAccountModal();
+  });
+
   const handleArchivedDragEnter = useLastCallback(() => {
     if (shouldIgnoreDragRef.current) {
       shouldIgnoreDragRef.current = false;
@@ -224,7 +225,8 @@ const ChatList: FC<OwnProps> = ({
 
     return viewportIds!.map((id, i) => {
       const isPinned = viewportOffset + i < pinnedCount;
-      const offsetTop = unconfirmedSessionHeight + archiveHeight + (viewportOffset + i) * CHAT_HEIGHT_PX;
+      const offsetTop = unconfirmedSessionHeight + archiveHeight + frozenNotificationHeight
+      + (viewportOffset + i) * CHAT_HEIGHT_PX;
 
       return (
         <Chat
@@ -253,16 +255,21 @@ const ChatList: FC<OwnProps> = ({
       preloadBackwards={CHAT_LIST_SLICE}
       withAbsolutePositioning
       beforeChildren={renderedOverflowTrigger}
-      maxHeight={chatsHeight + archiveHeight + unconfirmedSessionHeight}
+      maxHeight={chatsHeight + archiveHeight + frozenNotificationHeight + unconfirmedSessionHeight}
       onLoadMore={getMore}
       onDragLeave={handleDragLeave}
     >
-      {shouldRender && (
+      {shouldShowUnconfirmedSessions && (
         <UnconfirmedSession
           key="unconfirmed"
-          sessionRef={sessionRef}
           sessions={sessions!}
           onHeightChange={setUnconfirmedSessionHeight}
+        />
+      )}
+      {shouldShowFrozenAccountNotification && (
+        <FrozenAccountNotification
+          key="frozen"
+          onClick={handleFrozenAccountNotificationClick}
         />
       )}
       {shouldDisplayArchive && (

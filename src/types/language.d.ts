@@ -14,7 +14,7 @@ export interface LangPair {
   'Month11': undefined;
   'Month12': undefined;
   'GroupLeaveGroup': undefined;
-  'DeleteChatUser': undefined;
+  'DeleteChat': undefined;
   'AccDescrGroup': undefined;
   'AccDescrChannel': undefined;
   'Nothing': undefined;
@@ -53,6 +53,9 @@ export interface LangPair {
   'PremiumPreviewUploadsDescription': undefined;
   'PremiumPreviewAdvancedChatManagementDescription': undefined;
   'PremiumPreviewAnimatedProfilesDescription': undefined;
+  'PremiumLimitAccountsTitle': undefined;
+  'PremiumLimitAccountsNoPremium': undefined;
+  'PremiumLimitAccounts': undefined;
   'SendMessage': undefined;
   'ConversationDefaultRestrictedMedia': undefined;
   'AccDescrVoiceMessage': undefined;
@@ -64,6 +67,9 @@ export interface LangPair {
   'ProfileCopyPhone': undefined;
   'ContextCopySelected': undefined;
   'ContextCopyText': undefined;
+  'ContextArchiveCollapse': undefined;
+  'ContextArchiveExpand': undefined;
+  'ContextArchiveToMenu': undefined;
   'CallMessageVideoIncomingDeclined': undefined;
   'CallMessageVideoOutgoingMissed': undefined;
   'CallMessageVideoIncomingMissed': undefined;
@@ -154,6 +160,7 @@ export interface LangPair {
   'LoginRegisterLastNamePlaceholder': undefined;
   'Next': undefined;
   'LoginSelectCountryTitle': undefined;
+  'MenuAddAccount': undefined;
   'CountryNone': undefined;
   'VoipGroupVoiceChat': undefined;
   'AccDescrMoreOptions': undefined;
@@ -424,8 +431,9 @@ export interface LangPair {
   'PasscodeControllerDisableTitle': undefined;
   'PasscodeControllerChangeTitle': undefined;
   'FilterNew': undefined;
-  'FilterEdit': undefined;
-  'FilterDelete': undefined;
+  'EditFolder': undefined;
+  'FilterEditFolders': undefined;
+  'FilterMenuDelete': undefined;
   'FilterShare': undefined;
   'AutoDeleteConfirm': undefined;
   'LogOutTitle': undefined;
@@ -677,6 +685,7 @@ export interface LangPair {
   'MessageRecommendedLabel': undefined;
   'SponsoredMessageAd': undefined;
   'SponsoredMessageAdWhatIsThis': undefined;
+  'SponsoredPeerBadge': undefined;
   'PremiumStickerTooltip': undefined;
   'ViewAction': undefined;
   'Loading': undefined;
@@ -706,7 +715,7 @@ export interface LangPair {
   'EmptyGroupInfoLine3': undefined;
   'EmptyGroupInfoLine4': undefined;
   'Reactions': undefined;
-  'MarkAllAsRead': undefined;
+  'ChatListMarkAllAsRead': undefined;
   'PaymentCardNumber': undefined;
   'CheckoutTotalAmount': undefined;
   'PaymentCheckoutMethod': undefined;
@@ -757,7 +766,7 @@ export interface LangPair {
   'ChannelSubscribers': undefined;
   'ChannelBlockedUsers': undefined;
   'ChannelDelete': undefined;
-  'LeaveChannel': undefined;
+  'ChannelLeave': undefined;
   'ChannelDeleteAlert': undefined;
   'ChannelLeaveAlert': undefined;
   'ChannelCreator': undefined;
@@ -972,6 +981,7 @@ export interface LangPair {
   'ChatListFilterErrorEmpty': undefined;
   'ChatListFilterErrorTitleEmpty': undefined;
   'FilterMuted': undefined;
+  'ReadFolder': undefined;
   'FilterRead': undefined;
   'FilterArchived': undefined;
   'GroupsAndChannelsLimitTitle': undefined;
@@ -1004,10 +1014,13 @@ export interface LangPair {
   'ConversationViewChannel': undefined;
   'Telegram': undefined;
   'ChatListFilterAddToFolder': undefined;
-  'UnpinFromTop': undefined;
-  'PinToTop': undefined;
-  'MarkAsRead': undefined;
-  'MarkAsUnread': undefined;
+  'ChatListUnpinFromTop': undefined;
+  'ChatListPinToTop': undefined;
+  'ChatListOpenInNewWindow': undefined;
+  'ChatListOpenInNewTab': undefined;
+  'ChatListContextMaskAsRead': undefined;
+  'ChatListContextMaskAsUnread': undefined;
+  'ChatListContextAddToFolder': undefined;
   'Unarchive': undefined;
   'Archive': undefined;
   'WaitingForNetwork': undefined;
@@ -1269,7 +1282,16 @@ export interface LangPair {
   'PrivacyGifts': undefined;
   'PrivacyGiftsTitle': undefined;
   'PrivacyGiftsInfo': undefined;
+  'PrivacyAcceptedGiftTitle': undefined;
+  'PrivacyAcceptedGiftInfo': undefined;
+  'PrivacyDisplayGiftsButton': undefined;
+  'PrivacyDisplayGift': undefined;
+  'SendDisallowError': undefined;
   'PrivacyValueBots': undefined;
+  'PrivacyGiftLimitedEdition': undefined;
+  'PrivacyGiftUnlimited': undefined;
+  'PrivacyGiftUnique': undefined;
+  'PrivacyGiftPremiumSubscription': undefined;
   'CustomShareGiftsInfo': undefined;
   'AllChatsSearchContext': undefined;
   'PrivateChatsSearchContext': undefined;
@@ -1439,7 +1461,6 @@ export interface LangPair {
   'PrivacyPaidMessagesValue': undefined;
   'ButtonBuyStars': undefined;
   'TitleConfirmPayment': undefined;
-  'ToastTitleMessageSent': undefined;
   'ButtonUndo': undefined;
   'ConfirmRemoveMessageFee': undefined;
   'StoryTooltipGifSent': undefined;
@@ -1447,9 +1468,38 @@ export interface LangPair {
   'StoryTooltipReactionSent': undefined;
   'StarsNeededTextSendPaidMessages': undefined;
   'PaidMessageTransactionTotal': undefined;
+  'TitleFrozenAccount': undefined;
+  'SubtitleFrozenAccount': undefined;
+  'ComposerTitleFrozenAccount': undefined;
+  'ComposerSubtitleFrozenAccount': undefined;
   'DescriptionRestrictedMedia': undefined;
   'DescriptionScheduledPaidMediaNotAllowed': undefined;
   'DescriptionScheduledPaidMessagesNotAllowed': undefined;
+  'GroupMessagesChargePrice': undefined;
+  'RightsChargeStarsAbout': undefined;
+  'UnlockButtonTitle': undefined;
+  'PrivacySubscribeToTelegramPremium': undefined;
+  'PrivacyDisableLimitedEditionStarGifts': undefined;
+  'PrivacyEnableLimitedEditionStarGifts': undefined;
+  'PrivacyDisableUnlimitedStarGifts': undefined;
+  'PrivacyEnableUnlimitedStarGifts': undefined;
+  'PrivacyDisableUniqueStarGifts': undefined;
+  'PrivacyEnableUniqueStarGifts': undefined;
+  'PrivacyDisablePremiumGifts': undefined;
+  'PrivacyEnablePremiumGifts': undefined;
+  'DisplayGiftsButton': undefined;
+  'HideGiftsButton': undefined;
+  'FrozenAccountModalTitle': undefined;
+  'FrozenAccountViolationTitle': undefined;
+  'FrozenAccountViolationSubtitle': undefined;
+  'FrozenAccountReadOnlyTitle': undefined;
+  'FrozenAccountReadOnlySubtitle': undefined;
+  'FrozenAccountAppealTitle': undefined;
+  'ButtonAppeal': undefined;
+  'ButtonUnderstood': undefined;
+  'ActionPaidMessageGroupPriceFree': undefined;
+  'NotificationTitleNotSupportedInFrozenAccount': undefined;
+  'NotificationMessageNotSupportedInFrozenAccount': undefined;
 }
 
 export interface LangPairWithVariables<V extends unknown = LangVariable> {
@@ -1527,6 +1577,10 @@ export interface LangPairWithVariables<V extends unknown = LangVariable> {
   };
   'SpeakingWithVolume': {
     'volume': V;
+  };
+  'PrivacyDisplayGiftIconInChats':{
+    'icon': V;
+    'gift': V;
   };
   'CallEmojiKeyTooltip': {
     'user': V;
@@ -1851,6 +1905,9 @@ export interface LangPairWithVariables<V extends unknown = LangVariable> {
     'total': V;
   };
   'GiftInfoCollectible': {
+    'number': V;
+  };
+  'GiftSavedNumber': {
     'number': V;
   };
   'GiftInfoPeerOriginalInfo': {
@@ -2299,9 +2356,6 @@ export interface LangPairWithVariables<V extends unknown = LangVariable> {
     'percent': V;
     'amount': V;
   };
-  'SubtitlePrivacyUsersCount': {
-    'count': V;
-  };
   'FirstMessageInPaidMessagesChat': {
     'user': V;
     'amount': V;
@@ -2312,23 +2366,7 @@ export interface LangPairWithVariables<V extends unknown = LangVariable> {
   'ComposerPlaceholderPaidReply': {
     'amount': V;
   };
-  'ConfirmationModalPaymentForOneMessage': {
-    'user': V;
-    'amount': V;
-  };
-  'ConfirmationModalPaymentForMessages': {
-    'user': V;
-    'price': V;
-    'amount': V;
-    'count': V;
-  };
-  'ButtonPayForMessage': {
-    'count': V;
-  };
-  'ToastTitleMessagesSent': {
-    'count': V;
-  };
-  'ToastMessageSent': {
+  'MessageSentPaidToastText': {
     'amount': V;
   };
   'ActionPaidOneMessageOutgoing': {
@@ -2348,12 +2386,27 @@ export interface LangPairWithVariables<V extends unknown = LangVariable> {
   'ConfirmDialogRemoveFeeRefundStars': {
     'amount': V;
   };
-  'DescriptionGiftPaidMessage': {
-    'user': V;
-    'amount': V;
-  };
   'PaidMessageTransactionDescription': {
     'percent': V;
+  };
+  'SetPriceGroupDescription': {
+    'percent': V;
+    'amount': V;
+  };
+  'FrozenAccountAppealSubtitle': {
+    'botLink': V;
+    'date': V;
+  };
+  'ActionPaidMessageGroupPrice': {
+    'stars': V;
+  };
+  'ApiMessageActionPaidMessagesRefundedOutgoing': {
+    'stars': V;
+    'user': V;
+  };
+  'ApiMessageActionPaidMessagesRefundedIncoming': {
+    'user': V;
+    'stars': V;
   };
 }
 
@@ -2629,6 +2682,18 @@ export interface LangPairPluralWithVariables<V extends unknown = LangVariable> {
   };
   'ActionBoostApply': {
     'from': V;
+    'count': V;
+  };
+  'ConfirmationModalPaymentForMessage': {
+    'user': V;
+    'amount': V;
+    'totalAmount': V;
+    'count': V;
+  };
+  'PayForMessage': {
+    'count': V;
+  };
+  'MessageSentPaidToastTitle': {
     'count': V;
   };
   'PaidMessageTransaction': {
