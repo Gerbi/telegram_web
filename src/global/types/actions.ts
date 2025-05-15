@@ -67,6 +67,7 @@ import type {
   GlobalSearchContent,
   IAnchorPosition,
   IThemeSettings,
+  LeftColumnContent,
   LoadMoreDirection,
   ManagementScreens,
   MediaViewerMedia,
@@ -968,6 +969,9 @@ export interface ActionPayloads {
   focusLastMessage: WithTabId | undefined;
   updateDraftReplyInfo: Partial<ApiInputMessageReplyInfo> & WithTabId;
   resetDraftReplyInfo: WithTabId | undefined;
+  updateInsertingPeerIdMention: {
+    peerId?: string;
+  } & WithTabId;
 
   // Multitab
   destroyConnection: undefined;
@@ -2308,8 +2312,13 @@ export interface ActionPayloads {
   } | undefined;
   loadPeerColors: undefined;
   loadTimezones: undefined;
-  requestNextSettingsScreen: {
+  openLeftColumnContent: {
+    contentKey?: LeftColumnContent;
+  } & WithTabId;
+  openSettingsScreen: {
     screen?: SettingsScreens;
+  } & WithTabId;
+  requestNextFoldersAction: {
     foldersAction?: ReducerAction<FoldersActions>;
   } & WithTabId;
   sortChatFolders: { folderIds: number[] };
@@ -2397,6 +2406,10 @@ export interface ActionPayloads {
   } & WithTabId;
   closeGiftModal: WithTabId | undefined;
   sendStarGift: StarGiftInfo & WithTabId;
+  buyStarGift: {
+    slug: string;
+    stars: number;
+  } & WithTabId;
   sendPremiumGiftByStars: {
     userId: string;
     months: number;
@@ -2414,7 +2427,12 @@ export interface ActionPayloads {
   } | {
     gift: ApiStarGift;
   }) & WithTabId;
+  openGiftResalePriceComposerModal: ({
+    peerId: string;
+    gift: ApiSavedStarGift;
+  }) & WithTabId;
   closeGiftInfoModal: WithTabId | undefined;
+  closeGiftResalePriceComposerModal: WithTabId | undefined;
 
   openGiftUpgradeModal: {
     giftId: string;
@@ -2456,6 +2474,9 @@ export interface ActionPayloads {
     peerId: string;
     shouldRefresh?: boolean;
   } & WithTabId;
+  reloadPeerSavedGifts: {
+    peerId: string;
+  };
   changeGiftVisibility: {
     gift: ApiInputSavedStarGift;
     shouldUnsave?: boolean;
@@ -2466,6 +2487,11 @@ export interface ActionPayloads {
   toggleSavedGiftPinned: {
     peerId: string;
     gift: ApiSavedStarGift;
+  } & WithTabId;
+
+  updateStarGiftPrice: {
+    gift: ApiInputSavedStarGift;
+    price: number;
   } & WithTabId;
 
   openStarsGiftModal: ({

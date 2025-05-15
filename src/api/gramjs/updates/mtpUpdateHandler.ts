@@ -85,8 +85,6 @@ import { processMessageAndUpdateThreadInfo } from './entityProcessor';
 import LocalUpdatePremiumFloodWait from './UpdatePremiumFloodWait';
 import { LocalUpdateChannelPts, LocalUpdatePts } from './UpdatePts';
 
-const sentMessageIds = new Set();
-
 export function updater(update: Update) {
   if (update instanceof UpdateServerTimeOffset) {
     setServerTimeOffset(update.timeOffset);
@@ -159,23 +157,22 @@ export function updater(update: Update) {
 
     if (update instanceof GramJs.UpdateNewScheduledMessage) {
       sendApiUpdate({
-        '@type': sentMessageIds.has(message.id) ? 'updateScheduledMessage' : 'newScheduledMessage',
+        '@type': 'updateScheduledMessage',
         id: message.id,
         chatId: message.chatId,
         message,
         poll,
+        isFromNew: true,
       });
     } else {
-      // We don't have preview for action or 'via bot' messages, so `newMessage` update here is required
-      const hasLocalCopy = sentMessageIds.has(message.id) && !message.viaBotId && !message.content.action;
       sendApiUpdate({
-        '@type': hasLocalCopy ? 'updateMessage' : 'newMessage',
+        '@type': 'updateMessage',
         id: message.id,
         chatId: message.chatId,
         message,
         shouldForceReply,
         poll,
-        shouldCreateMessageIfNeeded: true,
+        isFromNew: true,
       });
     }
 
@@ -244,13 +241,14 @@ export function updater(update: Update) {
           });
         }
       } else if (action instanceof GramJs.MessageActionGroupCall) {
-        if (!action.duration && action.call) {
+        const groupCall = action.call instanceof GramJs.InputGroupCall ? action.call : undefined;
+        if (!action.duration && groupCall) {
           sendApiUpdate({
             '@type': 'updateGroupCallChatId',
             chatId: message.chatId,
             call: {
-              id: action.call.id.toString(),
-              accessHash: action.call.accessHash.toString(),
+              id: groupCall.id.toString(),
+              accessHash: groupCall.accessHash.toString(),
             },
           });
         }
@@ -414,8 +412,6 @@ export function updater(update: Update) {
         message,
       });
     }
-  } else if (update instanceof GramJs.UpdateMessageID || update instanceof GramJs.UpdateShortSentMessage) {
-    sentMessageIds.add(update.id);
   } else if (update instanceof GramJs.UpdateReadMessagesContents) {
     sendApiUpdate({
       '@type': 'updateCommonBoxMessages',
@@ -910,11 +906,14 @@ export function updater(update: Update) {
       presentation: Boolean(update.presentation),
     });
   } else if (update instanceof GramJs.UpdateGroupCallParticipants) {
-    sendApiUpdate({
-      '@type': 'updateGroupCallParticipants',
-      groupCallId: getGroupCallId(update.call),
-      participants: update.participants.map(buildApiGroupCallParticipant),
-    });
+    const groupCallId = getGroupCallId(update.call);
+    if (groupCallId) {
+      sendApiUpdate({
+        '@type': 'updateGroupCallParticipants',
+        groupCallId,
+        participants: update.participants.map(buildApiGroupCallParticipant),
+      });
+    }
   } else if (update instanceof GramJs.UpdatePendingJoinRequests) {
     sendApiUpdate({
       '@type': 'updatePendingJoinRequests',

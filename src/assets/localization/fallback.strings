@@ -742,6 +742,7 @@
 "PollsStopWarning" = "If you stop this poll now, nobody will be able to vote in it anymore. This action cannot be undone.";
 "PollsStopSure" = "Stop";
 "PaymentTestInvoice" = "TEST INVOICE";
+"PaymentInvoiceNotFound" = "Invoice not found";
 "AttachLiveLocation" = "Live Location";
 "NoWordsRecognized" = "No words recognized.";
 "ViaBot" = "via";
@@ -1484,6 +1485,7 @@
 "GiftInfoWear" = "Wear";
 "GiftInfoTakeOff" = "Take Off";
 "GiftInfoTransfer" = "Transfer";
+"GiftInfoUnlist" = "Unlist";
 "GiftTransferTitle" = "Transfer";
 "GiftTransferTON" = "Send via Blockchain";
 "GiftTransferTONBlocked" = "unlocks in {time}";
@@ -1673,6 +1675,7 @@
 "GiftFilterHidden" = "Hidden";
 "GiftSearchEmpty" = "No matching gifts";
 "GiftSearchReset" = "View All Gifts";
+"SetUp2FA" = "Set up Two-Step Verification";
 "CheckPasswordTitle" = "Enter Password";
 "CheckPasswordPlaceholder" = "Password";
 "CheckPasswordDescription" = "Please enter your password to continue.";
@@ -1867,6 +1870,7 @@
 "ActionMigratedFrom" = "Migrated from {chat}";
 "ActionMigratedTo" = "Migrated to {chat}";
 "ActionHistoryCleared" = "History was cleared";
+"Refunded" = "Refund";
 "UniqueStatusWearTitle" = "Wear {gift}";
 "UniqueStatusBenefitsDescription" = "and get these benefits:";
 "UniqueStatusBadgeBenefitTitle" = "Radiant Badge";
@@ -1950,3 +1954,25 @@
 "ApiMessageActionPaidMessagesRefundedIncoming" = "{user} refunded **{stars}** to you";
 "NotificationTitleNotSupportedInFrozenAccount" = "Your account is frozen";
 "NotificationMessageNotSupportedInFrozenAccount" = "This action is not available";
+"NotificationGiftIsSale" = "{gift} is now for sale!";
+"NotificationGiftIsUnlist" = "{gift} is removed from sale.";
+"GiftRibbonSale" = "sale";
+"ButtonBuyGift" = "Buy for {stars}";
+"GiftInfoBuyGift" = "{user} is selling this gift and you can buy it.";
+"StarsGiftBought"= "You bought gift!";
+"ButtonSellGift" = "Sell for {stars}";
+"GiftSellTitle" = "Sell Gift";
+"Sell" = "Sell";
+"InputPlaceholderGiftResalePrice" = "Enter Price";
+"DescriptionComposerGiftResalePrice" = "You will receive **{stars}**.";
+"DescriptionComposerGiftMinimumPrice" = "Minimum price is **{stars}**.";
+"ApiMessageMessageActionResaleStarGiftUniqueOutgoing" = "You paid {stars} for {gift}";
+"ApiMessageMessageActionResaleStarGiftUniqueIncoming" = "You received {stars} from selling {gift}";
+"ModalStarsBalanceBarDescription" = "Your balance is **{stars}**";
+"NotificationGiftCanResellAt" = "You will be able to resell this gift on {date}.";
+"NotificationGiftCanTransferAt" = "You can transfer this gift after {date}.";
+"StarGiftSaleTransaction" = "Gift Purchase";
+"StarGiftPurchaseTransaction" = "Gift Sale";
+"GiftBuyConfirmDescription" = "Do you want to buy **{gift}** for **{stars}**?";
+"ComposerTitleForwardFrom" = "From: **{users}**";
+"ContextMenuItemMention" = "Mention";

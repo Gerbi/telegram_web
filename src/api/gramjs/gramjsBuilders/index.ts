@@ -117,7 +117,7 @@ export function buildInputChannel(channelId: string, accessHash?: string): GramJ
 }
 
 export function buildInputChat(chatId: string) {
-  return BigInt(chatId);
+  return BigInt(chatId.slice(1));
 }
 
 export function buildInputPaidReactionPrivacy(isPrivate?: boolean, peerId?: string): GramJs.TypePaidReactionPrivacy {
@@ -684,6 +684,16 @@ export function buildInputInvoice(invoice: ApiRequestInputInvoice) {
     case 'slug': {
       return new GramJs.InputInvoiceSlug({
         slug: invoice.slug,
+      });
+    }
+
+    case 'stargiftResale': {
+      const {
+        peer, slug,
+      } = invoice;
+      return new GramJs.InputInvoiceStarGiftResale({
+        toId: buildInputPeer(peer.id, peer.accessHash),
+        slug,
       });
     }
 

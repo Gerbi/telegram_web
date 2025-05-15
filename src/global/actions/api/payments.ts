@@ -1,5 +1,6 @@
 import type {
-  ApiInputInvoice, ApiInputInvoicePremiumGiftStars, ApiInputInvoiceStarGift, ApiRequestInputInvoice,
+  ApiInputInvoice, ApiInputInvoicePremiumGiftStars, ApiInputInvoiceStarGift, ApiInputInvoiceStarGiftResale,
+  ApiRequestInputInvoice,
 } from '../../../api/types';
 import type { ApiCredentials } from '../../../components/payment/PaymentModal';
 import type { RegularLangFnParameters } from '../../../util/localization';
@@ -97,6 +98,8 @@ addActionHandler('openInvoice', async (global, actions, payload): Promise<void> 
 
   if ('error' in form) {
     setGlobal(global);
+
+    handlePaymentFormError(form.error, tabId);
     return;
   }
 
@@ -139,6 +142,20 @@ addActionHandler('sendStarGift', (global, actions, payload): ActionReturnType =>
   };
 
   payInputStarInvoice(global, inputInvoice, gift.stars, tabId);
+});
+
+addActionHandler('buyStarGift', (global, actions, payload): ActionReturnType => {
+  const {
+    slug, stars, tabId = getCurrentTabId(),
+  } = payload;
+
+  const inputInvoice: ApiInputInvoiceStarGiftResale = {
+    type: 'stargiftResale',
+    slug,
+    peerId: global.currentUserId!,
+  };
+
+  payInputStarInvoice(global, inputInvoice, stars, tabId);
 });
 
 addActionHandler('sendPremiumGiftByStars', (global, actions, payload): ActionReturnType => {
@@ -1099,7 +1116,7 @@ async function payInputStarInvoice<T extends GlobalState>(
   setGlobal(global);
 
   if ('error' in form) {
-    actions.showDialog({ data: { message: form.error || 'Error', hasErrorKey: true }, tabId });
+    handlePaymentFormError(form.error, tabId);
     return;
   }
 
@@ -1179,3 +1196,19 @@ addActionHandler('processStarGiftWithdrawal', async (global, actions, payload): 
   actions.openUrl({ url: result.url, shouldSkipModal: true, tabId });
   actions.closeGiftWithdrawModal({ tabId });
 });
+
+function handlePaymentFormError(error: string, tabId: number) {
+  if (error === 'SLUG_INVALID') {
+    // eslint-disable-next-line eslint-multitab-tt/no-getactions-in-actions
+    getActions().showNotification({
+      message: {
+        key: 'PaymentInvoiceNotFound',
+      },
+      tabId,
+    });
+    return;
+  }
+
+  // eslint-disable-next-line eslint-multitab-tt/no-getactions-in-actions
+  getActions().showDialog({ data: { message: error, hasErrorKey: true }, tabId });
+}

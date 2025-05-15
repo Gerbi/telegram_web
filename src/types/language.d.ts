@@ -654,6 +654,7 @@ export interface LangPair {
   'PollsStopWarning': undefined;
   'PollsStopSure': undefined;
   'PaymentTestInvoice': undefined;
+  'PaymentInvoiceNotFound': undefined;
   'AttachLiveLocation': undefined;
   'NoWordsRecognized': undefined;
   'ViaBot': undefined;
@@ -981,7 +982,6 @@ export interface LangPair {
   'ChatListFilterErrorEmpty': undefined;
   'ChatListFilterErrorTitleEmpty': undefined;
   'FilterMuted': undefined;
-  'ReadFolder': undefined;
   'FilterRead': undefined;
   'FilterArchived': undefined;
   'GroupsAndChannelsLimitTitle': undefined;
@@ -1235,6 +1235,7 @@ export interface LangPair {
   'GiftInfoWear': undefined;
   'GiftInfoTakeOff': undefined;
   'GiftInfoTransfer': undefined;
+  'GiftInfoUnlist': undefined;
   'GiftTransferTitle': undefined;
   'GiftTransferTON': undefined;
   'GiftTransferConfirmButtonFree': undefined;
@@ -1284,14 +1285,25 @@ export interface LangPair {
   'PrivacyGiftsInfo': undefined;
   'PrivacyAcceptedGiftTitle': undefined;
   'PrivacyAcceptedGiftInfo': undefined;
-  'PrivacyDisplayGiftsButton': undefined;
-  'PrivacyDisplayGift': undefined;
-  'SendDisallowError': undefined;
   'PrivacyValueBots': undefined;
   'PrivacyGiftLimitedEdition': undefined;
   'PrivacyGiftUnlimited': undefined;
   'PrivacyGiftUnique': undefined;
   'PrivacyGiftPremiumSubscription': undefined;
+  'PrivacyDisplayGiftsButton': undefined;
+  'PrivacyDisplayGift': undefined;
+  'SendDisallowError': undefined;
+  'PrivacySubscribeToTelegramPremium': undefined;
+  'PrivacyDisableLimitedEditionStarGifts': undefined;
+  'PrivacyEnableLimitedEditionStarGifts': undefined;
+  'PrivacyDisableUnlimitedStarGifts': undefined;
+  'PrivacyEnableUnlimitedStarGifts': undefined;
+  'PrivacyDisableUniqueStarGifts': undefined;
+  'PrivacyEnableUniqueStarGifts': undefined;
+  'PrivacyDisablePremiumGifts': undefined;
+  'PrivacyEnablePremiumGifts': undefined;
+  'DisplayGiftsButton': undefined;
+  'HideGiftsButton': undefined;
   'CustomShareGiftsInfo': undefined;
   'AllChatsSearchContext': undefined;
   'PrivateChatsSearchContext': undefined;
@@ -1357,6 +1369,7 @@ export interface LangPair {
   'GiftFilterHidden': undefined;
   'GiftSearchEmpty': undefined;
   'GiftSearchReset': undefined;
+  'SetUp2FA': undefined;
   'CheckPasswordTitle': undefined;
   'CheckPasswordPlaceholder': undefined;
   'CheckPasswordDescription': undefined;
@@ -1434,6 +1447,7 @@ export interface LangPair {
   'ActionGiftPremiumText': undefined;
   'ActionGiftStarsText': undefined;
   'ActionHistoryCleared': undefined;
+  'Refunded': undefined;
   'UniqueStatusBenefitsDescription': undefined;
   'UniqueStatusBadgeBenefitTitle': undefined;
   'UniqueStatusBadgeDescription': undefined;
@@ -1478,17 +1492,6 @@ export interface LangPair {
   'GroupMessagesChargePrice': undefined;
   'RightsChargeStarsAbout': undefined;
   'UnlockButtonTitle': undefined;
-  'PrivacySubscribeToTelegramPremium': undefined;
-  'PrivacyDisableLimitedEditionStarGifts': undefined;
-  'PrivacyEnableLimitedEditionStarGifts': undefined;
-  'PrivacyDisableUnlimitedStarGifts': undefined;
-  'PrivacyEnableUnlimitedStarGifts': undefined;
-  'PrivacyDisableUniqueStarGifts': undefined;
-  'PrivacyEnableUniqueStarGifts': undefined;
-  'PrivacyDisablePremiumGifts': undefined;
-  'PrivacyEnablePremiumGifts': undefined;
-  'DisplayGiftsButton': undefined;
-  'HideGiftsButton': undefined;
   'FrozenAccountModalTitle': undefined;
   'FrozenAccountViolationTitle': undefined;
   'FrozenAccountViolationSubtitle': undefined;
@@ -1500,6 +1503,14 @@ export interface LangPair {
   'ActionPaidMessageGroupPriceFree': undefined;
   'NotificationTitleNotSupportedInFrozenAccount': undefined;
   'NotificationMessageNotSupportedInFrozenAccount': undefined;
+  'GiftRibbonSale': undefined;
+  'StarsGiftBought': undefined;
+  'GiftSellTitle': undefined;
+  'Sell': undefined;
+  'InputPlaceholderGiftResalePrice': undefined;
+  'StarGiftSaleTransaction': undefined;
+  'StarGiftPurchaseTransaction': undefined;
+  'ContextMenuItemMention': undefined;
 }
 
 export interface LangPairWithVariables<V extends unknown = LangVariable> {
@@ -1577,10 +1588,6 @@ export interface LangPairWithVariables<V extends unknown = LangVariable> {
   };
   'SpeakingWithVolume': {
     'volume': V;
-  };
-  'PrivacyDisplayGiftIconInChats':{
-    'icon': V;
-    'gift': V;
   };
   'CallEmojiKeyTooltip': {
     'user': V;
@@ -2001,6 +2008,10 @@ export interface LangPairWithVariables<V extends unknown = LangVariable> {
     'bot': V;
     'filename': V;
   };
+  'PrivacyDisplayGiftIconInChats': {
+    'icon': V;
+    'gift': V;
+  };
   'StarsSubscribeBotButtonMonth': {
     'amount': V;
   };
@@ -2407,6 +2418,51 @@ export interface LangPairWithVariables<V extends unknown = LangVariable> {
   'ApiMessageActionPaidMessagesRefundedIncoming': {
     'user': V;
     'stars': V;
+  };
+  'NotificationGiftIsSale': {
+    'gift': V;
+  };
+  'NotificationGiftIsUnlist': {
+    'gift': V;
+  };
+  'ButtonBuyGift': {
+    'stars': V;
+  };
+  'GiftInfoBuyGift': {
+    'user': V;
+  };
+  'ButtonSellGift': {
+    'stars': V;
+  };
+  'DescriptionComposerGiftResalePrice': {
+    'stars': V;
+  };
+  'DescriptionComposerGiftMinimumPrice': {
+    'stars': V;
+  };
+  'ApiMessageMessageActionResaleStarGiftUniqueOutgoing': {
+    'stars': V;
+    'gift': V;
+  };
+  'ApiMessageMessageActionResaleStarGiftUniqueIncoming': {
+    'stars': V;
+    'gift': V;
+  };
+  'ModalStarsBalanceBarDescription': {
+    'stars': V;
+  };
+  'NotificationGiftCanResellAt': {
+    'date': V;
+  };
+  'NotificationGiftCanTransferAt': {
+    'date': V;
+  };
+  'GiftBuyConfirmDescription': {
+    'gift': V;
+    'stars': V;
+  };
+  'ComposerTitleForwardFrom': {
+    'users': V;
   };
 }
 
