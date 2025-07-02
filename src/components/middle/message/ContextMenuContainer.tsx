@@ -1,5 +1,5 @@
 import type { FC } from '../../../lib/teact/teact';
-import React, {
+import {
   memo, useEffect, useMemo, useState,
 } from '../../../lib/teact/teact';
 import { getActions, getGlobal, withGlobal } from '../../../global';
@@ -39,7 +39,6 @@ import {
   isChatGroup,
   isMessageLocal,
   isOwnMessage,
-  isUserId,
   isUserRightBanned,
 } from '../../../global/helpers';
 import {
@@ -66,6 +65,7 @@ import {
   selectPollFromMessage,
   selectRequestedChatTranslationLanguage,
   selectRequestedMessageTranslationLanguage,
+  selectSavedDialogIdFromMessage,
   selectStickerSet,
   selectThreadInfo,
   selectTopic,
@@ -74,6 +74,7 @@ import {
 } from '../../../global/selectors';
 import buildClassName from '../../../util/buildClassName';
 import { copyTextToClipboard } from '../../../util/clipboard';
+import { isUserId } from '../../../util/entities/ids';
 import { getSelectionAsFormattedText } from './helpers/getSelectionAsFormattedText';
 import { isSelectionRangeInsideMessage } from './helpers/isSelectionRangeInsideMessage';
 
@@ -156,6 +157,7 @@ type StateProps = {
   isWithPaidReaction?: boolean;
   userFullName?: string;
   canGift?: boolean;
+  savedDialogId?: string;
 };
 
 const selection = window.getSelection();
@@ -223,6 +225,7 @@ const ContextMenuContainer: FC<OwnProps & StateProps> = ({
   userFullName,
   canGift,
   className,
+  savedDialogId,
   onClose,
   onCloseAnimationEnd,
 }) => {
@@ -366,7 +369,7 @@ const ContextMenuContainer: FC<OwnProps & StateProps> = ({
 
     const selectionText = getSelectionAsFormattedText(selectionRange);
 
-    const messageText = message.content.text!.text!.replace(/\u00A0/g, ' ');
+    const messageText = message.content.text!.text.replace(/\u00A0/g, ' ');
 
     const canQuote = selectionText.text.trim().length > 0
       && messageText.includes(selectionText.text);
@@ -416,6 +419,7 @@ const ContextMenuContainer: FC<OwnProps & StateProps> = ({
         replyToMsgId: message.id,
         quoteText,
         quoteOffset: selectionQuoteOffset,
+        monoforumPeerId: savedDialogId,
         replyToPeerId: undefined,
       });
     }
@@ -807,12 +811,13 @@ export default memo(withGlobal<OwnProps>(
     const canSendText = chat && !isUserRightBanned(chat, 'sendPlain', chatFullInfo);
 
     const canReplyInChat = chat && threadId ? getCanPostInChat(chat, topic, isMessageThread, chatFullInfo)
-     && canSendText : false;
+      && canSendText : false;
 
     const isLocal = isMessageLocal(message);
     const hasTtl = hasMessageTtl(message);
     const canShowSeenBy = Boolean(!isLocal
       && chat
+      && !chat.isMonoforum
       && !isMessageUnread
       && seenByMaxChatMembers
       && seenByExpiresAt
@@ -848,6 +853,8 @@ export default memo(withGlobal<OwnProps>(
     const story = storyData ? selectPeerStory(global, storyData.peerId, storyData.id) : undefined;
 
     const canGift = selectCanGift(global, message.chatId);
+
+    const savedDialogId = selectSavedDialogIdFromMessage(global, message);
 
     return {
       threadId,
@@ -904,6 +911,7 @@ export default memo(withGlobal<OwnProps>(
       story,
       userFullName,
       canGift,
+      savedDialogId,
     };
   },
 )(ContextMenuContainer));

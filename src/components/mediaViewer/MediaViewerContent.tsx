@@ -1,4 +1,5 @@
-import React, { memo } from '../../lib/teact/teact';
+import type React from '../../lib/teact/teact';
+import { memo } from '../../lib/teact/teact';
 import { getActions, withGlobal } from '../../global';
 
 import type {
@@ -305,7 +306,6 @@ function renderVideoPreview(blobUrl?: string, imageSize?: ApiDimensions, canDrag
         <div
           style={wrapperStyle}
         >
-          {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
           <video
             style={videoStyle}
             className={buildClassName(isProtected && 'is-protected')}

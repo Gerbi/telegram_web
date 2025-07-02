@@ -1,5 +1,5 @@
 import type { FC } from '../../lib/teact/teact';
-import React, {
+import {
   beginHeavyAnimation, memo, useEffect, useMemo, useRef,
 } from '../../lib/teact/teact';
 import { addExtraClass, removeExtraClass } from '../../lib/teact/teact-dom';
@@ -28,11 +28,12 @@ import {
   isAnonymousForwardsChat,
   isChatChannel,
   isChatGroup,
+  isChatMonoforum,
   isSystemBot,
-  isUserId,
 } from '../../global/helpers';
 import {
   selectBot,
+  selectCanTranslateChat,
   selectChat,
   selectChatFullInfo,
   selectChatLastMessage,
@@ -48,15 +49,18 @@ import {
   selectIsInSelectMode,
   selectIsViewportNewest,
   selectLastScrollOffset,
+  selectMonoforumChannel,
   selectPerformanceSettingsValue,
   selectScrollOffset,
   selectTabState,
   selectThreadInfo,
   selectTopic,
+  selectTranslationLanguage,
   selectUserFullInfo,
 } from '../../global/selectors';
 import animateScroll, { isAnimatingScroll, restartCurrentScrollAnimation } from '../../util/animateScroll';
 import buildClassName from '../../util/buildClassName';
+import { isUserId } from '../../util/entities/ids';
 import { orderBy } from '../../util/iteratees';
 import { isLocalMessageId } from '../../util/keys/messageKey';
 import resetScroll from '../../util/resetScroll';
@@ -92,19 +96,20 @@ type OwnProps = {
   isComments?: boolean;
   canPost: boolean;
   isReady: boolean;
-  onScrollDownToggle: BooleanToVoidFunction;
-  onNotchToggle: BooleanToVoidFunction;
   withBottomShift?: boolean;
   withDefaultBg: boolean;
-  onIntersectPinnedMessage: OnIntersectPinnedMessage;
   isContactRequirePremium?: boolean;
   paidMessagesStars?: number;
+  onScrollDownToggle: BooleanToVoidFunction;
+  onNotchToggle: BooleanToVoidFunction;
+  onIntersectPinnedMessage: OnIntersectPinnedMessage;
 };
 
 type StateProps = {
   isChatLoaded?: boolean;
   isChannelChat?: boolean;
   isGroupChat?: boolean;
+  isChatMonoforum?: boolean;
   isChatWithSelf?: boolean;
   isSystemBotChat?: boolean;
   isAnonymousForwards?: boolean;
@@ -137,6 +142,10 @@ type StateProps = {
   isChatProtected?: boolean;
   hasCustomGreeting?: boolean;
   isAppConfigLoaded?: boolean;
+  monoforumChannelId?: string;
+  canTranslate?: boolean;
+  translationLanguage?: string;
+  shouldAutoTranslate?: boolean;
 };
 
 const MESSAGE_REACTIONS_POLLING_INTERVAL = 20 * 1000;
@@ -164,6 +173,7 @@ const MessageList: FC<OwnProps & StateProps> = ({
   isChannelWithAvatars,
   canPost,
   isSynced,
+  isChatMonoforum,
   isReady,
   isChatWithSelf,
   isSystemBotChat,
@@ -196,20 +206,23 @@ const MessageList: FC<OwnProps & StateProps> = ({
   areAdsEnabled,
   channelJoinInfo,
   isChatProtected,
+  isAccountFrozen,
+  hasCustomGreeting,
+  monoforumChannelId,
+  isAppConfigLoaded,
+  canTranslate,
+  translationLanguage,
+  shouldAutoTranslate,
   onIntersectPinnedMessage,
   onScrollDownToggle,
   onNotchToggle,
-  isAccountFrozen,
-  hasCustomGreeting,
-  isAppConfigLoaded,
 }) => {
   const {
     loadViewportMessages, setScrollOffset, loadSponsoredMessages, loadMessageReactions, copyMessagesByIds,
-    loadMessageViews, loadPeerStoriesByIds, loadFactChecks,
+    loadMessageViews, loadPeerStoriesByIds, loadFactChecks, requestChatTranslation,
   } = getActions();
 
-  // eslint-disable-next-line no-null/no-null
-  const containerRef = useRef<HTMLDivElement>(null);
+  const containerRef = useRef<HTMLDivElement>();
 
   // We update local cached `scrollOffsetRef` when opening chat.
   // Then we update global version every second on scrolling.
@@ -268,6 +281,12 @@ const MessageList: FC<OwnProps & StateProps> = ({
   useSyncEffect(() => {
     memoFocusingIdRef.current = focusingId;
   }, [focusingId]);
+
+  // Enable auto translation for the chat if it's available
+  useEffect(() => {
+    if (!shouldAutoTranslate || !canTranslate) return;
+    requestChatTranslation({ chatId, toLanguageCode: translationLanguage });
+  }, [shouldAutoTranslate, canTranslate, translationLanguage, chatId]);
 
   useNativeCopySelectedMessages(copyMessagesByIds);
 
@@ -371,7 +390,7 @@ const MessageList: FC<OwnProps & StateProps> = ({
     if (!storyDataList.length) return;
 
     const storiesByPeerIds = storyDataList.reduce((acc, storyData) => {
-      const { peerId, id } = storyData!;
+      const { peerId, id } = storyData;
       if (!acc[peerId]) {
         acc[peerId] = [];
       }
@@ -551,7 +570,7 @@ const MessageList: FC<OwnProps & StateProps> = ({
       && (messageIds && messageIds.length < MESSAGE_LIST_SLICE / 2)
       && !container.parentElement!.classList.contains('force-messages-scroll')
       && forceMeasure(() => (
-        (container.firstElementChild as HTMLDivElement)!.clientHeight <= container.offsetHeight * 2
+        (container.firstElementChild as HTMLDivElement).clientHeight <= container.offsetHeight * 2
       ))
     ) {
       addExtraClass(container.parentElement!, 'force-messages-scroll');
@@ -559,7 +578,7 @@ const MessageList: FC<OwnProps & StateProps> = ({
 
       setTimeout(() => {
         if (container.parentElement) {
-          removeExtraClass(container.parentElement!, 'force-messages-scroll');
+          removeExtraClass(container.parentElement, 'force-messages-scroll');
         }
       }, MESSAGE_ANIMATION_DURATION);
     }
@@ -586,7 +605,7 @@ const MessageList: FC<OwnProps & StateProps> = ({
           const shouldScrollToBottom = !isBackgroundModeActive() || !firstUnreadElement;
           animateScroll({
             container,
-            element: shouldScrollToBottom ? lastItemElement! : firstUnreadElement!,
+            element: shouldScrollToBottom ? lastItemElement : firstUnreadElement,
             position: shouldScrollToBottom ? 'end' : 'start',
             margin: BOTTOM_FOCUS_MARGIN,
             forceDuration: noMessageSendingAnimation ? 0 : undefined,
@@ -682,7 +701,7 @@ const MessageList: FC<OwnProps & StateProps> = ({
     isChatProtected && 'hide-on-print',
   );
 
-  const hasMessages = (messageIds && messageGroups) || lastMessage;
+  const hasMessages = Boolean((messageIds && messageGroups) || lastMessage);
 
   useEffect(() => {
     if (hasMessages) return;
@@ -703,12 +722,12 @@ const MessageList: FC<OwnProps & StateProps> = ({
             {restrictionReason ? restrictionReason.text : `This is a private ${isChannelChat ? 'channel' : 'chat'}`}
           </span>
         </div>
-      ) : paidMessagesStars && isPrivate && !hasMessages && !hasCustomGreeting ? (
-        <RequirementToContactMessage paidMessagesStars={paidMessagesStars} userId={chatId} />
+      ) : paidMessagesStars && !hasMessages && !hasCustomGreeting ? (
+        <RequirementToContactMessage paidMessagesStars={paidMessagesStars} peerId={monoforumChannelId || chatId} />
       ) : isContactRequirePremium && !hasMessages ? (
-        <RequirementToContactMessage userId={chatId} />
+        <RequirementToContactMessage peerId={chatId} />
       ) : (isBot || isNonContact) && !hasMessages ? (
-        <MessageListAccountInfo chatId={chatId} />
+        <MessageListAccountInfo chatId={chatId} hasMessages={hasMessages} />
       ) : shouldRenderGreeting ? (
         <ContactGreeting key={chatId} userId={chatId} />
       ) : messageIds && (!messageGroups || isGroupChatJustCreated || isEmptyTopic) ? (
@@ -725,6 +744,7 @@ const MessageList: FC<OwnProps & StateProps> = ({
           chatId={chatId}
           isComments={isComments}
           isChannelChat={isChannelChat}
+          isChatMonoforum={isChatMonoforum}
           isSavedDialog={isSavedDialog}
           messageIds={messageIds || [lastMessage!.id]}
           messageGroups={messageGroups || groupMessages([lastMessage!])}
@@ -807,12 +827,18 @@ export default memo(withGlobal<OwnProps>(
     const hasCustomGreeting = Boolean(userFullInfo?.businessIntro);
     const isAppConfigLoaded = global.isAppConfigLoaded;
 
+    const monoforumChannelId = selectMonoforumChannel(global, chatId)?.id;
+    const canTranslate = selectCanTranslateChat(global, chatId) && !chatFullInfo?.isTranslationDisabled;
+    const shouldAutoTranslate = chat?.hasAutoTranslation;
+    const translationLanguage = selectTranslationLanguage(global);
+
     return {
       areAdsEnabled,
       isChatLoaded: true,
       isRestricted,
       restrictionReason,
       isChannelChat: isChatChannel(chat),
+      isChatMonoforum: isChatMonoforum(chat),
       isGroupChat: isChatGroup(chat),
       isChannelWithAvatars: chat.areProfilesShown,
       isCreator: chat.isCreator,
@@ -843,6 +869,10 @@ export default memo(withGlobal<OwnProps>(
       isAccountFrozen,
       hasCustomGreeting,
       isAppConfigLoaded,
+      monoforumChannelId,
+      canTranslate,
+      translationLanguage,
+      shouldAutoTranslate,
     };
   },
 )(MessageList));

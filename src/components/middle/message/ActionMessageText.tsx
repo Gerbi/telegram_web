@@ -1,4 +1,4 @@
-import React, { memo, type TeactNode } from '../../../lib/teact/teact';
+import { memo, type TeactNode } from '../../../lib/teact/teact';
 import { getActions, getGlobal, withGlobal } from '../../../global';
 
 import type { ApiChat, ApiMessage, ApiPeer } from '../../../api/types';
@@ -9,6 +9,7 @@ import {
   TME_LINK_PREFIX,
 } from '../../../config';
 import {
+  getMainUsername,
   getMessageInvoice, getMessageText, isChatChannel,
 } from '../../../global/helpers';
 import { getPeerTitle } from '../../../global/helpers/peers';
@@ -225,7 +226,7 @@ const ActionMessageText = ({
         const topicLink = (
           <Link
             className={styles.topicLink}
-            // eslint-disable-next-line react/jsx-no-bind
+
             onClick={() => openThread({ chatId, threadId: topicId })}
           >
             {iconEmojiId ? <CustomEmoji documentId={iconEmojiId} isSelectable />
@@ -247,7 +248,7 @@ const ActionMessageText = ({
         const topicLink = (
           <Link
             className={styles.topicLink}
-            // eslint-disable-next-line react/jsx-no-bind
+
             onClick={() => openThread({ chatId, threadId: topicId })}
           >
             {iconEmojiId && iconEmojiId !== DEFAULT_TOPIC_ICON_ID
@@ -267,7 +268,7 @@ const ActionMessageText = ({
         const topicPlaceholderLink = (
           <Link
             className={styles.topicLink}
-            // eslint-disable-next-line react/jsx-no-bind
+
             onClick={() => openThread({ chatId, threadId: topicId })}
           >
             {lang('ActionTopicPlaceholder')}
@@ -386,10 +387,9 @@ const ActionMessageText = ({
         if (isAttachMenu) return lang('ActionAttachMenuBotAllowed');
         if (isFromRequest) return lang('ActionWebappBotAllowed');
         if (app) {
-          const link = sender?.usernames?.length
-            && `${TME_LINK_PREFIX + sender.usernames[0].username}/${app.shortName}`;
+          const senderUsername = sender && getMainUsername(sender);
+          const link = senderUsername && `${TME_LINK_PREFIX + senderUsername}/${app.shortName}`;
           const appLink = link
-            // eslint-disable-next-line react/jsx-no-bind
             ? <Link onClick={() => openTelegramLink({ url: link })}>{app.title}</Link>
             : lang('ActionBotAppPlaceholder');
           return lang('ActionBotAllowedFromApp', { app: appLink }, { withNodes: true });
@@ -397,8 +397,8 @@ const ActionMessageText = ({
 
         if (!domain) return lang(UNSUPPORTED_LANG_KEY);
 
-        const url = ensureProtocol(domain)!;
-        // eslint-disable-next-line react/jsx-no-bind
+        const url = ensureProtocol(domain);
+
         const link = <Link onClick={() => openUrl({ url })}>{domain}</Link>;
         return lang('ActionBotAllowedFromDomain', { domain: link }, { withNodes: true });
       }
@@ -456,7 +456,7 @@ const ActionMessageText = ({
 
       case 'prizeStars':
       case 'giftCode': {
-        return lang('ActionGiftTextUnknown');
+        return translateWithYou(lang, 'ActionGiftTextUnknown', isOutgoing, undefined);
       }
 
       case 'groupCall': {
@@ -717,13 +717,21 @@ const ActionMessageText = ({
         return action.message;
 
       case 'paidMessagesPrice': {
-        const { stars } = action;
+        const { stars, isAllowedInChannel } = action;
         if (stars === 0) {
-          return lang('ActionPaidMessageGroupPriceFree');
+          if (isChannel) {
+            return lang(
+              isAllowedInChannel ? 'ActionMessageChannelFree' : 'ActionMessageChannelDisabled',
+              { peer: chatLink },
+              { withNodes: true },
+            );
+          }
+          return translateWithYou(lang, 'ActionPaidMessagePriceFree', isOutgoing, { peer: senderLink });
         }
-        return lang('ActionPaidMessageGroupPrice', {
-          stars: formatStarsAsText(lang, stars),
-        }, { withNodes: true, withMarkdown: true });
+        return translateWithYou(lang, 'ActionPaidMessagePrice', isOutgoing, {
+          peer: senderLink,
+          amount: formatStarsAsText(lang, stars),
+        }, { withMarkdown: true });
       }
 
       case 'paidMessagesRefunded': {

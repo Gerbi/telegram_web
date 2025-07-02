@@ -1,5 +1,4 @@
 import type { FC } from '../../../../lib/teact/teact';
-import React from '../../../../lib/teact/teact';
 
 import type { OwnProps } from './GiftResalePriceComposerModal';
 
@@ -11,7 +10,6 @@ const GiftResalePriceComposerModalAsync: FC<OwnProps> = (props) => {
   const { modal } = props;
   const GiftResalePriceComposerModal = useModuleLoader(Bundles.Stars, 'GiftResalePriceComposerModal', !modal);
 
-  // eslint-disable-next-line react/jsx-props-no-spreading
   return GiftResalePriceComposerModal ? <GiftResalePriceComposerModal {...props} /> : undefined;
 };
 

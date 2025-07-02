@@ -1,4 +1,5 @@
-import React, { memo } from '../../lib/teact/teact';
+import type React from '../../lib/teact/teact';
+import { memo } from '../../lib/teact/teact';
 import { withGlobal } from '../../global';
 
 import type { TabState } from '../../global/types';
@@ -14,6 +15,7 @@ import BoostModal from './boost/BoostModal.async';
 import ChatInviteModal from './chatInvite/ChatInviteModal.async';
 import ChatlistModal from './chatlist/ChatlistModal.async';
 import CollectibleInfoModal from './collectible/CollectibleInfoModal.async';
+import DeleteAccountModal from './deleteAccount/DeleteAccountModal.async';
 import EmojiStatusAccessModal from './emojiStatusAccess/EmojiStatusAccessModal.async';
 import FrozenAccountModal from './frozenAccount/FrozenAccountModal.async';
 import PremiumGiftModal from './gift/GiftModal.async';
@@ -46,44 +48,44 @@ import WebAppModal from './webApp/WebAppModal.async';
 
 // `Pick` used only to provide tab completion
 type ModalKey = keyof Pick<TabState,
-'giftCodeModal' |
-'boostModal' |
-'chatlistModal' |
-'urlAuth' |
-'mapModal' |
-'oneTimeMediaModal' |
-'inviteViaLinkModal' |
-'requestedAttachBotInstall' |
-'collectibleInfoModal' |
-'reportAdModal' |
-'reportModal' |
-'starsBalanceModal' |
-'starsPayment' |
-'starsTransactionModal' |
-'paidReactionModal' |
-'webApps' |
-'starsTransactionModal' |
-'chatInviteModal' |
-'starsSubscriptionModal' |
-'starsGiftModal' |
-'giftModal' |
-'isGiftRecipientPickerOpen' |
-'isWebAppsCloseConfirmationModalOpen' |
-'giftInfoModal' |
-'giftResalePriceComposerModal' |
-'suggestedStatusModal' |
-'emojiStatusAccessModal' |
-'locationAccessModal' |
-'aboutAdsModal' |
-'giftUpgradeModal' |
-'monetizationVerificationModal' |
-'giftWithdrawModal' |
-'preparedMessageModal' |
-'sharePreparedMessageModal' |
-'giftStatusInfoModal' |
-'giftTransferModal' |
-'chatRefundModal' |
-'isFrozenAccountModalOpen'
+  'giftCodeModal' |
+  'boostModal' |
+  'chatlistModal' |
+  'urlAuth' |
+  'mapModal' |
+  'oneTimeMediaModal' |
+  'inviteViaLinkModal' |
+  'requestedAttachBotInstall' |
+  'collectibleInfoModal' |
+  'reportAdModal' |
+  'reportModal' |
+  'starsBalanceModal' |
+  'starsPayment' |
+  'starsTransactionModal' |
+  'paidReactionModal' |
+  'webApps' |
+  'chatInviteModal' |
+  'starsSubscriptionModal' |
+  'starsGiftModal' |
+  'giftModal' |
+  'isGiftRecipientPickerOpen' |
+  'isWebAppsCloseConfirmationModalOpen' |
+  'giftInfoModal' |
+  'giftResalePriceComposerModal' |
+  'suggestedStatusModal' |
+  'emojiStatusAccessModal' |
+  'locationAccessModal' |
+  'aboutAdsModal' |
+  'giftUpgradeModal' |
+  'monetizationVerificationModal' |
+  'giftWithdrawModal' |
+  'preparedMessageModal' |
+  'sharePreparedMessageModal' |
+  'giftStatusInfoModal' |
+  'giftTransferModal' |
+  'chatRefundModal' |
+  'isFrozenAccountModalOpen' |
+  'deleteAccountModal'
 >;
 
 type StateProps = {
@@ -136,6 +138,7 @@ const MODALS: ModalRegistry = {
   giftTransferModal: GiftTransferModal,
   chatRefundModal: ChatRefundModal,
   isFrozenAccountModalOpen: FrozenAccountModal,
+  deleteAccountModal: DeleteAccountModal,
 };
 const MODAL_KEYS = Object.keys(MODALS) as ModalKey[];
 const MODAL_ENTRIES = Object.entries(MODALS) as Entries<ModalRegistry>;

@@ -1,5 +1,5 @@
 import type { FC } from '../../../lib/teact/teact';
-import React, { useEffect, useMemo } from '../../../lib/teact/teact';
+import { useEffect, useMemo } from '../../../lib/teact/teact';
 import { getActions, withGlobal } from '../../../global';
 
 import type {
@@ -398,12 +398,13 @@ function renderPlaybackRateMenuItem(
   return (
     <MenuItem
       key={rate}
-      // eslint-disable-next-line react/jsx-no-bind
+
       onClick={() => onClick(rate)}
       icon={isSelected ? 'check' : undefined}
       customIcon={!isSelected ? <Icon name="placeholder" /> : undefined}
     >
-      {rate}X
+      {rate}
+      X
     </MenuItem>
   );
 }

@@ -1,5 +1,6 @@
 import type { FC } from '../../../lib/teact/teact';
-import React, {
+import type React from '../../../lib/teact/teact';
+import {
   memo,
   useCallback,
   useEffect,
@@ -47,6 +48,7 @@ import { EMOJI_STATUS_LOOP_LIMIT, MESSAGE_APPEARANCE_DELAY } from '../../../conf
 import {
   areReactionsEmpty,
   getIsDownloading,
+  getMainUsername,
   getMessageContent,
   getMessageCustomShape,
   getMessageDownloadableMedia,
@@ -66,7 +68,6 @@ import {
   isOwnMessage,
   isReplyToMessage,
   isSystemBot,
-  isUserId,
 } from '../../../global/helpers';
 import { getPeerFullTitle } from '../../../global/helpers/peers';
 import { getMessageReplyInfo, getStoryReplyInfo } from '../../../global/helpers/replies';
@@ -117,6 +118,7 @@ import {
 import { selectSharedSettings } from '../../../global/selectors/sharedState';
 import { IS_ANDROID, IS_ELECTRON, IS_TRANSLATION_SUPPORTED } from '../../../util/browser/windowEnvironment';
 import buildClassName from '../../../util/buildClassName';
+import { isUserId } from '../../../util/entities/ids';
 import { getMessageKey } from '../../../util/keys/messageKey';
 import stopEvent from '../../../util/stopEvent';
 import { isElementInViewport } from '../../../util/visibility/isElementInViewport';
@@ -441,12 +443,9 @@ const Message: FC<OwnProps & StateProps> = ({
     markMentionsRead,
   } = getActions();
 
-  // eslint-disable-next-line no-null/no-null
-  const ref = useRef<HTMLDivElement>(null);
-  // eslint-disable-next-line no-null/no-null
-  const bottomMarkerRef = useRef<HTMLDivElement>(null);
-  // eslint-disable-next-line no-null/no-null
-  const quickReactionRef = useRef<HTMLDivElement>(null);
+  const ref = useRef<HTMLDivElement>();
+  const bottomMarkerRef = useRef<HTMLDivElement>();
+  const quickReactionRef = useRef<HTMLDivElement>();
 
   const lang = useOldLang();
 
@@ -560,7 +559,7 @@ const Message: FC<OwnProps & StateProps> = ({
     && !((sticker || hasAnimatedEmoji) && asForwarded)
   );
   const canForward = isChannel && !isScheduled && message.isForwardingAllowed
-  && !isChatProtected;
+    && !isChatProtected;
   const canFocus = Boolean(isPinnedList
     || (forwardInfo
       && (forwardInfo.isChannelPost || isChatWithSelf || isRepliesChat || isAnonymousForwards)
@@ -578,7 +577,7 @@ const Message: FC<OwnProps & StateProps> = ({
       messageId,
       groupedId,
       ...(e?.shiftKey && { withShift: true }),
-      ...(isAlbum && { childMessageIds: album!.messages.map(({ id }) => id) }),
+      ...(isAlbum && { childMessageIds: album.messages.map(({ id }) => id) }),
     });
   });
 
@@ -748,7 +747,7 @@ const Message: FC<OwnProps & StateProps> = ({
 
   const detectedLanguage = useTextLanguage(
     text?.text,
-    !(areTranslationsEnabled || shouldDetectChatLanguage),
+    !(areTranslationsEnabled && shouldDetectChatLanguage),
     getIsMessageListReady,
   );
   useDetectChatLanguage(message, detectedLanguage, !shouldDetectChatLanguage, getIsMessageListReady);
@@ -890,7 +889,7 @@ const Message: FC<OwnProps & StateProps> = ({
 
   const albumLayout = useMemo(() => {
     return isAlbum
-      ? calculateAlbumLayout(isOwn, Boolean(noAvatars), album!, isMobile)
+      ? calculateAlbumLayout(isOwn, Boolean(noAvatars), album, isMobile)
       : undefined;
   }, [isAlbum, isOwn, noAvatars, album, isMobile]);
 
@@ -1403,7 +1402,7 @@ const Message: FC<OwnProps & StateProps> = ({
       <>
         {isAlbum && observeIntersectionForLoading && (
           <Album
-            album={album!}
+            album={album}
             albumLayout={albumLayout!}
             observeIntersection={observeIntersectionForLoading}
             isOwn={isOwn}
@@ -1486,7 +1485,9 @@ const Message: FC<OwnProps & StateProps> = ({
     );
   }
 
-  function renderSenderName(shouldSkipRenderForwardTitle:boolean = false, shouldSkipRenderAdminTitle: boolean = false) {
+  function renderSenderName(
+    shouldSkipRenderForwardTitle: boolean = false, shouldSkipRenderAdminTitle: boolean = false,
+  ) {
     let senderTitle;
     let senderColor;
     if (senderPeer && !(isCustomShape && viaBotId)) {
@@ -1494,13 +1495,13 @@ const Message: FC<OwnProps & StateProps> = ({
     } else if (forwardInfo?.hiddenUserName) {
       senderTitle = forwardInfo.hiddenUserName;
     } else if (storyData && originSender) {
-      senderTitle = getPeerFullTitle(lang, originSender!);
+      senderTitle = getPeerFullTitle(lang, originSender);
     }
     const senderEmojiStatus = senderPeer && 'emojiStatus' in senderPeer && senderPeer.emojiStatus;
     const senderIsPremium = senderPeer && 'isPremium' in senderPeer && senderPeer.isPremium;
 
     const shouldRenderForwardAvatar = asForwarded && senderPeer;
-    const hasBotSenderUsername = botSender?.usernames?.length;
+    const hasBotSenderUsername = botSender?.hasUsername;
     return (
       <div className="message-title" dir="ltr">
         {(senderTitle || asForwarded) ? (
@@ -1544,14 +1545,14 @@ const Message: FC<OwnProps & StateProps> = ({
         ) : !botSender ? (
           NBSP
         ) : undefined}
-        {botSender?.usernames?.length && (
+        {botSender?.hasUsername && (
           <span className="interactive">
             <span className="via">{lang('ViaBot')}</span>
             <span
               className="sender-title"
               onClick={handleViaBotClick}
             >
-              {renderText(`@${botSender.usernames[0].username}`)}
+              {renderText(`@${getMainUsername(botSender)}`)}
             </span>
           </span>
         )}

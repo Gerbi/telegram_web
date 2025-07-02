@@ -30,6 +30,8 @@ import {
   selectChatMessage,
   selectCurrentChat,
   selectCurrentMessageList,
+  selectIsChatWithBot,
+  selectIsChatWithSelf,
   selectIsCurrentUserPremium,
   selectIsTrustedBot,
   selectPeerPaidMessagesStars,
@@ -344,11 +346,13 @@ addActionHandler('showAllowedMessageTypesNotification', (global, actions, payloa
   const chat = selectChat(global, chatId);
   if (!chat) return;
   const chatFullInfo = selectChatFullInfo(global, chatId);
+  const isSavedMessages = chatId ? selectIsChatWithSelf(global, chatId) : undefined;
+  const isChatWithBot = chatId ? selectIsChatWithBot(global, chat) : undefined;
 
   const {
     canSendPlainText, canSendPhotos, canSendVideos, canSendDocuments, canSendAudios,
     canSendStickers, canSendRoundVideos, canSendVoices,
-  } = getAllowedAttachmentOptions(chat, chatFullInfo);
+  } = getAllowedAttachmentOptions(chat, chatFullInfo, isChatWithBot, isSavedMessages);
   const allowedContent = compact([
     canSendPlainText ? 'Chat.SendAllowedContentTypeText' : undefined,
     canSendPhotos ? 'Chat.SendAllowedContentTypePhoto' : undefined,
@@ -388,7 +392,7 @@ addActionHandler('dismissNotification', (global, actions, payload): ActionReturn
 });
 
 addActionHandler('showDialog', (global, actions, payload): ActionReturnType => {
-  const { data, tabId = getCurrentTabId() } = payload!;
+  const { data, tabId = getCurrentTabId() } = payload;
 
   // Filter out errors that we don't want to show to the user
   if ('message' in data && data.hasErrorKey && !getReadableErrorText(data)) {
@@ -525,17 +529,11 @@ addActionHandler('requestWave', (global, actions, payload): ActionReturnType => 
 });
 
 addActionHandler('updateAttachmentSettings', (global, actions, payload): ActionReturnType => {
-  const {
-    shouldCompress, shouldSendGrouped, isInvertedMedia, webPageMediaSize,
-  } = payload;
-
   return {
     ...global,
     attachmentSettings: {
-      shouldCompress: shouldCompress ?? global.attachmentSettings.shouldCompress,
-      shouldSendGrouped: shouldSendGrouped ?? global.attachmentSettings.shouldSendGrouped,
-      isInvertedMedia,
-      webPageMediaSize,
+      ...global.attachmentSettings,
+      ...payload,
     },
   };
 });
@@ -756,7 +754,7 @@ addActionHandler('setIsElectronUpdateAvailable', (global, action, payload): Acti
   global = getGlobal();
   global = {
     ...global,
-    isElectronUpdateAvailable: Boolean(payload),
+    isElectronUpdateAvailable: Boolean(payload.isAvailable),
   };
   setGlobal(global);
 });
@@ -911,7 +909,6 @@ let prevBlurredTabsCount: number = 0;
 let onlineTimeout: number | undefined;
 const ONLINE_TIMEOUT = 100;
 addCallback((global: GlobalState) => {
-  // eslint-disable-next-line eslint-multitab-tt/no-getactions-in-actions
   const { updatePageTitle, updateIsOnline } = getActions();
 
   const isLockedUpdated = global.passcode.isScreenLocked !== prevIsScreenLocked;
@@ -928,7 +925,7 @@ addCallback((global: GlobalState) => {
     onlineTimeout = window.setTimeout(() => {
       global = getGlobal();
       const newBlurredTabsCount = Object.values(global.byTabId).filter((l) => l.isBlurred).length;
-      updateIsOnline(newBlurredTabsCount !== getAllMultitabTokens().length);
+      updateIsOnline({ isOnline: newBlurredTabsCount !== getAllMultitabTokens().length });
     }, ONLINE_TIMEOUT);
   }
 

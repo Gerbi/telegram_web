@@ -1,5 +1,6 @@
 import type { FC } from '../../lib/teact/teact';
-import React, {
+import type React from '../../lib/teact/teact';
+import {
   memo, useEffect, useMemo, useRef,
   useState,
 } from '../../lib/teact/teact';
@@ -154,7 +155,7 @@ const ReactorListModal: FC<OwnProps & StateProps> = ({
             className={buildClassName(!chosenTab && 'chosen')}
             size="tiny"
             ripple
-            // eslint-disable-next-line react/jsx-no-bind
+
             onClick={() => setChosenTab(undefined)}
           >
             <Icon name="heart" />
@@ -169,7 +170,7 @@ const ReactorListModal: FC<OwnProps & StateProps> = ({
                 className={buildClassName(isSameReaction(chosenTab, reaction) && 'chosen')}
                 size="tiny"
                 ripple
-                // eslint-disable-next-line react/jsx-no-bind
+
                 onClick={() => setChosenTab(reaction)}
               >
                 <ReactionStaticEmoji
@@ -206,7 +207,7 @@ const ReactorListModal: FC<OwnProps & StateProps> = ({
                     <ListItem
                       key={`${peerId}-${getReactionKey(r.reaction)}`}
                       className="chat-item-clickable reactors-list-item"
-                      // eslint-disable-next-line react/jsx-no-bind
+
                       onClick={() => handleClick(peerId)}
                     >
                       <Avatar peer={peer} size="medium" />
@@ -233,7 +234,7 @@ const ReactorListModal: FC<OwnProps & StateProps> = ({
                     <ListItem
                       key={`${peerId}-seen-by`}
                       className="chat-item-clickable scroll-item small-icon"
-                      // eslint-disable-next-line react/jsx-no-bind
+
                       onClick={() => handleClick(peerId)}
                     >
                       <PrivateChatInfo

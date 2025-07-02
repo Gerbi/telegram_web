@@ -1,5 +1,6 @@
 import type { FC } from '../../../lib/teact/teact';
-import React, { memo, useMemo, useRef } from '../../../lib/teact/teact';
+import type React from '../../../lib/teact/teact';
+import { memo, useMemo, useRef } from '../../../lib/teact/teact';
 import { getActions, withGlobal } from '../../../global';
 
 import type { ApiMessage, ApiTypeStory } from '../../../api/types';
@@ -99,8 +100,7 @@ const WebPage: FC<OwnProps & StateProps> = ({
   const { openUrl, openTelegramLink } = getActions();
   const webPage = getMessageWebPage(message);
   const { isMobile } = useAppLayout();
-  // eslint-disable-next-line no-null/no-null
-  const stickersRef = useRef<HTMLDivElement>(null);
+  const stickersRef = useRef<HTMLDivElement>();
 
   const oldLang = useOldLang();
   const lang = useLang();
@@ -270,7 +270,7 @@ const WebPage: FC<OwnProps & StateProps> = ({
             video={video}
             isOwn={message.isOutgoing}
             isInWebPage
-            observeIntersectionForLoading={observeIntersectionForLoading!}
+            observeIntersectionForLoading={observeIntersectionForLoading}
             noAvatars={noAvatars}
             canAutoLoad={canAutoLoad}
             canAutoPlay={canAutoPlay}

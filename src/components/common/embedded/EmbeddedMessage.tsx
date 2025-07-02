@@ -1,5 +1,6 @@
 import type { FC } from '../../../lib/teact/teact';
-import React, { useMemo, useRef } from '../../../lib/teact/teact';
+import type React from '../../../lib/teact/teact';
+import { useMemo, useRef } from '../../../lib/teact/teact';
 
 import type {
   ApiChat,
@@ -17,11 +18,11 @@ import {
   isChatChannel,
   isChatGroup,
   isMessageTranslatable,
-  isUserId,
 } from '../../../global/helpers';
 import { getMediaContentTypeDescription } from '../../../global/helpers/messageSummary';
 import { getPeerTitle } from '../../../global/helpers/peers';
 import buildClassName from '../../../util/buildClassName';
+import { isUserId } from '../../../util/entities/ids';
 import freezeWhenClosed from '../../../util/hoc/freezeWhenClosed';
 import { getPictogramDimensions } from '../helpers/mediaDimensions';
 import renderText from '../helpers/renderText';
@@ -86,8 +87,7 @@ const EmbeddedMessage: FC<OwnProps> = ({
   observeIntersectionForPlaying,
   onClick,
 }) => {
-  // eslint-disable-next-line no-null/no-null
-  const ref = useRef<HTMLDivElement>(null);
+  const ref = useRef<HTMLDivElement>();
   const isIntersecting = useIsIntersecting(ref, observeIntersectionForLoading);
 
   const containedMedia: MediaContainer | undefined = useMemo(() => {
@@ -208,7 +208,7 @@ const EmbeddedMessage: FC<OwnProps> = ({
         {checkShouldRenderSenderTitle() && (
           <span className="embedded-sender">
             {!composerForwardSenders && senderTitle
-            && renderText(isReplyToQuote ? oldLang('ReplyToQuote', senderTitle) : senderTitle)}
+              && renderText(isReplyToQuote ? oldLang('ReplyToQuote', senderTitle) : senderTitle)}
             {forwardSendersTitle && renderText(lang('ComposerTitleForwardFrom', {
               users: forwardSendersTitle,
             }, {

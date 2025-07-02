@@ -1,5 +1,6 @@
 import type { FC } from '../../../lib/teact/teact';
-import React, {
+import type React from '../../../lib/teact/teact';
+import {
   memo,
   useEffect,
   useRef,
@@ -75,8 +76,7 @@ const SenderGroupContainer: FC<OwnProps & StateProps> = ({
   canPost,
 }) => {
   const { openChat, updateInsertingPeerIdMention } = getActions();
-  // eslint-disable-next-line no-null/no-null
-  const ref = useRef<HTMLDivElement>(null);
+  const ref = useRef<HTMLDivElement>();
 
   const { forwardInfo } = message;
 
@@ -94,7 +94,7 @@ const SenderGroupContainer: FC<OwnProps & StateProps> = ({
   }, [appearanceOrder, markShown, noAppearanceAnimation]);
 
   const shouldPreferOriginSender = forwardInfo
-  && (isChatWithSelf || isRepliesChat || isAnonymousForwards || !messageSender);
+    && (isChatWithSelf || isRepliesChat || isAnonymousForwards || !messageSender);
   const avatarPeer = shouldPreferOriginSender ? originSender : messageSender;
   const isAvatarPeerUser = avatarPeer && isApiPeerUser(avatarPeer);
 

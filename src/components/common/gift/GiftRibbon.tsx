@@ -1,4 +1,4 @@
-import React, { memo } from '../../../lib/teact/teact';
+import { memo } from '../../../lib/teact/teact';
 import { withGlobal } from '../../../global';
 
 import type { ThemeKey } from '../../../types';
@@ -19,9 +19,10 @@ const COLORS = {
 type ColorKey = keyof typeof COLORS;
 
 const COLOR_KEYS = new Set(Object.keys(COLORS) as ColorKey[]);
+type GradientColor = readonly [string, string];
 
 type OwnProps = {
-  color: ColorKey | string;
+  color: ColorKey | GradientColor | (string & {});
   text: string;
   className?: string;
 };
@@ -40,7 +41,13 @@ const GiftRibbon = ({
 
   const isDarkTheme = theme === 'dark';
 
-  const gradientColor = colorKey ? COLORS[colorKey][isDarkTheme ? 1 : 0] : undefined;
+  const gradientColor: GradientColor | undefined
+  = Array.isArray(color)
+    ? color as GradientColor
+    : colorKey
+      ? COLORS[colorKey][isDarkTheme ? 1 : 0]
+      : undefined;
+
   const startColor = gradientColor ? gradientColor[0] : color;
   const endColor = gradientColor ? gradientColor[1] : color;
 

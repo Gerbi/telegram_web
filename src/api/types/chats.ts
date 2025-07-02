@@ -29,12 +29,14 @@ export interface ApiChat {
   isVerified?: true;
   areSignaturesShown?: boolean;
   areProfilesShown?: boolean;
-  hasPrivateLink?: boolean;
+  isLinkedInDiscussion?: boolean;
+  hasGeo?: boolean;
   accessHash?: string;
   isMin?: boolean;
   hasVideoAvatar?: boolean;
   avatarPhotoId?: string;
   usernames?: ApiUsername[];
+  hasUsername?: boolean;
   membersCount?: number;
   creationDate?: number;
   isSupport?: true;
@@ -45,8 +47,13 @@ export interface ApiChat {
   emojiStatus?: ApiEmojiStatusType;
   isForum?: boolean;
   isForumAsMessages?: true;
+  isMonoforum?: boolean;
+  linkedMonoforumId?: string;
+  areChannelMessagesAllowed?: boolean;
   boostLevel?: number;
   botVerificationIconId?: string;
+  hasAutoTranslation?: true;
+  level?: number;
 
   // Calls
   isCallActive?: boolean;
@@ -253,7 +260,7 @@ export interface ApiTopic {
   isPinned?: boolean;
   isHidden?: boolean;
   isOwner?: boolean;
-  // eslint-disable-next-line max-len
+
   // TODO[forums] https://github.com/telegramdesktop/tdesktop/blob/1aece79a471d99a8b63d826b1bce1f36a04d7293/Telegram/SourceFiles/data/data_forum_topic.cpp#L318
   isMin?: boolean;
   date: number;

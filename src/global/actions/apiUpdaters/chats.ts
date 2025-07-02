@@ -1,4 +1,4 @@
-import type { ApiMessage, ApiUpdateChat } from '../../../api/types';
+import type { ApiChat, ApiMessage, ApiUpdateChat } from '../../../api/types';
 import type { ActionReturnType } from '../../types';
 import { MAIN_THREAD_ID } from '../../../api/types';
 
@@ -43,6 +43,10 @@ import {
 } from '../../selectors';
 
 const TYPING_STATUS_CLEAR_DELAY = 6000; // 6 seconds
+const INVALIDATE_FULL_CHAT_FIELDS = new Set<keyof ApiChat>([
+  'boostLevel', 'isForum', 'isLinkedInDiscussion', 'fakeType', 'restrictionReason', 'isJoinToSend', 'isJoinRequest',
+  'type',
+]);
 
 addActionHandler('apiUpdate', (global, actions, update): ActionReturnType => {
   switch (update['@type']) {
@@ -68,7 +72,7 @@ addActionHandler('apiUpdate', (global, actions, update): ActionReturnType => {
 
       const updatedChat = selectChat(global, update.id);
       if (!update.noTopChatsRequest && !selectIsChatListed(global, update.id)
-          && !updatedChat?.isNotJoined) {
+        && !updatedChat?.isNotJoined) {
         // Reload top chats to update chat listing
         actions.loadTopChats();
       }
@@ -92,6 +96,15 @@ addActionHandler('apiUpdate', (global, actions, update): ActionReturnType => {
           actions.openChat({ id: currentChatId, tabId });
         }
       });
+
+      if (localChat) {
+        const chatUpdate = update.chat;
+        const changedFields = (Object.keys(chatUpdate) as (keyof ApiChat)[])
+          .filter((key) => localChat[key] !== chatUpdate[key]);
+        if (changedFields.some((key) => INVALIDATE_FULL_CHAT_FIELDS.has(key))) {
+          actions.invalidateFullInfo({ peerId: update.id });
+        }
+      }
 
       return undefined;
     }
@@ -207,7 +220,7 @@ addActionHandler('apiUpdate', (global, actions, update): ActionReturnType => {
         const chat = selectChat(global, chatId);
 
         if (messageUpdate.reactions && chat?.unreadReactionsCount
-            && !checkIfHasUnreadReactions(global, messageUpdate.reactions)) {
+          && !checkIfHasUnreadReactions(global, messageUpdate.reactions)) {
           global = updateUnreadReactions(global, chatId, {
             unreadReactionsCount: Math.max(chat.unreadReactionsCount - 1, 0) || undefined,
             unreadReactions: chat.unreadReactions?.filter((i) => i !== id),
@@ -229,6 +242,10 @@ addActionHandler('apiUpdate', (global, actions, update): ActionReturnType => {
     case 'updatePinnedChatIds': {
       const { ids, folderId } = update;
       const listType = folderId === ARCHIVED_FOLDER_ID ? 'archived' : 'active';
+      if (!ids) {
+        actions.loadPinnedDialogs({ listType });
+        return global;
+      }
 
       return {
         ...global,

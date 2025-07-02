@@ -1,4 +1,5 @@
-import React, { useEffect, useRef, useState } from '../../../lib/teact/teact';
+import type React from '../../../lib/teact/teact';
+import { useEffect, useRef, useState } from '../../../lib/teact/teact';
 
 import type { ApiMediaExtendedPreview, ApiPhoto } from '../../../api/types';
 import type { ObserveFn } from '../../../hooks/useIntersectionObserver';
@@ -56,7 +57,6 @@ export type OwnProps<T> = {
   onCancelUpload?: (arg: T) => void;
 };
 
-// eslint-disable-next-line @typescript-eslint/comma-dangle
 const Photo = <T,>({
   id,
   photo,
@@ -83,8 +83,7 @@ const Photo = <T,>({
   onClick,
   onCancelUpload,
 }: OwnProps<T>) => {
-  // eslint-disable-next-line no-null/no-null
-  const ref = useRef<HTMLDivElement>(null);
+  const ref = useRef<HTMLDivElement>();
   const isPaidPreview = photo.mediaType === 'extendedMediaPreview';
 
   const localBlobUrl = !isPaidPreview ? photo.blobUrl : undefined;
@@ -253,7 +252,10 @@ const Photo = <T,>({
         className="media-spoiler"
       />
       {isTransferring && (
-        <span className="message-transfer-progress">{Math.round(transferProgress * 100)}%</span>
+        <span className="message-transfer-progress">
+          {Math.round(transferProgress * 100)}
+          %
+        </span>
       )}
     </div>
   );

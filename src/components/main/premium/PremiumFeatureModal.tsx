@@ -1,5 +1,6 @@
 import type { FC } from '../../../lib/teact/teact';
-import React, {
+import type React from '../../../lib/teact/teact';
+import {
   memo, useEffect, useMemo, useRef, useState,
 } from '../../../lib/teact/teact';
 import { toggleExtraClass } from '../../../lib/teact/teact-dom';
@@ -130,8 +131,7 @@ const PremiumFeatureModal: FC<OwnProps> = ({
 }) => {
   const oldLang = useOldLang();
   const lang = useLang();
-  // eslint-disable-next-line no-null/no-null
-  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const scrollContainerRef = useRef<HTMLDivElement>();
   const [currentSlideIndex, setCurrentSlideIndex] = useState(PREMIUM_FEATURE_SECTIONS.indexOf(initialSection));
   const [reverseAnimationSlideIndex, setReverseAnimationSlideIndex] = useState(0);
   const [isScrolling, startScrolling, stopScrolling] = useFlag();
@@ -303,10 +303,10 @@ const PremiumFeatureModal: FC<OwnProps> = ({
                 />
               </div>
               <h1 className={styles.title}>
-                {oldLang(PREMIUM_FEATURE_TITLES[promo.videoSections[i]!])}
+                {oldLang(PREMIUM_FEATURE_TITLES[promo.videoSections[i]])}
               </h1>
               <div className={styles.description}>
-                {renderText(oldLang(PREMIUM_FEATURE_DESCRIPTIONS[promo.videoSections[i]!]), ['br'])}
+                {renderText(oldLang(PREMIUM_FEATURE_DESCRIPTIONS[promo.videoSections[i]]), ['br'])}
               </div>
             </div>
           );
@@ -325,7 +325,7 @@ const PremiumFeatureModal: FC<OwnProps> = ({
           active={currentSlideIndex}
           onSelectSlide={handleSelectSlide}
         />
-        {subscriptionButtonText && (
+        {Boolean(subscriptionButtonText) && (
           <Button
             className={buildClassName(styles.button)}
             isShiny={!isPremium}

@@ -80,6 +80,7 @@ import type {
   PerformanceType,
   Point,
   ProfileTabType,
+  ResaleGiftsFilterOptions,
   ScrollTargetPosition,
   SendMessageParams,
   SettingsScreens,
@@ -122,7 +123,7 @@ export interface ActionPayloads {
     lastName: string;
   };
   returnToAuthPhoneNumber: undefined;
-  setAuthRememberMe: boolean;
+  setAuthRememberMe: { value: boolean };
   clearAuthErrorKey: undefined;
   uploadProfilePhoto: {
     file: File;
@@ -252,10 +253,10 @@ export interface ActionPayloads {
   };
   loadNotificationExceptions: undefined;
   setThemeSettings: { theme: ThemeKey } & Partial<IThemeSettings>;
-  updateIsOnline: boolean;
+  updateIsOnline: { isOnline: boolean };
 
   loadContentSettings: undefined;
-  updateContentSettings: boolean;
+  updateContentSettings: { isSensitiveEnabled: boolean };
 
   loadCountryList: {
     langCode?: string;
@@ -269,7 +270,7 @@ export interface ActionPayloads {
   clearWebPagePreview: WithTabId | undefined;
   loadWallpapers: undefined;
   uploadWallpaper: File;
-  setDeviceToken: string;
+  setDeviceToken: { token: string };
   deleteDeviceToken: undefined;
   checkVersionNotification: undefined;
   createServiceNotification: {
@@ -308,7 +309,7 @@ export interface ActionPayloads {
     currentMediaMessageId: number;
     direction?: LoadMoreDirection;
     chatId?: string;
-    threadId? : ThreadId;
+    threadId?: ThreadId;
     limit?: number;
   } & WithTabId;
   searchMessagesByDate: {
@@ -344,13 +345,18 @@ export interface ActionPayloads {
     listType: ChatListType;
     whenFirstBatchDone?: () => Promise<void>;
   };
+  loadPinnedDialogs: {
+    listType: ChatListType;
+  };
   openChatWithInfo: ActionPayloads['openChat'] & {
     profileTab?: ProfileTabType;
     forceScrollProfileTab?: boolean;
   } & WithTabId;
   openThreadWithInfo: ActionPayloads['openThread'] & WithTabId;
   openLinkedChat: { id: string } & WithTabId;
-  loadMoreMembers: WithTabId | undefined;
+  loadMoreMembers: {
+    chatId: string;
+  };
   setActiveChatFolder: {
     activeChatFolder: number;
   } & WithTabId;
@@ -684,8 +690,11 @@ export interface ActionPayloads {
     title: string;
     about?: string;
     photo?: File;
-    memberIds: string[];
-  } & WithTabId;
+    memberIds?: string[];
+    discussionChannelId?: string;
+  } & (
+    { isChannel: true } | { isSuperGroup: true }
+  ) & WithTabId;
   createGroupChat: {
     title: string;
     memberIds: string[];
@@ -1005,7 +1014,7 @@ export interface ActionPayloads {
   openLimitReachedModal: { limit: ApiLimitTypeWithModal } & WithTabId;
   closeLimitReachedModal: WithTabId | undefined;
   checkAppVersion: undefined;
-  setIsElectronUpdateAvailable: boolean;
+  setIsElectronUpdateAvailable: { isAvailable: boolean };
   setGlobalSearchClosing: ({
     isClosing?: boolean;
   } & WithTabId) | undefined;
@@ -1036,6 +1045,14 @@ export interface ActionPayloads {
   };
   openFrozenAccountModal: WithTabId | undefined;
   closeFrozenAccountModal: WithTabId | undefined;
+  openDeleteAccountModal: {
+    days: number;
+  } & WithTabId | undefined;
+  closeDeleteAccountModal: WithTabId | undefined;
+  setAccountTTL: {
+    days: number;
+  } & WithTabId | undefined;
+  loadAccountDaysTtl: undefined;
 
   // Chats
   loadPeerSettings: {
@@ -1065,6 +1082,10 @@ export interface ActionPayloads {
   updatePaidMessagesPrice: {
     chatId: string;
     paidMessagesStars: number;
+  } & WithTabId;
+  toggleAutoTranslation: {
+    chatId: string;
+    isEnabled: boolean;
   } & WithTabId;
 
   updateChat: {
@@ -1141,6 +1162,9 @@ export interface ActionPayloads {
     chatId: string;
     withPhotos?: boolean;
     force?: boolean;
+  };
+  invalidateFullInfo: {
+    peerId: string;
   };
   updateChatPhoto: {
     chatId: string;
@@ -1583,7 +1607,7 @@ export interface ActionPayloads {
     privacy: ApiPrivacySettings;
   };
   toggleStoriesHidden: {
-    peerId : string;
+    peerId: string;
     isHidden: boolean;
   };
   loadStoriesMaxIds: {
@@ -2169,6 +2193,7 @@ export interface ActionPayloads {
     shouldSendGrouped?: boolean;
     isInvertedMedia?: true;
     webPageMediaSize?: WebPageMediaSize;
+    shouldSendInHighQuality?: boolean;
   };
 
   saveEffectInDraft: {
@@ -2221,7 +2246,7 @@ export interface ActionPayloads {
 
   requestCollectibleInfo: {
     peerId: string;
-    type : 'phone' | 'username';
+    type: 'phone' | 'username';
     collectible: string;
   } & WithTabId;
   closeCollectibleInfoModal: WithTabId | undefined;
@@ -2265,10 +2290,6 @@ export interface ActionPayloads {
     username: string;
     inviteHash: string;
   } & WithTabId;
-  subscribeToGroupCallUpdates: {
-    subscribed: boolean;
-    id: string;
-  };
   createGroupCallInviteLink: WithTabId | undefined;
 
   loadMoreGroupCallParticipants: undefined;
@@ -2398,6 +2419,14 @@ export interface ActionPayloads {
 
   loadPremiumGifts: undefined;
   loadStarGifts: undefined;
+  updateResaleGiftsFilter: {
+    filter: ResaleGiftsFilterOptions;
+  } & WithTabId;
+  loadResaleGifts: {
+    giftId: string;
+    shouldRefresh?: boolean;
+  } & WithTabId;
+  resetResaleGifts: WithTabId | undefined;
   loadDefaultTopicIcons: undefined;
   loadPremiumStickers: undefined;
 
@@ -2407,6 +2436,7 @@ export interface ActionPayloads {
   closeGiftModal: WithTabId | undefined;
   sendStarGift: StarGiftInfo & WithTabId;
   buyStarGift: {
+    peerId: string;
     slug: string;
     stars: number;
   } & WithTabId;
@@ -2423,6 +2453,7 @@ export interface ActionPayloads {
   } & WithTabId;
   openGiftInfoModal: ({
     peerId: string;
+    recipientId?: string;
     gift: ApiSavedStarGift;
   } | {
     gift: ApiStarGift;

@@ -297,7 +297,7 @@ export function sendMessageLocal(
     wasDrafted,
   });
 
-  return localMessage;
+  return Promise.resolve(localMessage);
 }
 
 export function sendApiMessage(
@@ -422,11 +422,11 @@ export function sendApiMessage(
   return messagePromise;
 }
 
-export function sendMessage(
+export async function sendMessage(
   params: SendMessageParams,
   onProgress?: ApiOnProgress,
 ) {
-  const localMessage = params.localMessage || sendMessageLocal(params);
+  const localMessage = params.localMessage || await sendMessageLocal(params);
   return localMessage ? sendApiMessage(params, localMessage, onProgress) : undefined;
 }
 
@@ -495,7 +495,7 @@ function sendGroupedMedia(
 
     const inputMedia = await fetchInputMedia(
       buildInputPeer(chat.id, chat.accessHash),
-      media as GramJs.InputMediaUploadedPhoto | GramJs.InputMediaUploadedDocument,
+      media,
     );
 
     await prevMediaQueue;
@@ -980,8 +980,8 @@ export async function sendMessageAction({
 }: {
   peer: ApiPeer; threadId?: ThreadId; action: ApiSendMessageAction;
 }) {
-  const gramAction = buildSendMessageAction(action);
-  if (!gramAction) {
+  const mtpAction = buildSendMessageAction(action);
+  if (!mtpAction) {
     if (DEBUG) {
       // eslint-disable-next-line no-console
       console.warn('Unsupported message action', action);
@@ -993,7 +993,7 @@ export async function sendMessageAction({
     const result = await invokeRequest(new GramJs.messages.SetTyping({
       peer: buildInputPeer(peer.id, peer.accessHash),
       topMsgId: Number(threadId),
-      action: gramAction,
+      action: mtpAction,
     }), {
       shouldThrow: true,
       abortControllerChatId: peer.id,
@@ -1557,7 +1557,7 @@ export function forwardMessagesLocal(params: ForwardMessagesParams) {
       wasDrafted,
     });
   });
-  return { messageIds, localMessages };
+  return Promise.resolve({ messageIds, localMessages });
 }
 
 export async function forwardApiMessages(params: ForwardMessagesParams) {
@@ -1617,7 +1617,7 @@ export async function forwardMessages(params: ForwardMessagesParams) {
   } else {
     const newParams = {
       ...params,
-      forwardedLocalMessagesSlice: forwardMessagesLocal(params),
+      forwardedLocalMessagesSlice: await forwardMessagesLocal(params),
     };
     await forwardApiMessages(newParams);
   }
@@ -2114,7 +2114,7 @@ export async function fetchOutboxReadDate({ chat, messageId }: { chat: ApiChat; 
   const peer = buildInputPeer(id, accessHash);
 
   const result = await invokeRequest(new GramJs.messages.GetOutboxReadDate({
-    peer: peer as GramJs.TypeInputPeer,
+    peer,
     msgId: messageId,
   }), { shouldThrow: true });
 

@@ -1,5 +1,6 @@
-import type { FC, TeactNode } from '../../lib/teact/teact';
-import React, { beginHeavyAnimation, useEffect } from '../../lib/teact/teact';
+import type { ElementRef, FC, TeactNode } from '../../lib/teact/teact';
+import type React from '../../lib/teact/teact';
+import { beginHeavyAnimation, useEffect } from '../../lib/teact/teact';
 
 import type { TextPart } from '../../types';
 
@@ -40,14 +41,15 @@ export type OwnProps = {
   children: React.ReactNode;
   style?: string;
   dialogStyle?: string;
-  dialogRef?: React.RefObject<HTMLDivElement>;
+  dialogRef?: ElementRef<HTMLDivElement>;
   isLowStackPriority?: boolean;
   dialogContent?: React.ReactNode;
   ignoreFreeze?: boolean;
   onClose: () => void;
   onCloseAnimationEnd?: () => void;
   onEnter?: () => void;
-  withBalanceBar?: Boolean;
+  withBalanceBar?: boolean;
+  isCondensedHeader?: boolean;
 };
 
 const Modal: FC<OwnProps> = ({
@@ -73,6 +75,7 @@ const Modal: FC<OwnProps> = ({
   onCloseAnimationEnd,
   onEnter,
   withBalanceBar,
+  isCondensedHeader,
 }) => {
   const {
     ref: modalRef,
@@ -157,7 +160,7 @@ const Modal: FC<OwnProps> = ({
     }
 
     return (
-      <div className={buildClassName('modal-header', headerClassName)}>
+      <div className={buildClassName('modal-header', headerClassName, isCondensedHeader && 'modal-header-condensed')}>
         {withCloseButton && closeButton}
         <div className="modal-title">{title}</div>
       </div>

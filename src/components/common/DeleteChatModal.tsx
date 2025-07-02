@@ -1,5 +1,5 @@
 import type { FC } from '../../lib/teact/teact';
-import React, { memo } from '../../lib/teact/teact';
+import { memo } from '../../lib/teact/teact';
 import { getActions, withGlobal } from '../../global';
 
 import type { ApiChat } from '../../api/types';
@@ -12,9 +12,9 @@ import {
   isChatChannel,
   isChatSuperGroup,
   isUserBot,
-  isUserId,
 } from '../../global/helpers';
 import { selectIsChatWithSelf, selectUser } from '../../global/selectors';
+import { isUserId } from '../../util/entities/ids';
 import renderText from './helpers/renderText';
 
 import useLastCallback from '../../hooks/useLastCallback';

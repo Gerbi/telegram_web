@@ -1,5 +1,5 @@
 import type { FC, TeactNode } from '../../../../lib/teact/teact';
-import React, { memo, useMemo, useState } from '../../../../lib/teact/teact';
+import { memo, useMemo, useState } from '../../../../lib/teact/teact';
 import { getActions, getGlobal, withGlobal } from '../../../../global';
 
 import type {
@@ -58,6 +58,7 @@ type StateProps = {
   collectibleEmojiStatuses?: ApiEmojiStatusType[];
   tonExplorerUrl?: string;
   currentUser?: ApiUser;
+  recipientPeer?: ApiPeer;
 };
 
 const STICKER_SIZE = 120;
@@ -73,6 +74,7 @@ const GiftInfoModal = ({
   collectibleEmojiStatuses,
   tonExplorerUrl,
   currentUser,
+  recipientPeer,
 }: OwnProps & StateProps) => {
   const {
     closeGiftInfoModal,
@@ -83,6 +85,7 @@ const GiftInfoModal = ({
     openGiftUpgradeModal,
     showNotification,
     buyStarGift,
+    closeGiftModal,
   } = getActions();
 
   const [isConvertConfirmOpen, openConvertConfirm, closeConvertConfirm] = useFlag();
@@ -138,7 +141,7 @@ const GiftInfoModal = ({
     const giftChat = isSender ? renderingTargetPeer : renderingFromPeer;
     if (!savedGift?.upgradeMsgId || !giftChat) return;
     const { upgradeMsgId } = savedGift;
-    focusMessage({ chatId: giftChat.id, messageId: upgradeMsgId! });
+    focusMessage({ chatId: giftChat.id, messageId: upgradeMsgId });
     handleClose();
   });
 
@@ -161,7 +164,7 @@ const GiftInfoModal = ({
   });
 
   const handleBuyGift = useLastCallback(() => {
-    if (!savedGift || gift?.type !== 'starGiftUnique' || !gift.resellPriceInStars) return;
+    if (gift?.type !== 'starGiftUnique' || !gift.resellPriceInStars) return;
     setIsConfirmModalOpen(true);
   });
 
@@ -170,9 +173,11 @@ const GiftInfoModal = ({
   });
 
   const handleConfirmBuyGift = useLastCallback(() => {
-    if (!savedGift || gift?.type !== 'starGiftUnique' || !gift.resellPriceInStars) return;
+    const peer = recipientPeer || currentUser;
+    if (!peer || gift?.type !== 'starGiftUnique' || !gift.resellPriceInStars) return;
     closeConfirmModal();
-    buyStarGift({ slug: gift.slug, stars: gift.resellPriceInStars });
+    closeGiftModal();
+    buyStarGift({ peerId: peer.id, slug: gift.slug, stars: gift.resellPriceInStars });
   });
 
   const giftAttributes = useMemo(() => {
@@ -205,7 +210,7 @@ const GiftInfoModal = ({
       return (
         <Button noForcedUpperCase size="smaller" onClick={handleBuyGift}>
           {lang('ButtonBuyGift', {
-            stars: formatStarsAsIcon(lang, resellPriceInStars!, { asFont: true }),
+            stars: formatStarsAsIcon(lang, resellPriceInStars, { asFont: true }),
           }, { withNodes: true })}
         </Button>
       );
@@ -416,7 +421,7 @@ const GiftInfoModal = ({
         <h1 className={styles.title}>
           {getTitle()}
         </h1>
-        {description && (
+        {Boolean(description) && (
           <p className={buildClassName(styles.description, !savedGift && gift?.type === 'starGift' && styles.soldOut)}>
             {description}
           </p>
@@ -539,7 +544,8 @@ const GiftInfoModal = ({
         tableData.push([
           lang('GiftAttributeModel'),
           <span className={styles.uniqueAttribute}>
-            {model.name}<BadgeButton>{formatPercent(model.rarityPercent)}</BadgeButton>
+            {model.name}
+            <BadgeButton>{formatPercent(model.rarityPercent)}</BadgeButton>
           </span>,
         ]);
       }
@@ -548,7 +554,8 @@ const GiftInfoModal = ({
         tableData.push([
           lang('GiftAttributeBackdrop'),
           <span className={styles.uniqueAttribute}>
-            {backdrop.name}<BadgeButton>{formatPercent(backdrop.rarityPercent)}</BadgeButton>
+            {backdrop.name}
+            <BadgeButton>{formatPercent(backdrop.rarityPercent)}</BadgeButton>
           </span>,
         ]);
       }
@@ -557,7 +564,8 @@ const GiftInfoModal = ({
         tableData.push([
           lang('GiftAttributeSymbol'),
           <span className={styles.uniqueAttribute}>
-            {pattern.name}<BadgeButton>{formatPercent(pattern.rarityPercent)}</BadgeButton>
+            {pattern.name}
+            <BadgeButton>{formatPercent(pattern.rarityPercent)}</BadgeButton>
           </span>,
         ]);
       }
@@ -586,7 +594,7 @@ const GiftInfoModal = ({
 
         const formattedDate = formatDateTimeToString(date * 1000, lang.code, true);
         const recipientLink = (
-          // eslint-disable-next-line react/jsx-no-bind
+
           <Link onClick={() => openChat(recipientId)} isPrimary>
             {getPeerTitle(lang, recipient)}
           </Link>
@@ -608,7 +616,7 @@ const GiftInfoModal = ({
           });
         } else {
           const senderLink = (
-            // eslint-disable-next-line react/jsx-no-bind
+
             <Link onClick={() => openChat(sender.id)} isPrimary>
               {getPeerTitle(lang, sender)}
             </Link>
@@ -711,30 +719,46 @@ const GiftInfoModal = ({
         withBalanceBar={Boolean(canBuyGift)}
         isLowStackPriority
       />
-      {uniqueGift && currentUser && resellPriceInStars && (
+      {uniqueGift && currentUser && Boolean(resellPriceInStars) && (
         <ConfirmDialog
           isOpen={isConfirmModalOpen}
           noDefaultTitle
           onClose={closeConfirmModal}
           confirmLabel={lang('ButtonBuyGift', {
-            stars: formatStarsAsIcon(lang, resellPriceInStars!, { asFont: true }),
+            stars: formatStarsAsIcon(lang, resellPriceInStars, { asFont: true }),
           }, { withNodes: true })}
           confirmHandler={handleConfirmBuyGift}
         >
 
           <GiftTransferPreview
-            peer={currentUser}
+            peer={recipientPeer || currentUser}
             gift={uniqueGift}
           />
-          <p>
-            {lang('GiftBuyConfirmDescription', {
-              gift: lang('GiftUnique', { title: uniqueGift.title, number: uniqueGift.number }),
-              stars: formatStarsAsText(lang, resellPriceInStars),
-            }, {
-              withNodes: true,
-              withMarkdown: true,
-            })}
-          </p>
+          {!recipientPeer
+            && (
+              <p>
+                {lang('GiftBuyConfirmDescription', {
+                  gift: lang('GiftUnique', { title: uniqueGift.title, number: uniqueGift.number }),
+                  stars: formatStarsAsText(lang, resellPriceInStars),
+                }, {
+                  withNodes: true,
+                  withMarkdown: true,
+                })}
+              </p>
+            )}
+          {recipientPeer
+            && (
+              <p>
+                {lang('GiftBuyForPeerConfirmDescription', {
+                  gift: lang('GiftUnique', { title: uniqueGift.title, number: uniqueGift.number }),
+                  stars: formatStarsAsText(lang, resellPriceInStars),
+                  peer: getPeerTitle(lang, recipientPeer),
+                }, {
+                  withNodes: true,
+                  withMarkdown: true,
+                })}
+              </p>
+            )}
         </ConfirmDialog>
       )}
       {savedGift && (
@@ -783,6 +807,8 @@ export default memo(withGlobal<OwnProps>(
     const chat = targetPeer && isApiPeerChat(targetPeer) ? targetPeer : undefined;
     const hasAdminRights = chat && getHasAdminRight(chat, 'postMessages');
     const currentUser = selectUser(global, currentUserId!);
+    const recipientPeer = modal?.recipientId && currentUserId !== modal.recipientId
+      ? selectPeer(global, modal.recipientId) : undefined;
     const currentUserEmojiStatus = currentUser?.emojiStatus;
     const collectibleEmojiStatuses = global.collectibleEmojiStatuses?.statuses;
 
@@ -796,6 +822,7 @@ export default memo(withGlobal<OwnProps>(
       currentUserEmojiStatus,
       collectibleEmojiStatuses,
       currentUser,
+      recipientPeer,
     };
   },
 )(GiftInfoModal));

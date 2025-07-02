@@ -38,6 +38,7 @@ import type {
   ApiSponsoredPeer,
   ApiStarGift,
   ApiStarGiftAttribute,
+  ApiStarGiftAttributeCounter,
   ApiStarGiveawayOption,
   ApiStarsSubscription,
   ApiStarsTransaction,
@@ -76,6 +77,7 @@ import type {
   PaymentStep,
   ProfileEditProgress,
   ProfileTabType,
+  ResaleGiftsFilterOptions,
   ScrollTargetPosition,
   SettingsScreens,
   SharedMediaType,
@@ -217,6 +219,20 @@ export type TabState = {
     filter: GiftProfileFilterOptions;
   };
 
+  resaleGifts: {
+    giftId?: string;
+    gifts: ApiStarGift[];
+    count: number;
+    attributes?: ApiStarGiftAttribute[];
+    counters?: ApiStarGiftAttributeCounter[];
+    nextOffset?: string;
+    attributesHash?: string;
+    isLoading?: boolean;
+    isAllLoaded?: boolean;
+    filter: ResaleGiftsFilterOptions;
+    updateIteration: number;
+  };
+
   leftColumn: {
     contentKey: LeftColumnContent;
     settingsScreen: SettingsScreens;
@@ -303,7 +319,7 @@ export type TabState = {
     isArchive?: boolean;
     // Last viewed story id in current view session.
     // Used for better switch animation between peers.
-    lastViewedByPeerIds?: Record<string, number>;
+    lastViewedByPeerId?: Record<string, number>;
     isPrivacyModalOpen?: boolean;
     isPaymentConfirmDialogOpen?: boolean;
     isStealthModalOpen?: boolean;
@@ -536,7 +552,7 @@ export type TabState = {
     openedOrderedKeys: string[];
     sessionKeys: string[];
     openedWebApps: Record<string, WebApp>;
-    modalState : WebAppModalStateType;
+    modalState: WebAppModalStateType;
     isModalOpen: boolean;
     isMoreAppsTabActive: boolean;
   };
@@ -725,6 +741,10 @@ export type TabState = {
     info: ApiCheckedGiftCode;
   };
 
+  deleteAccountModal?: {
+    selfDestructAccountDays: number;
+  };
+
   paidReactionModal?: {
     chatId: string;
     messageId: number;
@@ -761,6 +781,7 @@ export type TabState = {
 
   giftInfoModal?: {
     peerId?: string;
+    recipientId?: string;
     gift: ApiSavedStarGift | ApiStarGift;
   };
 

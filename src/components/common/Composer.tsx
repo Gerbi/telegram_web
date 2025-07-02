@@ -1,5 +1,5 @@
 import type { FC, TeactNode } from '../../lib/teact/teact';
-import React, {
+import {
   memo, useEffect, useMemo, useRef, useSignal, useState,
 } from '../../lib/teact/teact';
 import { getActions, getGlobal, withGlobal } from '../../global';
@@ -21,6 +21,7 @@ import type {
   ApiMessage,
   ApiMessageEntity,
   ApiNewPoll,
+  ApiPeer,
   ApiQuickReply,
   ApiReaction,
   ApiStealthMode,
@@ -62,10 +63,10 @@ import {
   getStoryKey,
   isChatAdmin,
   isChatChannel,
+  isChatPublic,
   isChatSuperGroup,
   isSameReaction,
   isSystemBot,
-  isUserId,
 } from '../../global/helpers';
 import { getChatNotifySettings } from '../../global/helpers/notifications';
 import { getPeerTitle } from '../../global/helpers/peers';
@@ -114,6 +115,7 @@ import { processDeepLink } from '../../util/deeplink';
 import { tryParseDeepLink } from '../../util/deepLinkParser';
 import deleteLastCharacterOutsideSelection from '../../util/deleteLastCharacterOutsideSelection';
 import { processMessageInputForCustomEmoji } from '../../util/emoji/customEmojiManager';
+import { isUserId } from '../../util/entities/ids';
 import focusEditableElement from '../../util/focusEditableElement';
 import { formatStarsAsIcon } from '../../util/localization/format';
 import { MEMO_EMPTY_ARRAY } from '../../util/memo';
@@ -253,8 +255,7 @@ type StateProps =
     inlineBots?: Record<string, false | InlineBotSettings>;
     botCommands?: ApiBotCommand[] | false;
     botMenuButton?: ApiBotMenuButton;
-    sendAsUser?: ApiUser;
-    sendAsChat?: ApiChat;
+    sendAsPeer?: ApiPeer;
     sendAsId?: string;
     editingDraft?: ApiFormattedText;
     requestedDraft?: ApiFormattedText;
@@ -299,6 +300,7 @@ type StateProps =
     isAccountFrozen?: boolean;
     isAppConfigLoaded?: boolean;
     insertingPeerIdMention?: string;
+    pollMaxAnswers?: number;
   };
 
 enum MainButtonState {
@@ -374,8 +376,7 @@ const Composer: FC<OwnProps & StateProps> = ({
   inlineBots,
   isInlineBotLoading,
   botCommands,
-  sendAsUser,
-  sendAsChat,
+  sendAsPeer,
   sendAsId,
   editingDraft,
   requestedDraft,
@@ -413,10 +414,6 @@ const Composer: FC<OwnProps & StateProps> = ({
   shouldPlayEffect,
   maxMessageLength,
   isSilentPosting,
-  onDropHide,
-  onFocus,
-  onBlur,
-  onForward,
   isPaymentMessageConfirmDialogOpen,
   starsBalance,
   isStarsBalanceModalOpen,
@@ -424,6 +421,11 @@ const Composer: FC<OwnProps & StateProps> = ({
   isAccountFrozen,
   isAppConfigLoaded,
   insertingPeerIdMention,
+  pollMaxAnswers,
+  onDropHide,
+  onFocus,
+  onBlur,
+  onForward,
 }) => {
   const {
     sendMessage,
@@ -457,13 +459,10 @@ const Composer: FC<OwnProps & StateProps> = ({
   const oldLang = useOldLang();
   const lang = useLang();
 
-  // eslint-disable-next-line no-null/no-null
-  const inputRef = useRef<HTMLDivElement>(null);
-  // eslint-disable-next-line no-null/no-null
-  const counterRef = useRef<HTMLSpanElement>(null);
+  const inputRef = useRef<HTMLDivElement>();
+  const counterRef = useRef<HTMLSpanElement>();
 
-  // eslint-disable-next-line no-null/no-null
-  const storyReactionRef = useRef<HTMLButtonElement>(null);
+  const storyReactionRef = useRef<HTMLButtonElement>();
 
   const [getHtml, setHtml] = useSignal('');
   const [isMounted, setIsMounted] = useState(false);
@@ -475,8 +474,7 @@ const Composer: FC<OwnProps & StateProps> = ({
   const isInMessageList = type === 'messageList';
   const isInStoryViewer = type === 'story';
   const sendAsPeerIds = isInMessageList ? chat?.sendAsPeerIds : undefined;
-  const canShowSendAs = sendAsPeerIds
-    && (sendAsPeerIds.length > 1 || !sendAsPeerIds.some((peer) => peer.id === currentUserId!));
+  const canShowSendAs = Boolean(sendAsPeerIds?.length);
   // Prevent Symbol Menu from closing when calendar is open
   const [isSymbolMenuForced, forceShowSymbolMenu, cancelForceShowSymbolMenu] = useFlag();
   const sendMessageAction = useSendMessageAction(chatId, threadId);
@@ -485,8 +483,11 @@ const Composer: FC<OwnProps & StateProps> = ({
 
   const canMediaBeReplaced = editingMessage && canEditMedia(editingMessage);
 
+  const isMonoforum = chat?.isMonoforum;
   const { emojiSet, members: groupChatMembers, botCommands: chatBotCommands } = chatFullInfo || {};
   const chatEmojiSetId = emojiSet?.id;
+
+  const canSchedule = !paidMessagesStars && !isMonoforum;
 
   const isSentStoryReactionHeart = sentStoryReaction && isSameReaction(sentStoryReaction, HEART_REACTION);
 
@@ -514,14 +515,16 @@ const Composer: FC<OwnProps & StateProps> = ({
   }, [chatId]);
 
   useEffect(() => {
-    if (isAppConfigLoaded && chatId && isReady && !isInStoryViewer) {
+    if (isAppConfigLoaded && chatId && isReady && !isInStoryViewer && !isMonoforum) {
       loadScheduledHistory({ chatId });
     }
-  }, [isReady, chatId, threadId, isInStoryViewer, isAppConfigLoaded]);
+  }, [isReady, chatId, threadId, isInStoryViewer, isAppConfigLoaded, isMonoforum]);
 
   useEffect(() => {
     const isChannelWithProfiles = isChannel && chat?.areProfilesShown;
-    if (chatId && chat && !sendAsPeerIds && isReady && (isChatSuperGroup(chat) || isChannelWithProfiles)) {
+    const isChatWithSendAs = chat && isChatSuperGroup(chat)
+      && Boolean(isChatPublic(chat) || chat.isLinkedInDiscussion || chat.hasGeo);
+    if (!sendAsPeerIds && isReady && (isChatWithSendAs || isChannelWithProfiles)) {
       loadSendAs({ chatId });
     }
   }, [chat, chatId, isChannel, isReady, loadSendAs, sendAsPeerIds]);
@@ -543,10 +546,11 @@ const Composer: FC<OwnProps & StateProps> = ({
     () => getAllowedAttachmentOptions(chat,
       chatFullInfo,
       isChatWithBot,
+      isChatWithSelf,
       isInStoryViewer,
       paidMessagesStars,
       isInScheduledList),
-    [chat, chatFullInfo, isChatWithBot, isInStoryViewer, paidMessagesStars, isInScheduledList],
+    [chat, chatFullInfo, isChatWithBot, isChatWithSelf, isInStoryViewer, paidMessagesStars, isInScheduledList],
   );
 
   const isNeedPremium = isContactRequirePremium && isInStoryViewer;
@@ -607,7 +611,7 @@ const Composer: FC<OwnProps & StateProps> = ({
   const insertTextAndUpdateCursor = useLastCallback((
     text: string, inInputId: string = editableInputId,
   ) => {
-    const newHtml = renderText(text, ['escape_html', 'emoji_html', 'br_html'])
+    const newHtml = (renderText(text, ['escape_html', 'emoji_html', 'br_html']) as string[])
       .join('')
       .replace(/\u200b+/g, '\u200b');
     insertHtmlAndUpdateCursor(newHtml, inInputId);
@@ -631,7 +635,6 @@ const Composer: FC<OwnProps & StateProps> = ({
   });
 
   const {
-    shouldSuggestCompression,
     shouldForceCompression,
     shouldForceAsFile,
     handleAppendFiles,
@@ -651,6 +654,7 @@ const Composer: FC<OwnProps & StateProps> = ({
     canSendDocuments,
     insertNextText,
     editedMessage: editingMessage,
+    shouldSendInHighQuality: attachmentSettings.shouldSendInHighQuality,
   });
 
   const [isBotKeyboardOpen, openBotKeyboard, closeBotKeyboard] = useFlag();
@@ -806,7 +810,7 @@ const Composer: FC<OwnProps & StateProps> = ({
     getHtml,
     setHtml,
     editedMessage: editingMessage,
-    isDisabled: isInStoryViewer || Boolean(requestedDraft),
+    isDisabled: isInStoryViewer || Boolean(requestedDraft) || isMonoforum,
   });
 
   const resetComposer = useLastCallback((shouldPreserveInput = false) => {
@@ -1162,7 +1166,7 @@ const Composer: FC<OwnProps & StateProps> = ({
           isInvertedMedia,
           effectId,
           webPageMediaSize: attachmentSettings.webPageMediaSize,
-          webPageUrl: hasWebPagePreview ? webPagePreview!.url : undefined,
+          webPageUrl: hasWebPagePreview ? webPagePreview.url : undefined,
           isForwarding,
         });
       }
@@ -1570,7 +1574,7 @@ const Composer: FC<OwnProps & StateProps> = ({
   const isComposerHasFocus = isBotKeyboardOpen || isSymbolMenuOpen || isEmojiTooltipOpen || isSendAsMenuOpen
     || isMentionTooltipOpen || isInlineBotTooltipOpen || isBotCommandMenuOpen || isAttachMenuOpen
     || isStickerTooltipOpen || isChatCommandTooltipOpen || isCustomEmojiTooltipOpen || isBotMenuButtonOpen
-  || isCustomSendMenuOpen || Boolean(activeVoiceRecording) || attachments.length > 0 || isInputHasFocus;
+    || isCustomSendMenuOpen || Boolean(activeVoiceRecording) || attachments.length > 0 || isInputHasFocus;
   const isReactionSelectorOpen = isComposerHasFocus && !isReactionPickerOpen && isInStoryViewer && !isAttachMenuOpen
     && !isSymbolMenuOpen;
 
@@ -1589,6 +1593,11 @@ const Composer: FC<OwnProps & StateProps> = ({
           withNodes: true,
         });
       }
+
+      if (chat?.adminRights?.anonymous) {
+        return lang('ComposerPlaceholderAnonymous');
+      }
+
       if (chat?.isForum && chat?.isForumAsMessages && threadId === MAIN_THREAD_ID) {
         return replyToTopic
           ? lang('ComposerPlaceholderTopic', { topic: replyToTopic.title })
@@ -1779,9 +1788,13 @@ const Composer: FC<OwnProps & StateProps> = ({
     },
   );
 
-  const handleRemoveEffect = useLastCallback(() => { saveEffectInDraft({ chatId, threadId, effectId: undefined }); });
+  const handleRemoveEffect = useLastCallback(() => {
+    saveEffectInDraft({ chatId, threadId, effectId: undefined });
+  });
 
-  const handleStopEffect = useLastCallback(() => { hideEffectInComposer({ }); });
+  const handleStopEffect = useLastCallback(() => {
+    hideEffectInComposer({ });
+  });
 
   const onSend = useMemo(() => {
     switch (mainButtonState) {
@@ -1835,13 +1848,12 @@ const Composer: FC<OwnProps & StateProps> = ({
         attachments={attachments}
         getHtml={getHtml}
         isReady={isReady}
-        shouldSuggestCompression={shouldSuggestCompression}
         shouldForceCompression={shouldForceCompression}
         shouldForceAsFile={shouldForceAsFile}
         isForCurrentMessageList={isForCurrentMessageList}
         isForMessage={isInMessageList}
-        shouldSchedule={!paidMessagesStars && isInScheduledList}
-        canSchedule={!paidMessagesStars}
+        shouldSchedule={canSchedule && isInScheduledList}
+        canSchedule={canSchedule}
         forceDarkTheme={isInStoryViewer}
         onCaptionUpdate={onCaptionUpdate}
         onSendSilent={handleSendSilentAttachments}
@@ -1862,6 +1874,7 @@ const Composer: FC<OwnProps & StateProps> = ({
         isOpen={pollModal.isOpen}
         isQuiz={pollModal.isQuiz}
         shouldBeAnonymous={isChannel}
+        maxOptionsCount={pollMaxAnswers}
         onClear={closePollModal}
         onSend={handlePollSend}
       />
@@ -1977,7 +1990,7 @@ const Composer: FC<OwnProps & StateProps> = ({
                   <Icon name="bot-commands-filled" />
                 </ResponsiveHoverButton>
               )}
-              {canShowSendAs && (sendAsUser || sendAsChat) && (
+              {canShowSendAs && sendAsPeer && (
                 <Button
                   round
                   color="translucent"
@@ -1990,7 +2003,7 @@ const Composer: FC<OwnProps & StateProps> = ({
                   )}
                 >
                   <Avatar
-                    peer={sendAsUser || sendAsChat}
+                    peer={sendAsPeer}
                     size="tiny"
                   />
                 </Button>
@@ -2297,7 +2310,7 @@ const Composer: FC<OwnProps & StateProps> = ({
       {canShowCustomSendMenu && (
         <CustomSendMenu
           isOpen={isCustomSendMenuOpen}
-          canSchedule={!paidMessagesStars && isInMessageList && !isViewOnceEnabled}
+          canSchedule={canSchedule && isInMessageList && !isViewOnceEnabled}
           canScheduleUntilOnline={canScheduleUntilOnline && !isViewOnceEnabled}
           onSendSilent={!isChatWithSelf ? handleSendSilent : undefined}
           onSendSchedule={!isInScheduledList ? handleSendScheduled : undefined}
@@ -2337,6 +2350,7 @@ export default memo(withGlobal<OwnProps>(
   (global, {
     chatId, threadId, storyId, messageListType, isMobile, type,
   }): StateProps => {
+    const appConfig = global.appConfig;
     const chat = selectChat(global, chatId);
     const chatBot = !isSystemBot(chatId) ? selectBot(global, chatId) : undefined;
     const isChatWithBot = Boolean(chatBot);
@@ -2362,13 +2376,8 @@ export default memo(withGlobal<OwnProps>(
     const { currentUserId } = global;
     const currentUser = selectUser(global, currentUserId!)!;
     const defaultSendAsId = chatFullInfo ? chatFullInfo?.sendAsId || currentUserId : undefined;
-    const sendAsId = chat?.sendAsPeerIds && defaultSendAsId && (
-      chat.sendAsPeerIds.some((peer) => peer.id === defaultSendAsId)
-        ? defaultSendAsId
-        : (chat?.adminRights?.anonymous ? chat?.id : undefined)
-    );
-    const sendAsUser = sendAsId ? selectUser(global, sendAsId) : undefined;
-    const sendAsChat = !sendAsUser && sendAsId ? selectChat(global, sendAsId) : undefined;
+    const sendAsId = defaultSendAsId;
+    const sendAsPeer = sendAsId ? selectPeer(global, sendAsId) : undefined;
     const requestedDraft = selectRequestedDraft(global, chatId);
     const requestedDraftFiles = selectRequestedDraftFiles(global, chatId);
 
@@ -2410,7 +2419,7 @@ export default memo(withGlobal<OwnProps>(
     )?.isSilentPosting;
 
     const areEffectsSupported = isChatWithUser && !isChatWithBot
-    && !isInScheduledList && !isChatWithSelf && type !== 'story' && chatId !== SERVICE_NOTIFICATIONS_USER_ID;
+      && !isInScheduledList && !isChatWithSelf && type !== 'story' && chatId !== SERVICE_NOTIFICATIONS_USER_ID;
     const canPlayEffect = selectPerformanceSettingsValue(global, 'stickerEffects');
     const shouldPlayEffect = tabState.shouldPlayEffectInComposer;
     const effectId = areEffectsSupported && draft?.effectId;
@@ -2466,8 +2475,7 @@ export default memo(withGlobal<OwnProps>(
       isInlineBotLoading: tabState.inlineBots.isLoading,
       botCommands: userFullInfo ? (userFullInfo.botInfo?.commands || false) : undefined,
       botMenuButton: userFullInfo?.botInfo?.menuButton,
-      sendAsUser,
-      sendAsChat,
+      sendAsPeer,
       sendAsId,
       editingDraft,
       requestedDraft,
@@ -2513,6 +2521,7 @@ export default memo(withGlobal<OwnProps>(
       isAccountFrozen,
       isAppConfigLoaded,
       insertingPeerIdMention,
+      pollMaxAnswers: appConfig?.pollMaxAnswers,
     };
   },
 )(Composer));
