@@ -16,6 +16,7 @@ import type {
   ApiInputReplyInfo,
   ApiInputStorePaymentPurpose,
   ApiMessageEntity,
+  ApiNewMediaTodo,
   ApiNewPoll,
   ApiPhoneCall,
   ApiPhoto,
@@ -41,6 +42,12 @@ import { CHANNEL_ID_BASE, DEFAULT_STATUS_ICON_ID } from '../../../config';
 import { pick } from '../../../util/iteratees';
 import { deserializeBytes } from '../helpers/misc';
 import localDb from '../localDb';
+
+export const DEFAULT_PRIMITIVES = {
+  INT: 0,
+  BIGINT: BigInt(0),
+  STRING: '',
+} as const;
 
 export function getEntityTypeById(peerId: string) {
   const n = Number(peerId);
@@ -254,6 +261,28 @@ export function buildInputPollFromExisting(poll: ApiPoll, shouldClose = false) {
     correctAnswers: poll.results.results?.filter((o) => o.isCorrect).map((o) => deserializeBytes(o.option)),
     solution: poll.results.solution,
     solutionEntities: poll.results.solutionEntities?.map(buildMtpMessageEntity),
+  });
+}
+
+export function buildInputTodo(todo: ApiNewMediaTodo) {
+  const { title, items } = todo.todo;
+
+  const todoItems = items.map((item) => {
+    return new GramJs.TodoItem({
+      id: item.id,
+      title: buildInputTextWithEntities(item.title),
+    });
+  });
+
+  const todoList = new GramJs.TodoList({
+    title: buildInputTextWithEntities(title),
+    list: todoItems,
+    othersCanAppend: todo.todo.othersCanAppend || undefined,
+    othersCanComplete: todo.todo.othersCanComplete || undefined,
+  });
+
+  return new GramJs.InputMediaTodo({
+    todo: todoList,
   });
 }
 
@@ -514,7 +543,7 @@ export function buildInputPrivacyKey(privacyKey: ApiPrivacyKey) {
   return undefined;
 }
 
-export function buildInputReportReason(reason: ApiReportReason) {
+export function buildInputReportReason(reason: ApiReportReason): GramJs.TypeReportReason {
   switch (reason) {
     case 'spam':
       return new GramJs.InputReportReasonSpam();
@@ -535,10 +564,9 @@ export function buildInputReportReason(reason: ApiReportReason) {
     case 'personalDetails':
       return new GramJs.InputReportReasonPersonalDetails();
     case 'other':
+    default:
       return new GramJs.InputReportReasonOther();
   }
-
-  return undefined;
 }
 
 export function buildSendMessageAction(action: ApiSendMessageAction) {
