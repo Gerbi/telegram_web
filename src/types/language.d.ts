@@ -576,6 +576,7 @@ export interface LangPair {
   'MenuStickers': undefined;
   'MenuAnimations': undefined;
   'MenuStars': undefined;
+  'MenuTon': undefined;
   'MenuSendGift': undefined;
   'MenuTelegramFaq': undefined;
   'MenuPrivacyPolicy': undefined;
@@ -946,6 +947,7 @@ export interface LangPair {
   'AttachSticker': undefined;
   'AttachMusic': undefined;
   'AttachContact': undefined;
+  'AttachStory': undefined;
   'MessageLocation': undefined;
   'MessageLiveLocation': undefined;
   'ServiceNotifications': undefined;
@@ -1207,6 +1209,7 @@ export interface LangPair {
   'GiftInfoDescriptionRegular': undefined;
   'GiftInfoDescriptionUpgradeRegular': undefined;
   'GiftInfoDescriptionFreeUpgrade': undefined;
+  'GiftInfoDescriptionUpgrade': undefined;
   'GiftInfoDescriptionUpgraded': undefined;
   'GiftInfoFrom': undefined;
   'GiftInfoDate': undefined;
@@ -1233,6 +1236,7 @@ export interface LangPair {
   'GiftInfoViewUpgraded': undefined;
   'GiftInfoUpgradeBadge': undefined;
   'GiftInfoUpgradeForFree': undefined;
+  'GiftInfoUpgrade': undefined;
   'GiftInfoWithdraw': undefined;
   'GiftInfoWear': undefined;
   'GiftInfoTakeOff': undefined;
@@ -1330,6 +1334,7 @@ export interface LangPair {
   'SearchTabMusic': undefined;
   'SearchTabVoice': undefined;
   'SearchTabMessages': undefined;
+  'SearchTabPublicPosts': undefined;
   'StarsTransactionsAll': undefined;
   'StarsTransactionsIncoming': undefined;
   'StarsTransactionsOutgoing': undefined;
@@ -1348,6 +1353,7 @@ export interface LangPair {
   'ProfileTabSharedGroups': undefined;
   'ProfileTabSimilarChannels': undefined;
   'ProfileTabSimilarBots': undefined;
+  'ProfileTabPublicPosts': undefined;
   'ActionUnsupportedTitle': undefined;
   'ActionUnsupportedDescription': undefined;
   'UnlockMoreSimilarBots': undefined;
@@ -1538,6 +1544,43 @@ export interface LangPair {
   'MonoforumComposerPlaceholder': undefined;
   'ChannelSendMessage': undefined;
   'AutomaticTranslation': undefined;
+  'ComposerEmbeddedMessageSuggestedPostTitle': undefined;
+  'ComposerEmbeddedMessageSuggestedPostDescription': undefined;
+  'ActionSuggestedPostOutgoing': undefined;
+  'ActionSuggestedChangesPrice': undefined;
+  'ActionSuggestedChangesText': undefined;
+  'ActionSuggestedChangesTime': undefined;
+  'ActionSuggestedChangesMedia': undefined;
+  'TitlePrice': undefined;
+  'TitleTime': undefined;
+  'TitleSuggestMessage': undefined;
+  'TitleSuggestedChanges': undefined;
+  'SuggestMessageNoPrice': undefined;
+  'EnterPriceInStars': undefined;
+  'EnterPriceInTon': undefined;
+  'SuggestMessagePriceDescriptionStars': undefined;
+  'SuggestMessagePriceDescriptionTon': undefined;
+  'SuggestMessageDateTimeHint': undefined;
+  'SuggestMessageAnytime': undefined;
+  'ButtonOfferFree': undefined;
+  'ButtonUpdateTerms': undefined;
+  'InputPlaceholderPrice': undefined;
+  'SuggestedPostApprove': undefined;
+  'SuggestedPostDecline': undefined;
+  'SuggestedPostSuggestChanges': undefined;
+  'InputTitleSuggestMessageTime': undefined;
+  'SuggestedPostApproved': undefined;
+  'SuggestedPostRejectedNotification': undefined;
+  'SuggestedPostAgreementReached': undefined;
+  'CurrencyStars': undefined;
+  'CurrencyTon': undefined;
+  'DeclineReasonPlaceholder': undefined;
+  'SuggestedPostRejectedYou': undefined;
+  'SuggestedPostRejectedWithReasonYou': undefined;
+  'ComposerPlaceholderCaption': undefined;
+  'SuggestedPostConfirmTitle': undefined;
+  'ButtonPublish': undefined;
+  'PublishNow': undefined;
   'TitleNewToDoList': undefined;
   'TitleEditToDoList': undefined;
   'TitleAppendToDoList': undefined;
@@ -1558,6 +1601,43 @@ export interface LangPair {
   'ToDoListErrorChooseTitle': undefined;
   'ToDoListErrorChooseTasks': undefined;
   'PremiumPreviewTodo': undefined;
+  'DescriptionAboutTon': undefined;
+  'ButtonTopUpViaFragment': undefined;
+  'TonModalHint': undefined;
+  'TonGiftReceived': undefined;
+  'MediaSpoilerSensitive': undefined;
+  'TextSensitiveModal': undefined;
+  'ButtonSensitiveView': undefined;
+  'TitleAgeVerificationModal': undefined;
+  'DescriptionAgeVerificationModal': undefined;
+  'TitleAgeCheckFailed': undefined;
+  'TitleAgeCheckSuccess': undefined;
+  'ButtonAgeVerification': undefined;
+  'GiftRibbonPremium': undefined;
+  'PremiumGiftHeader': undefined;
+  'PriceInStars': undefined;
+  'PriceInTON': undefined;
+  'OnlyAcceptTON': undefined;
+  'OnlyAcceptTONDescription': undefined;
+  'DescriptionPayInTON': undefined;
+  'LabelPayInTON': undefined;
+  'PriceChanged': undefined;
+  'PayNewPrice': undefined;
+  'LinkPreview': undefined;
+  'ContextMoveTextUp': undefined;
+  'ContextMoveTextDown': undefined;
+  'ContextLinkLargerMedia': undefined;
+  'ContextLinkSmallerMedia': undefined;
+  'ContextLinkRemovePreview': undefined;
+  'AccLinkRemovePreview': undefined;
+  'GlobalSearch': undefined;
+  'DescriptionPublicPostsSearch': undefined;
+  'PublicPosts': undefined;
+  'PublicPostsLimitReached': undefined;
+  'PublicPostsPremiumFeatureDescription': undefined;
+  'PublicPostsPremiumFeatureSubtitle': undefined;
+  'PublicPostsSubscribeToPremium': undefined;
+  'PostsSearchTransaction': undefined;
 }
 
 export interface LangPairWithVariables<V = LangVariable> {
@@ -2393,6 +2473,13 @@ export interface LangPairWithVariables<V = LangVariable> {
     'from': V;
     'amount': V;
   };
+  'TonAmount': {
+    'amount': V;
+  };
+  'ActionGiftCostCrypto': {
+    'cryptoPrice': V;
+    'price': V;
+  };
   'ActionPaymentRefunded': {
     'peer': V;
     'amount': V;
@@ -2539,6 +2626,129 @@ export interface LangPairWithVariables<V = LangVariable> {
   'ComposerTitleForwardFrom': {
     'users': V;
   };
+  'TitleSuggestedPostAmountForAnyTime': {
+    'amount': V;
+  };
+  'ActionSuggestedPostIncoming': {
+    'user': V;
+  };
+  'ActionSuggestedChangesOutgoing': {
+    'changes': V;
+  };
+  'ActionSuggestedChangesIncoming': {
+    'user': V;
+    'changes': V;
+  };
+  'SuggestMessageTimeDescription': {
+    'hint': V;
+    'duration': V;
+  };
+  'ButtonOfferAmount': {
+    'amount': V;
+  };
+  'SuggestedPostPublishSchedule': {
+    'peer': V;
+    'date': V;
+  };
+  'SuggestedPostPublishScheduleYou': {
+    'peer': V;
+    'date': V;
+  };
+  'SuggestedPostPublished': {
+    'peer': V;
+    'date': V;
+  };
+  'SuggestedPostPublishedYou': {
+    'peer': V;
+    'date': V;
+  };
+  'SuggestedPostCharged': {
+    'user': V;
+    'amount': V;
+  };
+  'SuggestedPostChargedYou': {
+    'amount': V;
+  };
+  'SuggestedPostReceiveAmount': {
+    'peer': V;
+    'currency': V;
+    'duration': V;
+  };
+  'SuggestedPostReceiveAmountYou': {
+    'peer': V;
+    'currency': V;
+    'duration': V;
+  };
+  'SuggestedPostRefund': {
+    'peer': V;
+    'duration': V;
+  };
+  'SuggestedPostRefundYou': {
+    'peer': V;
+    'duration': V;
+    'currency': V;
+  };
+  'SuggestedPostBalanceTooLow': {
+    'peer': V;
+    'currency': V;
+  };
+  'SuggestedPostRefundedByUser': {
+    'channel': V;
+    'amount': V;
+    'user': V;
+  };
+  'SuggestedPostRefundedByChannel': {
+    'amount': V;
+    'peer': V;
+    'channel': V;
+  };
+  'DeclinePostDialogQuestion': {
+    'sender': V;
+  };
+  'SuggestedPostRejected': {
+    'peer': V;
+  };
+  'SuggestedPostRejectedWithReason': {
+    'peer': V;
+  };
+  'SuggestedPostRejectedComment': {
+    'comment': V;
+  };
+  'ActionSuggestedPostSuccess': {
+    'channel': V;
+    'amount': V;
+  };
+  'DescriptionSuggestedPostMinimumOffer': {
+    'amount': V;
+  };
+  'SuggestedPostConfirmMessage': {
+    'peer': V;
+  };
+  'SuggestedPostConfirmDetailsAdmin': {
+    'amount': V;
+    'commission': V;
+    'duration': V;
+  };
+  'SuggestedPostConfirmDetailsUser': {
+    'amount': V;
+    'commission': V;
+    'duration': V;
+  };
+  'SuggestedPostConfirmDetailsWithTimeAdmin': {
+    'amount': V;
+    'commission': V;
+    'time': V;
+    'duration': V;
+  };
+  'SuggestedPostConfirmDetailsWithTimeUser': {
+    'amount': V;
+    'commission': V;
+    'time': V;
+    'duration': V;
+  };
+  'ButtonPublishAtTime': {
+    'time': V;
+  };
   'TitleUserToDoList': {
     'peer': V;
   };
@@ -2594,6 +2804,47 @@ export interface LangPairWithVariables<V = LangVariable> {
   };
   'HintTodoListTasksCount': {
     'count': V;
+  };
+  'GiftInfoCollectibleBy': {
+    'number': V;
+    'owner': V;
+  };
+  'TitleSensitiveModal': {
+    'years': V;
+  };
+  'ButtonSensitiveAlways': {
+    'years': V;
+  };
+  'NotificationGiftsLimit': {
+    'count': V;
+  };
+  'DescriptionGiftPremiumRequired': {
+    'count': V;
+  };
+  'DescriptionComposerGiftMinimumCurrencyPrice': {
+    'amount': V;
+  };
+  'DescriptionComposerGiftResaleCurrencyPrice': {
+    'amount': V;
+  };
+  'ButtonSellGiftTon': {
+    'amount': V;
+  };
+  'PriceChangedText': {
+    'originalAmount': V;
+    'newAmount': V;
+  };
+  'ButtonSearchPublicPosts': {
+    'query': V;
+  };
+  'PublicPostsSearchForStars': {
+    'stars': V;
+  };
+  'UnlockTimerPublicPostsSearch': {
+    'time': V;
+  };
+  'NotificationPaidExtraSearch': {
+    'stars': V;
   };
 }
 
@@ -2873,6 +3124,9 @@ export interface LangPairPluralWithVariables<V = LangVariable> {
   'ActionGiftStarsTitle': {
     'amount': V;
   };
+  'TonAmountText': {
+    'amount': V;
+  };
   'ActionBoostApplyYou': {
     'count': V;
   };
@@ -2908,6 +3162,15 @@ export interface LangPairPluralWithVariables<V = LangVariable> {
     'count': V;
   };
   'MessageActionTodoTaskCount': {
+    'count': V;
+  };
+  'TextAgeVerificationModal': {
+    'count': V;
+  };
+  'RemainingPublicPostsSearch': {
+    'count': V;
+  };
+  'HintPublicPostsSearchQuota': {
     'count': V;
   };
 }

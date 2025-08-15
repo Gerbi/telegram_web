@@ -27,7 +27,6 @@ import {
   getMediaFilename,
   getMediaFormat,
   getMediaHash,
-  getMessageDownloadableMedia,
   getMessageStatefulContent,
   isChatChannel,
 } from '../../helpers';
@@ -72,6 +71,7 @@ import {
   selectThreadInfo,
   selectViewportIds,
 } from '../../selectors';
+import { selectMessageDownloadableMedia } from '../../selectors/media';
 import { getPeerStarsForMessage } from '../api/messages';
 
 import { getIsMobile } from '../../../hooks/useAppLayout';
@@ -679,7 +679,7 @@ addActionHandler('downloadSelectedMessages', (global, actions, payload): ActionR
   const messages = messageIds.map((id) => chatMessages[id])
     .filter((message) => selectAllowedMessageActionsSlow(global, message, threadId).canDownload);
   messages.forEach((message) => {
-    const media = getMessageDownloadableMedia(message);
+    const media = selectMessageDownloadableMedia(global, message);
     if (!media) return;
     actions.downloadMedia({ media, originMessage: message, tabId });
   });
@@ -1017,6 +1017,34 @@ addActionHandler('closePaidReactionModal', (global, actions, payload): ActionRet
   const { tabId = getCurrentTabId() } = payload || {};
   return updateTabState(global, {
     paidReactionModal: undefined,
+  }, tabId);
+});
+
+addActionHandler('openSuggestMessageModal', (global, actions, payload): ActionReturnType => {
+  const { chatId, messageId, tabId = getCurrentTabId() } = payload;
+  return updateTabState(global, {
+    suggestMessageModal: { chatId, messageId },
+  }, tabId);
+});
+
+addActionHandler('closeSuggestMessageModal', (global, actions, payload): ActionReturnType => {
+  const { tabId = getCurrentTabId() } = payload || {};
+  return updateTabState(global, {
+    suggestMessageModal: undefined,
+  }, tabId);
+});
+
+addActionHandler('openSuggestedPostApprovalModal', (global, actions, payload): ActionReturnType => {
+  const { chatId, messageId, tabId = getCurrentTabId() } = payload;
+  return updateTabState(global, {
+    suggestedPostApprovalModal: { chatId, messageId },
+  }, tabId);
+});
+
+addActionHandler('closeSuggestedPostApprovalModal', (global, actions, payload): ActionReturnType => {
+  const { tabId = getCurrentTabId() } = payload || {};
+  return updateTabState(global, {
+    suggestedPostApprovalModal: undefined,
   }, tabId);
 });
 

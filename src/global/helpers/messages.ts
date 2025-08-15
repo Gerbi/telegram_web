@@ -1,3 +1,5 @@
+import type { TeactNode } from '../../lib/teact/teact';
+
 import type {
   ApiAttachment,
   ApiMessage,
@@ -7,9 +9,10 @@ import type {
   ApiTypeStory,
 } from '../../api/types';
 import type {
-  ApiPoll, MediaContainer, StatefulMediaContent,
+  ApiPoll, ApiWebPage, MediaContainer, StatefulMediaContent,
 } from '../../api/types/messages';
 import type { ThreadId } from '../../types';
+import type { LangFn } from '../../util/localization';
 import type { GlobalState } from '../types';
 import { ApiMessageEntityTypes, MAIN_THREAD_ID } from '../../api/types';
 
@@ -25,11 +28,13 @@ import {
   VERIFICATION_CODES_USER_ID,
   VIDEO_STICKER_MIME_TYPE,
 } from '../../config';
+import { areDeepEqual } from '../../util/areDeepEqual';
 import { getCleanPeerId, isUserId } from '../../util/entities/ids';
 import { areSortedArraysIntersecting, unique } from '../../util/iteratees';
 import { isLocalMessageId } from '../../util/keys/messageKey';
 import { getServerTime } from '../../util/serverTime';
 import { getGlobal } from '../index';
+import { selectPollFromMessage, selectWebPageFromMessage } from '../selectors';
 import { getMainUsername } from './users';
 
 const RE_LINK = new RegExp(RE_LINK_TEMPLATE, 'i');
@@ -64,24 +69,28 @@ export function hasMessageText(message: MediaContainer) {
 }
 
 export function getMessageStatefulContent(global: GlobalState, message: ApiMessage): StatefulMediaContent {
-  const poll = message.content.pollId ? global.messages.pollById[message.content.pollId] : undefined;
+  const poll = selectPollFromMessage(global, message);
+  const webPage = selectWebPageFromMessage(global, message);
 
   const { peerId: storyPeerId, id: storyId } = message.content.storyData || {};
   const story = storyId && storyPeerId ? global.stories.byPeerId[storyPeerId]?.byId[storyId] : undefined;
 
-  return groupStatefulContent({ poll, story });
+  return groupStatefulContent({ poll, story, webPage });
 }
 
 export function groupStatefulContent({
   poll,
   story,
+  webPage,
 }: {
   poll?: ApiPoll;
   story?: ApiTypeStory;
+  webPage?: ApiWebPage;
 }) {
   return {
     poll,
     story: story && 'content' in story ? story : undefined,
+    webPage,
   };
 }
 
@@ -100,8 +109,8 @@ export function getMessageCustomShape(message: ApiMessage): boolean {
     return true;
   }
 
-  if (!text || photo || video || audio || voice || document || pollId || webPage || contact || action || game || invoice
-    || location || storyData) {
+  if (!text || photo || video || audio || voice || document || pollId || webPage || contact || action || game
+    || invoice || location || storyData) {
     return false;
   }
 
@@ -408,4 +417,85 @@ export function splitMessagesForForwarding(messages: ApiMessage[], limit: number
   }
 
   return result;
+}
+
+export interface SuggestedChangesInfo {
+  isNewText: boolean;
+  isNewPrice: boolean;
+  isNewTime: boolean;
+  isNewMedia: boolean;
+}
+
+export function getSuggestedChangesInfo(
+  message: ApiMessage,
+  originalMessage?: ApiMessage,
+): SuggestedChangesInfo | undefined {
+  if (!message.suggestedPostInfo || message.replyInfo?.type !== 'message'
+    || !message.replyInfo?.replyToMsgId || !originalMessage) {
+    return undefined;
+  }
+
+  if (!originalMessage.suggestedPostInfo) {
+    return undefined;
+  }
+
+  const original = originalMessage.suggestedPostInfo;
+  const suggested = message.suggestedPostInfo;
+
+  const originalContent = originalMessage.content;
+  const suggestedContent = message.content;
+  const { text: originalText, ...originalMediaContent } = originalContent;
+  const { text: suggestedText, ...suggestedMediaContent } = suggestedContent;
+
+  const isNewText = !areDeepEqual(originalText, suggestedText);
+  const isNewMedia = !areDeepEqual(originalMediaContent, suggestedMediaContent);
+
+  const originalPrice = original.price?.amount;
+  const suggestedPrice = suggested.price?.amount;
+  const isNewPrice = originalPrice !== suggestedPrice;
+
+  const originalTime = original.scheduleDate;
+  const suggestedTime = suggested.scheduleDate;
+  const isNewTime = originalTime !== suggestedTime;
+
+  if (!isNewText && !isNewPrice && !isNewTime && !isNewMedia) {
+    return undefined;
+  }
+
+  return {
+    isNewText,
+    isNewPrice,
+    isNewTime,
+    isNewMedia,
+  };
+}
+
+export function getSuggestedChangesActionText(
+  lang: LangFn,
+  message: ApiMessage,
+  originalMessage?: ApiMessage,
+  isOutgoing?: boolean,
+  senderLink?: TeactNode,
+): TeactNode | undefined {
+  const changesInfo = getSuggestedChangesInfo(message, originalMessage);
+  if (!changesInfo) {
+    return undefined;
+  }
+
+  const changesParts: string[] = [];
+  if (changesInfo.isNewPrice) changesParts.push(lang('ActionSuggestedChangesPrice'));
+  if (changesInfo.isNewTime) changesParts.push(lang('ActionSuggestedChangesTime'));
+  if (changesInfo.isNewText) changesParts.push(lang('ActionSuggestedChangesText'));
+  if (changesInfo.isNewMedia) changesParts.push(lang('ActionSuggestedChangesMedia'));
+
+  const changesText = lang.conjunction(changesParts);
+
+  const langKey = isOutgoing ? 'ActionSuggestedChangesOutgoing' : 'ActionSuggestedChangesIncoming';
+  return lang(langKey, {
+    changes: changesText,
+    user: senderLink,
+  }, {
+    withNodes: true,
+    withMarkdown: true,
+  });
 }

@@ -55,6 +55,7 @@ import {
   SCHEDULED_WHEN_ONLINE,
   SEND_MESSAGE_ACTION_INTERVAL,
   SERVICE_NOTIFICATIONS_USER_ID,
+  STARS_CURRENCY_CODE,
 } from '../../config';
 import { requestMeasure, requestNextMutation } from '../../lib/fasterdom/fasterdom';
 import {
@@ -106,6 +107,7 @@ import {
   selectTopicFromMessage,
   selectUser,
   selectUserFullInfo,
+  selectWebPage,
 } from '../../global/selectors';
 import { selectCurrentLimit } from '../../global/selectors/limits';
 import { selectSharedSettings } from '../../global/selectors/sharedState';
@@ -142,6 +144,7 @@ import useGetSelectionRange from '../../hooks/useGetSelectionRange';
 import useLang from '../../hooks/useLang';
 import useLastCallback from '../../hooks/useLastCallback';
 import useOldLang from '../../hooks/useOldLang';
+import usePrevious from '../../hooks/usePrevious';
 import usePreviousDeprecated from '../../hooks/usePreviousDeprecated';
 import useSchedule from '../../hooks/useSchedule';
 import useSendMessageAction from '../../hooks/useSendMessageAction';
@@ -156,6 +159,7 @@ import useDraft from '../middle/composer/hooks/useDraft';
 import useEditing from '../middle/composer/hooks/useEditing';
 import useEmojiTooltip from '../middle/composer/hooks/useEmojiTooltip';
 import useInlineBotTooltip from '../middle/composer/hooks/useInlineBotTooltip';
+import useLoadLinkPreview from '../middle/composer/hooks/useLoadLinkPreview';
 import useMentionTooltip from '../middle/composer/hooks/useMentionTooltip';
 import usePaidMessageConfirmation from '../middle/composer/hooks/usePaidMessageConfirmation';
 import useStickerTooltip from '../middle/composer/hooks/useStickerTooltip';
@@ -235,6 +239,8 @@ type StateProps =
     isReactionPickerOpen?: boolean;
     shouldDisplayGiftsButton?: boolean;
     isForwarding?: boolean;
+    isReplying?: boolean;
+    hasSuggestedPost?: boolean;
     forwardedMessagesCount?: number;
     pollModal: TabState['pollModal'];
     todoListModal: TabState['todoListModal'];
@@ -358,6 +364,8 @@ const Composer: FC<OwnProps & StateProps> = ({
   isReactionPickerOpen,
   shouldDisplayGiftsButton,
   isForwarding,
+  isReplying,
+  hasSuggestedPost,
   forwardedMessagesCount,
   pollModal,
   todoListModal,
@@ -460,6 +468,7 @@ const Composer: FC<OwnProps & StateProps> = ({
     hideEffectInComposer,
     updateChatSilentPosting,
     updateInsertingPeerIdMention,
+    updateDraftSuggestedPostInfo,
   } = getActions();
 
   const oldLang = useOldLang();
@@ -816,7 +825,13 @@ const Composer: FC<OwnProps & StateProps> = ({
     getHtml,
     setHtml,
     editedMessage: editingMessage,
-    isDisabled: isInStoryViewer || Boolean(requestedDraft) || isMonoforum,
+    isDisabled: isInStoryViewer || Boolean(requestedDraft) || (!hasSuggestedPost && isMonoforum),
+  });
+
+  useLoadLinkPreview({
+    chatId,
+    threadId,
+    getHtml,
   });
 
   const resetComposer = useLastCallback((shouldPreserveInput = false) => {
@@ -872,6 +887,8 @@ const Composer: FC<OwnProps & StateProps> = ({
   }, [disallowedGifts]);
 
   const shouldShowGiftButton = Boolean(!isChatWithSelf && shouldDisplayGiftsButton && !areAllGiftsDisallowed);
+  const shouldShowSuggestedPostButton = isMonoforum && !editingMessage
+    && !isForwarding && !isReplying && !draft?.suggestedPostInfo;
 
   const showCustomEmojiPremiumNotification = useLastCallback(() => {
     const notificationNumber = customEmojiNotificationNumber.current;
@@ -1567,6 +1584,11 @@ const Composer: FC<OwnProps & StateProps> = ({
   const handleGiftClick = useLastCallback(() => {
     openGiftModal({ forUserId: chatId });
   });
+  const handleSuggestPostClick = useLastCallback(() => {
+    updateDraftSuggestedPostInfo({
+      price: { currency: STARS_CURRENCY_CODE, amount: 0, nanos: 0 },
+    });
+  });
 
   const handleToggleSilentPosting = useLastCallback(() => {
     const newValue = !isSilentPosting;
@@ -1638,6 +1660,10 @@ const Composer: FC<OwnProps & StateProps> = ({
         });
       }
 
+      if (isReplying && hasSuggestedPost) {
+        return lang('ComposerPlaceholderCaption');
+      }
+
       if (chat?.adminRights?.anonymous) {
         return lang('ComposerPlaceholderAnonymous');
       }
@@ -1658,7 +1684,8 @@ const Composer: FC<OwnProps & StateProps> = ({
     return lang('ComposerPlaceholderNoText');
   }, [
     activeVoiceRecording, botKeyboardPlaceholder, chat, inputPlaceholder, isChannel, isComposerBlocked,
-    isInStoryViewer, isSilentPosting, lang, replyToTopic, threadId, windowWidth, paidMessagesStars,
+    isInStoryViewer, isSilentPosting, lang, replyToTopic, isReplying, threadId, windowWidth, paidMessagesStars,
+    hasSuggestedPost,
   ]);
 
   useEffect(() => {
@@ -1857,6 +1884,7 @@ const Composer: FC<OwnProps & StateProps> = ({
   const effectEmoji = areEffectsSupported && effect?.emoticon;
 
   const shouldRenderPaidBadge = Boolean(paidMessagesStars && mainButtonState === MainButtonState.Send);
+  const prevShouldRenderPaidBadge = usePrevious(shouldRenderPaidBadge);
 
   return (
     <div className={fullClassName}>
@@ -2008,8 +2036,7 @@ const Composer: FC<OwnProps & StateProps> = ({
             <WebPagePreview
               chatId={chatId}
               threadId={threadId}
-              getHtml={getHtml}
-              isDisabled={!canAttachEmbedLinks || hasAttachments}
+              isDisabled={!canAttachEmbedLinks || hasAttachments || !hasText}
               isEditing={Boolean(editingMessage)}
             />
           </>
@@ -2164,6 +2191,17 @@ const Composer: FC<OwnProps & StateProps> = ({
                         onClick={handleGiftClick}
                       >
                         <Icon name="gift" />
+                      </Button>
+                    )}
+                    {shouldShowSuggestedPostButton && (
+                      <Button
+                        round
+                        faded
+                        className="composer-action-button"
+                        color="translucent"
+                        onClick={handleSuggestPostClick}
+                      >
+                        <Icon name="cash-circle" />
                       </Button>
                     )}
                     {Boolean(botKeyboardMessageId) && !activeVoiceRecording && !editingMessage && (
@@ -2330,7 +2368,12 @@ const Composer: FC<OwnProps & StateProps> = ({
         {isInMessageList && <Icon name="schedule" />}
         {isInMessageList && <Icon name="check" />}
         <Button
-          className={buildClassName('paidStarsBadge', shouldRenderPaidBadge && 'visible')}
+          className={buildClassName(
+            'paidStarsBadge',
+            shouldRenderPaidBadge && 'visible',
+            prevShouldRenderPaidBadge && !shouldRenderPaidBadge && 'hiding',
+            !prevShouldRenderPaidBadge && !shouldRenderPaidBadge && 'hidden',
+          )}
           nonInteractive
           size="tiny"
           color="stars"
@@ -2479,11 +2522,15 @@ export default memo(withGlobal<OwnProps>(
 
     const maxMessageLength = global.config?.maxMessageLength || DEFAULT_MAX_MESSAGE_LENGTH;
     const isForwarding = chatId === tabState.forwardMessages.toChatId;
+    const isReplying = Boolean(draft?.replyInfo);
+    const hasSuggestedPost = Boolean(draft?.suggestedPostInfo);
     const starsBalance = global.stars?.balance.amount || 0;
     const isStarsBalanceModalOpen = Boolean(tabState.starsBalanceModal);
     const isAccountFrozen = selectIsCurrentUserFrozen(global);
     const isAppConfigLoaded = global.isAppConfigLoaded;
     const insertingPeerIdMention = tabState.insertingPeerIdMention;
+
+    const webPagePreview = tabState.webPagePreviewId ? selectWebPage(global, tabState.webPagePreviewId) : undefined;
 
     return {
       availableReactions: global.reactions.availableReactions,
@@ -2507,6 +2554,8 @@ export default memo(withGlobal<OwnProps>(
       botKeyboardMessageId,
       botKeyboardPlaceholder: keyboardMessage?.keyboardPlaceholder,
       isForwarding,
+      isReplying,
+      hasSuggestedPost,
       forwardedMessagesCount: isForwarding ? forwardMessageIds!.length : undefined,
       pollModal: tabState.pollModal,
       todoListModal: tabState.todoListModal,
@@ -2554,7 +2603,7 @@ export default memo(withGlobal<OwnProps>(
       quickReplies: global.quickReplies.byId,
       canSendQuickReplies,
       noWebPage,
-      webPagePreview: selectTabState(global).webPagePreview,
+      webPagePreview,
       isContactRequirePremium: userFullInfo?.isContactRequirePremium,
       effect,
       effectReactions,

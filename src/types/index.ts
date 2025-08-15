@@ -16,6 +16,7 @@ import type {
   ApiFakeType,
   ApiFormattedText,
   ApiInputReplyInfo,
+  ApiInputSuggestedPostInfo,
   ApiLabeledPrice,
   ApiLanguage,
   ApiMediaFormat,
@@ -40,6 +41,7 @@ import type {
   ApiTopic,
   ApiTypingStatus,
   ApiVideo,
+  MediaContent,
   StarGiftAttributeIdModel,
 } from '../api/types';
 import type { DC_IDS } from '../config';
@@ -311,6 +313,7 @@ export enum GlobalSearchContent {
   ChatList,
   ChannelList,
   BotApps,
+  PublicPosts,
   Media,
   Links,
   Files,
@@ -726,6 +729,7 @@ export type SendMessageParams = {
   text?: string;
   entities?: ApiMessageEntity[];
   replyInfo?: ApiInputReplyInfo;
+  suggestedPostInfo?: ApiInputSuggestedPostInfo;
   attachment?: ApiAttachment;
   sticker?: ApiSticker;
   story?: ApiStory | ApiStorySkipped;
@@ -755,6 +759,7 @@ export type SendMessageParams = {
   isForwarding?: boolean;
   forwardParams?: ForwardMessagesParams;
   isStoryReply?: boolean;
+  suggestedMedia?: MediaContent;
 };
 
 export type ForwardedLocalMessagesSlice = {

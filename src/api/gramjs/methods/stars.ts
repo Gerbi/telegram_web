@@ -8,19 +8,26 @@ import type {
   ApiRequestInputSavedStarGift,
   ApiStarGiftAttributeId,
   ApiStarGiftRegular,
+  ApiTypeCurrencyAmount,
 } from '../../types';
 
+import { buildApiChatFromPreview } from '../apiBuilders/chats';
 import { buildApiResaleGifts, buildApiSavedStarGift, buildApiStarGift,
   buildApiStarGiftAttribute, buildInputResaleGiftsAttributes } from '../apiBuilders/gifts';
 import {
-  buildApiStarsAmount,
+  buildApiCurrencyAmount,
   buildApiStarsGiftOptions,
   buildApiStarsGiveawayOptions,
   buildApiStarsSubscription,
   buildApiStarsTransaction,
   buildApiStarTopupOption,
 } from '../apiBuilders/payments';
-import { buildInputPeer, buildInputSavedStarGift, buildInputUser, DEFAULT_PRIMITIVES } from '../gramjsBuilders';
+import { buildApiUser } from '../apiBuilders/users';
+import { buildInputPeer,
+  buildInputSavedStarGift,
+  buildInputStarsAmount,
+  buildInputUser,
+  DEFAULT_PRIMITIVES } from '../gramjsBuilders';
 import { checkErrorType, wrapError } from '../helpers/misc';
 import { invokeRequest } from './client';
 import { getPassword } from './twoFaSettings';
@@ -44,8 +51,18 @@ export async function fetchStarGifts() {
     return undefined;
   }
 
+  const chats = result.chats?.map((chat) => buildApiChatFromPreview(chat)).filter(Boolean);
+  const users = result.users?.map(buildApiUser).filter(Boolean);
+
   // Right now, only regular star gifts can be bought, but API are not specific
-  return result.gifts.map(buildApiStarGift).filter((gift): gift is ApiStarGiftRegular => gift.type === 'starGift');
+  const gifts
+   = result.gifts.map(buildApiStarGift).filter((gift): gift is ApiStarGiftRegular => gift.type === 'starGift');
+
+  return {
+    gifts,
+    chats,
+    users,
+  };
 }
 
 export async function fetchResaleGifts({
@@ -170,21 +187,31 @@ export async function getStarsGiftOptions({
   return result.map(buildApiStarsGiftOptions);
 }
 
-export async function fetchStarsStatus() {
+export async function fetchStarsStatus({
+  isTon,
+}: {
+  isTon?: boolean;
+} = {}) {
   const result = await invokeRequest(new GramJs.payments.GetStarsStatus({
     peer: new GramJs.InputPeerSelf(),
+    ton: isTon || undefined,
   }));
 
   if (!result) {
     return undefined;
   }
 
+  const balance = buildApiCurrencyAmount(result.balance);
+  if (!balance) {
+    return undefined;
+  }
+
   return {
     nextHistoryOffset: result.nextOffset,
-    history: result.history?.map(buildApiStarsTransaction),
+    history: result.history?.map(buildApiStarsTransaction).filter(Boolean),
     nextSubscriptionOffset: result.subscriptionsNextOffset,
     subscriptions: result.subscriptions?.map(buildApiStarsSubscription),
-    balance: buildApiStarsAmount(result.balance),
+    balance,
   };
 }
 
@@ -194,42 +221,52 @@ export async function fetchStarsTransactions({
   limit = DEFAULT_PRIMITIVES.INT,
   isInbound,
   isOutbound,
+  isTon,
 }: {
   peer?: ApiPeer;
   offset?: string;
   limit?: number;
-  isInbound?: true;
-  isOutbound?: true;
+  isInbound?: boolean;
+  isOutbound?: boolean;
+  isTon?: boolean;
 }) {
   const inputPeer = peer ? buildInputPeer(peer.id, peer.accessHash) : new GramJs.InputPeerSelf();
   const result = await invokeRequest(new GramJs.payments.GetStarsTransactions({
     peer: inputPeer,
     offset,
     limit,
-    inbound: isInbound,
-    outbound: isOutbound,
+    inbound: isInbound || undefined,
+    outbound: isOutbound || undefined,
+    ton: isTon || undefined,
   }));
 
   if (!result) {
     return undefined;
   }
 
+  const balance = buildApiCurrencyAmount(result.balance);
+  if (!balance) {
+    return undefined;
+  }
+
   return {
     nextOffset: result.nextOffset,
-    history: result.history?.map(buildApiStarsTransaction),
-    balance: buildApiStarsAmount(result.balance),
+    history: result.history?.map(buildApiStarsTransaction).filter(Boolean),
+    balance,
   };
 }
 
 export async function fetchStarsTransactionById({
-  id, peer,
+  id, peer, ton,
 }: {
   id: string;
   peer?: ApiPeer;
+  ton?: true;
 }) {
   const inputPeer = peer ? buildInputPeer(peer.id, peer.accessHash) : new GramJs.InputPeerSelf();
   const result = await invokeRequest(new GramJs.payments.GetStarsTransactionsByID({
     peer: inputPeer,
+    ton,
     id: [new GramJs.InputStarsTransaction({
       id,
     })],
@@ -261,10 +298,15 @@ export async function fetchStarsSubscriptions({
     return undefined;
   }
 
+  const balance = buildApiCurrencyAmount(result.balance);
+  if (!balance) {
+    return undefined;
+  }
+
   return {
     nextOffset: result.subscriptionsNextOffset,
     subscriptions: result.subscriptions.map(buildApiStarsSubscription),
-    balance: buildApiStarsAmount(result.balance),
+    balance,
   };
 }
 
@@ -386,11 +428,11 @@ export function updateStarGiftPrice({
   price,
 }: {
   inputSavedGift: ApiRequestInputSavedStarGift;
-  price: number;
+  price: ApiTypeCurrencyAmount;
 }) {
   return invokeRequest(new GramJs.payments.UpdateStarGiftPrice({
     stargift: buildInputSavedStarGift(inputSavedGift),
-    resellStars: bigInt(price),
+    resellAmount: buildInputStarsAmount(price),
   }), {
     shouldReturnTrue: true,
   });
