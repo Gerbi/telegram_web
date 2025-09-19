@@ -26,9 +26,6 @@ import type {
 } from '../../../types';
 import { MAIN_THREAD_ID } from '../../../api/types';
 
-import {
-  TODO_ITEMS_LIMIT,
-} from '../../../config';
 import { PREVIEW_AVATAR_COUNT, SERVICE_NOTIFICATIONS_USER_ID } from '../../../config';
 import {
   areReactionsEmpty,
@@ -74,6 +71,7 @@ import {
   selectTopic,
   selectUser,
   selectUserStatus,
+  selectWebPageFromMessage,
 } from '../../../global/selectors';
 import { selectMessageDownloadableMedia } from '../../../global/selectors/media';
 import buildClassName from '../../../util/buildClassName';
@@ -788,7 +786,7 @@ const ContextMenuContainer: FC<OwnProps & StateProps> = ({
 };
 
 export default memo(withGlobal<OwnProps>(
-  (global, { message, messageListType, detectedLanguage }): StateProps => {
+  (global, { message, messageListType, detectedLanguage }): Complete<StateProps> => {
     const { threadId } = selectCurrentMessageList(global) || {};
 
     const { defaultTags, topReactions, availableReactions } = global.reactions;
@@ -802,7 +800,7 @@ export default memo(withGlobal<OwnProps>(
 
     const {
       seenByExpiresAt, seenByMaxChatMembers, maxUniqueReactions, readDateExpiresAt,
-    } = global.appConfig || {};
+    } = global.appConfig;
 
     const reactionsLimit = chatFullInfo?.reactionsLimit || maxUniqueReactions;
 
@@ -893,13 +891,14 @@ export default memo(withGlobal<OwnProps>(
     const isInSavedMessages = selectIsChatWithSelf(global, message.chatId);
 
     const poll = selectPollFromMessage(global, message);
+    const webPage = selectWebPageFromMessage(global, message);
     const storyData = message.content.storyData;
     const story = storyData ? selectPeerStory(global, storyData.peerId, storyData.id) : undefined;
 
     const canGift = selectCanGift(global, message.chatId);
 
     const savedDialogId = selectSavedDialogIdFromMessage(global, message);
-    const todoItemsMax = global.appConfig?.todoItemsMax || TODO_ITEMS_LIMIT;
+    const todoItemsMax = global.appConfig.todoItemsMax;
     const canAppendTodoList = message.content.todo?.todo.othersCanAppend
       && message.content.todo?.todo.items?.length < todoItemsMax;
 
@@ -960,6 +959,7 @@ export default memo(withGlobal<OwnProps>(
       userFullName,
       canGift,
       savedDialogId,
+      webPage,
     };
   },
 )(ContextMenuContainer));

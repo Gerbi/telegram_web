@@ -6,7 +6,6 @@ import { getActions } from '../../global';
 import type { ApiDocument, ApiMessage } from '../../api/types';
 import type { ObserveFn } from '../../hooks/useIntersectionObserver';
 
-import { SVG_EXTENSIONS } from '../../config';
 import {
   getDocumentMediaHash,
   getMediaFormat,
@@ -14,7 +13,9 @@ import {
   getMediaTransferState,
   isDocumentVideo,
 } from '../../global/helpers';
+import { isIpRevealingMedia } from '../../util/media/ipRevealingMedia';
 import { getDocumentExtension, getDocumentHasPreview } from './helpers/documentInfo';
+import { preloadDocumentMedia } from './helpers/preloadDocumentMedia';
 
 import useFlag from '../../hooks/useFlag';
 import { useIsIntersecting } from '../../hooks/useIntersectionObserver';
@@ -41,7 +42,7 @@ type OwnProps = {
   sender?: string;
   autoLoadFileMaxSizeMb?: number;
   isDownloading?: boolean;
-  shouldWarnAboutSvg?: boolean;
+  shouldWarnAboutFiles?: boolean;
   onCancelUpload?: () => void;
   onMediaClick?: () => void;
 } & ({
@@ -67,7 +68,7 @@ const Document = ({
   sender,
   isSelected,
   isSelectable,
-  shouldWarnAboutSvg,
+  shouldWarnAboutFiles,
   isDownloading,
   message,
   onCancelUpload,
@@ -79,10 +80,10 @@ const Document = ({
   const ref = useRef<HTMLDivElement>();
 
   const lang = useOldLang();
-  const [isSvgDialogOpen, openSvgDialog, closeSvgDialog] = useFlag();
-  const [shouldNotWarnAboutSvg, setShouldNotWarnAboutSvg] = useState(false);
+  const [isFileIpDialogOpen, openFileIpDialog, closeFileIpDialog] = useFlag();
+  const [shouldNotWarnAboutFiles, setShouldNotWarnAboutFiles] = useState(false);
 
-  const { fileName, size, timestamp } = document;
+  const { fileName, size, timestamp, mimeType } = document;
   const extension = getDocumentExtension(document) || '';
 
   const isIntersecting = useIsIntersecting(ref, observeIntersection);
@@ -119,7 +120,25 @@ const Document = ({
   const localBlobUrl = hasPreview ? document.previewBlobUrl : undefined;
   const previewData = useMedia(getDocumentMediaHash(document, 'pictogram'), !isIntersecting);
 
-  const withMediaViewer = onMediaClick && document.innerMediaType;
+  const shouldForceDownload = document.innerMediaType === 'photo' && document.mediaSize
+    && !document.mediaSize.fromDocumentAttribute && !document.mediaSize.fromPreload;
+
+  const withMediaViewer = onMediaClick && document.innerMediaType && !shouldForceDownload;
+
+  useEffect(() => {
+    const fileEl = ref.current;
+    if (!withMediaViewer || !fileEl || !message) return;
+
+    const onHover = () => {
+      preloadDocumentMedia(message);
+    };
+
+    fileEl.addEventListener('mouseenter', onHover);
+
+    return () => {
+      fileEl.removeEventListener('mouseenter', onHover);
+    };
+  }, [withMediaViewer, message]);
 
   const handleDownload = useLastCallback(() => {
     downloadMedia({ media: document, originMessage: message });
@@ -148,17 +167,17 @@ const Document = ({
       return;
     }
 
-    if (SVG_EXTENSIONS.has(extension) && shouldWarnAboutSvg) {
-      openSvgDialog();
+    if (isIpRevealingMedia({ mimeType, extension }) && shouldWarnAboutFiles) {
+      openFileIpDialog();
       return;
     }
 
     handleDownload();
   });
 
-  const handleSvgConfirm = useLastCallback(() => {
-    setSharedSettingOption({ shouldWarnAboutSvg: !shouldNotWarnAboutSvg });
-    closeSvgDialog();
+  const handleFileIpConfirm = useLastCallback(() => {
+    setSharedSettingOption({ shouldWarnAboutFiles: !shouldNotWarnAboutFiles });
+    closeFileIpDialog();
     handleDownload();
   });
 
@@ -189,16 +208,16 @@ const Document = ({
         onDateClick={onDateClick ? handleDateClick : undefined}
       />
       <ConfirmDialog
-        isOpen={isSvgDialogOpen}
-        onClose={closeSvgDialog}
-        confirmHandler={handleSvgConfirm}
+        isOpen={isFileIpDialogOpen}
+        onClose={closeFileIpDialog}
+        confirmHandler={handleFileIpConfirm}
       >
         {lang('lng_launch_svg_warning')}
         <Checkbox
           className="dialog-checkbox"
-          checked={shouldNotWarnAboutSvg}
+          checked={shouldNotWarnAboutFiles}
           label={lang('lng_launch_exe_dont_ask')}
-          onCheck={setShouldNotWarnAboutSvg}
+          onCheck={setShouldNotWarnAboutFiles}
         />
       </ConfirmDialog>
     </>

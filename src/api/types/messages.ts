@@ -153,7 +153,7 @@ export interface ApiDocument {
   previewPhotoSizes?: ApiPhotoSize[];
   previewBlobUrl?: string;
   innerMediaType?: 'photo' | 'video';
-  mediaSize?: ApiDimensions;
+  mediaSize?: ApiDimensions & { fromDocumentAttribute?: boolean; fromPreload?: true };
 }
 
 export interface ApiContact {
@@ -1036,6 +1036,13 @@ export type ApiSearchPostsFlood = {
   remains: number;
   waitTill?: number;
   starsAmount: number;
+};
+
+export type LinkContext = {
+  type: 'message';
+  threadId?: ThreadId;
+  chatId: string;
+  messageId: number;
 };
 
 export const MAIN_THREAD_ID = -1;

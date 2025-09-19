@@ -6,8 +6,10 @@ import type { ActionReturnType, GlobalState } from '../../types';
 import {
   ANIMATION_WAVE_MIN_INTERVAL,
   DEBUG, GLOBAL_STATE_CACHE_CUSTOM_EMOJI_LIMIT, INACTIVE_MARKER, PAGE_TITLE,
+  PAGE_TITLE_TAURI,
 } from '../../../config';
-import { IS_ELECTRON, IS_WAVE_TRANSFORM_SUPPORTED } from '../../../util/browser/windowEnvironment';
+import { IS_TAURI } from '../../../util/browser/globalEnvironment';
+import { IS_WAVE_TRANSFORM_SUPPORTED } from '../../../util/browser/windowEnvironment';
 import { getAllMultitabTokens, getCurrentTabId, reestablishMasterToSelf } from '../../../util/establishMultitabRole';
 import { getAllNotificationsCount } from '../../../util/folderManager';
 import generateUniqueId from '../../../util/generateUniqueId';
@@ -184,7 +186,9 @@ addActionHandler('toggleMessageStatistics', (global, actions, payload): ActionRe
     statistics: {
       ...selectTabState(global, tabId).statistics,
       currentMessageId: messageId,
+      currentMessage: undefined,
       currentStoryId: undefined,
+      currentStory: undefined,
     },
   }, tabId);
 });
@@ -196,6 +200,8 @@ addActionHandler('toggleStoryStatistics', (global, actions, payload): ActionRetu
       ...selectTabState(global, tabId).statistics,
       currentStoryId: storyId,
       currentMessageId: undefined,
+      currentMessage: undefined,
+      currentStory: undefined,
     },
   }, tabId);
 });
@@ -750,15 +756,6 @@ addActionHandler('checkAppVersion', (global): ActionReturnType => {
     });
 });
 
-addActionHandler('setIsElectronUpdateAvailable', (global, action, payload): ActionReturnType => {
-  global = getGlobal();
-  global = {
-    ...global,
-    isElectronUpdateAvailable: Boolean(payload.isAvailable),
-  };
-  setGlobal(global);
-});
-
 addActionHandler('afterHangUp', (global): ActionReturnType => {
   if (!selectTabState(global, getCurrentTabId()).multitabNextAction) return;
   reestablishMasterToSelf();
@@ -801,13 +798,16 @@ addActionHandler('updatePageTitle', (global, actions, payload): ActionReturnType
   const isTestServer = global.config?.isTestServer;
   const prefix = isTestServer ? '[T] ' : '';
 
+  const defaultTitle = IS_TAURI ? PAGE_TITLE_TAURI : PAGE_TITLE;
+
   if (document.title.includes(INACTIVE_MARKER)) {
     updateIcon(false);
-    setPageTitleInstant(`${prefix}${PAGE_TITLE} ${INACTIVE_MARKER}`);
+    setPageTitleInstant(`${prefix}${defaultTitle} ${INACTIVE_MARKER}`);
     return;
   }
 
-  if (global.initialUnreadNotifications && Math.round(Date.now() / 1000) % 2 === 0) {
+  // Show blinking title in browser tab
+  if (!IS_TAURI && global.initialUnreadNotifications && Math.round(Date.now() / 1000) % 2 === 0) {
     const notificationCount = getAllNotificationsCount();
 
     const newUnread = notificationCount - global.initialUnreadNotifications;
@@ -839,7 +839,7 @@ addActionHandler('updatePageTitle', (global, actions, payload): ActionReturnType
     }
   }
 
-  setPageTitleInstant(IS_ELECTRON ? '' : `${prefix}${PAGE_TITLE}`);
+  setPageTitleInstant(`${prefix}${defaultTitle}`);
 });
 
 addActionHandler('closeInviteViaLinkModal', (global, actions, payload): ActionReturnType => {
@@ -873,7 +873,7 @@ addActionHandler('processPremiumFloodWait', (global, actions, payload): ActionRe
     bandwidthPremiumDownloadSpeedup,
     bandwidthPremiumUploadSpeedup,
     bandwidthPremiumNotifyPeriod,
-  } = global.appConfig || {};
+  } = global.appConfig;
   const { lastPremiumBandwithNotificationDate: lastNotifiedAt } = global.settings;
 
   if (!bandwidthPremiumDownloadSpeedup || !bandwidthPremiumUploadSpeedup || !bandwidthPremiumNotifyPeriod) {

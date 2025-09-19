@@ -11,6 +11,7 @@ import type { IAnchorPosition, ThreadId } from '../../types';
 import type { IconName } from '../../types/icons';
 import { MAIN_THREAD_ID } from '../../api/types';
 
+import { UNMUTE_TIMESTAMP } from '../../config';
 import {
   getCanAddContact,
   getCanDeleteChat,
@@ -303,7 +304,7 @@ const HeaderMenuContainer: FC<OwnProps & StateProps> = ({
     if (isAccountFrozen) {
       openFrozenAccountModal();
     } else {
-      updateChatMutedState({ chatId, isMuted: false });
+      updateChatMutedState({ chatId, mutedUntil: UNMUTE_TIMESTAMP });
     }
     closeMenu();
   });
@@ -841,11 +842,11 @@ const HeaderMenuContainer: FC<OwnProps & StateProps> = ({
 };
 
 export default memo(withGlobal<OwnProps>(
-  (global, { chatId, threadId }): StateProps => {
+  (global, { chatId, threadId }): Complete<StateProps> => {
     const chat = selectChat(global, chatId);
     const isRestricted = selectIsChatRestricted(global, chatId);
     if (!chat || isRestricted) {
-      return {};
+      return {} as Complete<StateProps>;
     }
     const isPrivate = isUserId(chat.id);
     const user = isPrivate ? selectUser(global, chatId) : undefined;

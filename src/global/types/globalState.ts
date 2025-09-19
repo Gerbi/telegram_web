@@ -30,12 +30,14 @@ import type {
   ApiSavedReactionTag,
   ApiSession,
   ApiSponsoredMessage,
+  ApiStarGiftCollection,
   ApiStarGiftRegular,
   ApiStarsAmount,
   ApiStarTopupOption,
   ApiStealthMode,
   ApiSticker,
   ApiStickerSet,
+  ApiStoryAlbum,
   ApiTimezone,
   ApiTonAmount,
   ApiTranscription,
@@ -76,7 +78,7 @@ export type GlobalState = {
   cacheVersion: number;
   isInited: boolean;
   config?: ApiConfig;
-  appConfig?: ApiAppConfig;
+  appConfig: ApiAppConfig;
   peerColors?: ApiPeerColors;
   timezones?: {
     byId: Record<string, ApiTimezone>;
@@ -90,7 +92,6 @@ export type GlobalState = {
   isSyncing?: boolean;
   isAppConfigLoaded?: boolean;
   isAppUpdateAvailable?: boolean;
-  isElectronUpdateAvailable?: boolean;
   isSynced?: boolean;
   isFetchingDifference?: boolean;
   leftColumnWidth?: number;
@@ -253,6 +254,7 @@ export type GlobalState = {
       archived: string[];
     };
     stealthMode: ApiStealthMode;
+    albumsByPeerId: Record<string, ApiStoryAlbum[]>;
   };
 
   groupCalls: {
@@ -276,6 +278,7 @@ export type GlobalState = {
     byId: Record<number, ApiChatFolder>;
     invites: Record<number, ApiChatlistExportedInvite[]>;
     recommended?: ApiChatFolder[];
+    areTagsEnabled?: boolean;
   };
 
   phoneCall?: ApiPhoneCall;
@@ -305,6 +308,9 @@ export type GlobalState = {
   starGifts?: {
     byId: Record<string, ApiStarGiftRegular>;
     idsByCategory: Record<StarGiftCategory, string[]>;
+  };
+  starGiftCollections?: {
+    byPeerId: Record<string, ApiStarGiftCollection[]>;
   };
 
   stickers: {

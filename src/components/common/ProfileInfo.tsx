@@ -3,8 +3,10 @@ import { memo, useEffect, useState } from '../../lib/teact/teact';
 import { getActions, withGlobal } from '../../global';
 
 import type {
-  ApiChat, ApiPeerPhotos, ApiSticker, ApiTopic, ApiUser, ApiUserStatus,
+  ApiChat, ApiPeerPhotos, ApiSticker, ApiTopic, ApiUser, ApiUserFullInfo, ApiUserStatus,
 } from '../../api/types';
+import type { AnimationLevel } from '../../types';
+import type { IconName } from '../../types/icons';
 import { MediaViewerOrigin } from '../../types';
 
 import {
@@ -13,17 +15,21 @@ import {
 import {
   selectChat,
   selectCurrentMessageList,
+  selectCustomEmoji,
   selectPeerPhotos,
   selectTabState,
   selectThreadMessagesCount,
   selectTopic,
   selectUser,
+  selectUserFullInfo,
   selectUserStatus,
 } from '../../global/selectors';
+import { selectSharedSettings } from '../../global/selectors/sharedState.ts';
 import { IS_TOUCH_ENV } from '../../util/browser/windowEnvironment';
 import buildClassName from '../../util/buildClassName';
 import { captureEvents, SwipeDirection } from '../../util/captureEvents';
 import { MEMO_EMPTY_ARRAY } from '../../util/memo';
+import { resolveTransitionName } from '../../util/resolveTransitionName.ts';
 import renderText from './helpers/renderText';
 
 import useIntervalForceUpdate from '../../hooks/schedulers/useIntervalForceUpdate';
@@ -36,11 +42,14 @@ import usePhotosPreload from './hooks/usePhotosPreload';
 import Transition from '../ui/Transition';
 import Avatar from './Avatar';
 import FullNameTitle from './FullNameTitle';
+import Icon from './icons/Icon';
 import ProfilePhoto from './ProfilePhoto';
 import TopicIcon from './TopicIcon';
 
 import './ProfileInfo.scss';
 import styles from './ProfileInfo.module.scss';
+
+const MAX_LEVEL_ICON = 90;
 
 type OwnProps = {
   peerId: string;
@@ -52,12 +61,14 @@ type OwnProps = {
 type StateProps =
   {
     user?: ApiUser;
+    userFullInfo?: ApiUserFullInfo;
     userStatus?: ApiUserStatus;
     chat?: ApiChat;
     mediaIndex?: number;
     avatarOwnerId?: string;
     topic?: ApiTopic;
     messagesCount?: number;
+    animationLevel: AnimationLevel;
     emojiStatusSticker?: ApiSticker;
     emojiStatusSlug?: string;
     profilePhotos?: ApiPeerPhotos;
@@ -73,12 +84,14 @@ const ProfileInfo: FC<OwnProps & StateProps> = ({
   forceShowSelf,
   canPlayVideo,
   user,
+  userFullInfo,
   userStatus,
   chat,
   mediaIndex,
   avatarOwnerId,
   topic,
   messagesCount,
+  animationLevel,
   emojiStatusSticker,
   emojiStatusSlug,
   profilePhotos,
@@ -92,6 +105,7 @@ const ProfileInfo: FC<OwnProps & StateProps> = ({
     openPrivacySettingsNoticeModal,
     loadMoreProfilePhotos,
     openUniqueGiftBySlug,
+    openProfileRatingModal,
   } = getActions();
 
   const oldLang = useOldLang();
@@ -103,8 +117,6 @@ const ProfileInfo: FC<OwnProps & StateProps> = ({
   const prevMediaIndex = usePreviousDeprecated(mediaIndex);
   const prevAvatarOwnerId = usePreviousDeprecated(avatarOwnerId);
   const [hasSlideAnimation, setHasSlideAnimation] = useState(true);
-  // slideOptimized doesn't work well when animation is dynamically disabled
-  const slideAnimation = hasSlideAnimation ? (oldLang.isRtl ? 'slideRtl' : 'slide') : 'none';
 
   const [currentPhotoIndex, setCurrentPhotoIndex] = useState(0);
   const isFirst = photos.length <= 1 || currentPhotoIndex === 0;
@@ -176,6 +188,12 @@ const ProfileInfo: FC<OwnProps & StateProps> = ({
 
   const handleOpenGetReadDateModal = useLastCallback(() => {
     openPrivacySettingsNoticeModal({ chatId: chat!.id, isReadDate: false });
+  });
+
+  const handleRatingClick = useLastCallback((level: number) => {
+    if (user) {
+      openProfileRatingModal({ userId: user.id, level });
+    }
   });
 
   function handleSelectFallbackPhoto() {
@@ -264,6 +282,43 @@ const ProfileInfo: FC<OwnProps & StateProps> = ({
     );
   }
 
+  function renderUserRating() {
+    if (!userFullInfo?.starsRating) return undefined;
+
+    const level = userFullInfo.starsRating.level;
+    const isNegative = level < 0;
+
+    const onRatingClick = () => handleRatingClick(level);
+
+    if (isNegative) {
+      return (
+        <span className={styles.userRatingNegativeWrapper} onClick={onRatingClick}>
+          <Icon
+            name="rating-icons-negative"
+            className={styles.ratingNegativeIcon}
+          />
+          <span className={styles.ratingLevel}>!</span>
+        </span>
+      );
+    }
+
+    const safeLevel = Math.max(level, 1);
+    const iconLevel = Math.min(safeLevel, MAX_LEVEL_ICON);
+    const iconName = (iconLevel < 10
+      ? `rating-icons-level${iconLevel}`
+      : `rating-icons-level${Math.floor(iconLevel / 10) * 10}`) as IconName;
+
+    return (
+      <span className={styles.userRatingWrapper} onClick={onRatingClick}>
+        <Icon
+          name={iconName}
+          className={styles.ratingIcon}
+        />
+        <span className={styles.ratingLevel}>{level}</span>
+      </span>
+    );
+  }
+
   function renderStatus() {
     const isAnonymousForwards = isAnonymousForwardsChat(peerId);
     const isSystemBotChat = isSystemBot(peerId);
@@ -286,6 +341,7 @@ const ProfileInfo: FC<OwnProps & StateProps> = ({
             isUserOnline(user, userStatus) && 'online',
           )}
         >
+          {renderUserRating()}
           <span className={styles.userStatus} dir="auto">
             {getUserStatus(oldLang, user, userStatus)}
           </span>
@@ -349,7 +405,10 @@ const ProfileInfo: FC<OwnProps & StateProps> = ({
             </div>
           </div>
         )}
-        <Transition activeKey={currentPhotoIndex} name={slideAnimation}>
+        <Transition
+          activeKey={currentPhotoIndex}
+          name={resolveTransitionName('slide', animationLevel, !hasSlideAnimation, oldLang.isRtl)}
+        >
           {renderPhoto}
         </Transition>
 
@@ -391,8 +450,9 @@ const ProfileInfo: FC<OwnProps & StateProps> = ({
 };
 
 export default memo(withGlobal<OwnProps>(
-  (global, { peerId }): StateProps => {
+  (global, { peerId }): Complete<StateProps> => {
     const user = selectUser(global, peerId);
+    const userFullInfo = user ? selectUserFullInfo(global, peerId) : undefined;
     const userStatus = selectUserStatus(global, peerId);
     const chat = selectChat(global, peerId);
     const profilePhotos = selectPeerPhotos(global, peerId);
@@ -400,24 +460,25 @@ export default memo(withGlobal<OwnProps>(
     const isForum = chat?.isForum;
     const { threadId: currentTopicId } = selectCurrentMessageList(global) || {};
     const topic = isForum && currentTopicId ? selectTopic(global, peerId, currentTopicId) : undefined;
+    const { animationLevel } = selectSharedSettings(global);
 
     const emojiStatus = (user || chat)?.emojiStatus;
-    const emojiStatusSticker = emojiStatus ? global.customEmojis.byId[emojiStatus.documentId] : undefined;
+    const emojiStatusSticker = emojiStatus ? selectCustomEmoji(global, emojiStatus.documentId) : undefined;
     const emojiStatusSlug = emojiStatus?.type === 'collectible' ? emojiStatus.slug : undefined;
 
     return {
       user,
+      userFullInfo,
       userStatus,
       chat,
       mediaIndex,
       avatarOwnerId,
+      animationLevel,
       emojiStatusSticker,
       emojiStatusSlug,
       profilePhotos,
-      ...(topic && {
-        topic,
-        messagesCount: selectThreadMessagesCount(global, peerId, currentTopicId!),
-      }),
+      topic,
+      messagesCount: topic ? selectThreadMessagesCount(global, peerId, currentTopicId!) : undefined,
     };
   },
 )(ProfileInfo));

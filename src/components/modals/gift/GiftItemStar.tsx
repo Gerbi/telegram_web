@@ -86,9 +86,10 @@ function GiftItemStar({
 
     if (isUserLimitReached) {
       showNotification({
-        message: lang('NotificationGiftsLimit', {
+        message: lang('NotificationGiftsLimit2', {
           count: perUserTotal,
         }, {
+          pluralValue: perUserTotal!,
           withMarkdown: true,
           withNodes: true,
         }),
@@ -143,14 +144,14 @@ function GiftItemStar({
         />
       );
     }
-    if (isPremiumRequired) {
-      return <GiftRibbon color="orange" text={lang('LimitPremium')} />;
-    }
     if (isResale) {
       return <GiftRibbon color="green" text={lang('GiftRibbonResale')} />;
     }
     if (isSoldOut) {
       return <GiftRibbon color="red" text={lang('GiftSoldOut')} />;
+    }
+    if (isPremiumRequired) {
+      return <GiftRibbon color="orange" text={lang('LimitPremium')} />;
     }
     if (isLimited) {
       return <GiftRibbon color="blue" text={lang('GiftLimited')} />;
@@ -218,7 +219,7 @@ function GiftItemStar({
 }
 
 export default memo(
-  withGlobal<OwnProps>((global): StateProps => {
+  withGlobal<OwnProps>((global): Complete<StateProps> => {
     const isCurrentUserPremium = selectIsCurrentUserPremium(global);
 
     return {

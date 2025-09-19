@@ -36,6 +36,8 @@ import {
   selectTabState,
 } from '../../global/selectors';
 import { stopCurrentAudio } from '../../util/audioPlayer';
+import { IS_TAURI } from '../../util/browser/globalEnvironment';
+import { IS_MAC_OS } from '../../util/browser/windowEnvironment';
 import captureEscKeyListener from '../../util/captureEscKeyListener';
 import { disableDirectTextInput, enableDirectTextInput } from '../../util/directInputManager';
 import { isUserId } from '../../util/entities/ids';
@@ -46,7 +48,6 @@ import selectViewableMedia from './helpers/getViewableMedia';
 import { animateClosing, animateOpening } from './helpers/ghostAnimation';
 
 import useAppLayout from '../../hooks/useAppLayout';
-import useElectronDrag from '../../hooks/useElectronDrag';
 import useFlag from '../../hooks/useFlag';
 import useForceUpdate from '../../hooks/useForceUpdate';
 import useLastCallback from '../../hooks/useLastCallback';
@@ -208,9 +209,6 @@ const MediaViewer = ({
       });
     }
   }, [isMobile, isOpen]);
-
-  const headerRef = useRef<HTMLDivElement>();
-  useElectronDrag(headerRef);
 
   const forceUpdate = useForceUpdate();
   useEffect(() => {
@@ -422,7 +420,11 @@ const MediaViewer = ({
       shouldAnimateFirstRender
       noCloseTransition={shouldSkipHistoryAnimations}
     >
-      <div className="media-viewer-head" dir={lang.isRtl ? 'rtl' : undefined} ref={headerRef}>
+      <div
+        className="media-viewer-head"
+        dir={lang.isRtl ? 'rtl' : undefined}
+        data-tauri-drag-region={IS_TAURI && IS_MAC_OS ? true : undefined}
+      >
         {isMobile && (
           <Button
             className="media-viewer-close"
@@ -486,7 +488,7 @@ const MediaViewer = ({
 };
 
 export default memo(withGlobal(
-  (global): StateProps => {
+  (global): Complete<StateProps> => {
     const { mediaViewer, shouldSkipHistoryAnimations } = selectTabState(global);
     const {
       chatId,
@@ -536,6 +538,14 @@ export default memo(withGlobal(
         isSynced,
         currentItem,
         viewableMedia,
+        chatId,
+        threadId,
+        messageId,
+        message: undefined,
+        collectedMessageIds: undefined,
+        chatMessages: undefined,
+        sponsoredMessage: undefined,
+        withDynamicLoading,
       };
     }
 
@@ -611,6 +621,10 @@ export default memo(withGlobal(
       isSynced,
       currentItem,
       viewableMedia,
+      canUpdateMedia: undefined,
+      avatar: undefined,
+      avatarOwner: undefined,
+      profilePhotos: undefined,
     };
   },
 )(MediaViewer));

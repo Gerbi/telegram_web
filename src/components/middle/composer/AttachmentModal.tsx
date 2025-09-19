@@ -100,7 +100,6 @@ type StateProps = {
   currentUserId?: string;
   groupChatMembers?: ApiChatMember[];
   recentEmojis: string[];
-  editingMessage?: ApiMessage;
   baseEmojiKeywords?: Record<string, string[]>;
   emojiKeywords?: Record<string, string[]>;
   shouldSuggestCustomEmoji?: boolean;
@@ -478,8 +477,8 @@ const AttachmentModal: FC<OwnProps & StateProps> = ({
     const everyPhoto = renderingAttachments.every((a) => SUPPORTED_PHOTO_CONTENT_TYPES.has(a.mimeType));
     const everyVideo = renderingAttachments.every((a) => SUPPORTED_VIDEO_CONTENT_TYPES.has(a.mimeType));
     const everyAudio = renderingAttachments.every((a) => SUPPORTED_AUDIO_CONTENT_TYPES.has(a.mimeType));
-    const hasAnyPhoto = renderingAttachments.some((a) => SUPPORTED_PHOTO_CONTENT_TYPES.has(a.mimeType));
-    return [everyPhoto, everyVideo, everyAudio, hasAnyPhoto];
+    const anyPhoto = renderingAttachments.some((a) => SUPPORTED_PHOTO_CONTENT_TYPES.has(a.mimeType));
+    return [everyPhoto, everyVideo, everyAudio, anyPhoto];
   }, [renderingAttachments, isQuickGallery]);
 
   const hasAnySpoilerable = useMemo(() => {
@@ -748,6 +747,7 @@ const AttachmentModal: FC<OwnProps & StateProps> = ({
               <Button
                 ref={mainButtonRef}
                 className={styles.send}
+                size="smaller"
                 onClick={handleSendClick}
                 onContextMenu={canShowCustomSendMenu ? handleContextMenu : undefined}
               >
@@ -776,7 +776,7 @@ const AttachmentModal: FC<OwnProps & StateProps> = ({
 };
 
 export default memo(withGlobal<OwnProps>(
-  (global, { chatId }): StateProps => {
+  (global, { chatId }): Complete<StateProps> => {
     const {
       currentUserId,
       recentEmojis,

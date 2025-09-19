@@ -1,4 +1,4 @@
-import type { ApiPeer, ApiSavedGifts } from '../../api/types';
+import type { ApiPeer, ApiSavedGifts, ApiStarGiftCollection } from '../../api/types';
 import type { GlobalState, TabArgs } from '../types';
 
 import { SERVICE_NOTIFICATIONS_USER_ID } from '../../config';
@@ -6,6 +6,7 @@ import { isUserId } from '../../util/entities/ids';
 import { getCurrentTabId } from '../../util/establishMultitabRole';
 import { isChatAdmin, isDeletedUser } from '../helpers';
 import { selectChat, selectChatFullInfo } from './chats';
+import { selectActiveGiftsCollectionId } from './payments';
 import { selectTabState } from './tabs';
 import { selectBot, selectUser, selectUserFullInfo } from './users';
 
@@ -32,8 +33,17 @@ export function selectPeerSavedGifts<T extends GlobalState>(
   global: T,
   peerId: string,
   ...[tabId = getCurrentTabId()]: TabArgs<T>
-): ApiSavedGifts {
-  return selectTabState(global, tabId).savedGifts.giftsByPeerId[peerId];
+): ApiSavedGifts | undefined {
+  const tabState = selectTabState(global, tabId);
+  const activeCollectionId = selectActiveGiftsCollectionId(global, peerId, tabId);
+  return tabState.savedGifts.collectionsByPeerId[peerId]?.[activeCollectionId];
+}
+
+export function selectPeerStarGiftCollections<T extends GlobalState>(
+  global: T,
+  peerId: string,
+): ApiStarGiftCollection[] | undefined {
+  return global.starGiftCollections?.byPeerId[peerId];
 }
 
 export function selectPeerPaidMessagesStars<T extends GlobalState>(

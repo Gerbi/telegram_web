@@ -331,7 +331,7 @@ const HeaderActions: FC<OwnProps & StateProps> = ({
         <>
           {canExpandActions && !shouldSendJoinRequest && (canSubscribe || shouldJoinToSend) && (
             <Button
-              size="tiny"
+              size="smaller"
               ripple
               fluid
               onClick={handleSubscribeClick}
@@ -341,7 +341,7 @@ const HeaderActions: FC<OwnProps & StateProps> = ({
           )}
           {canExpandActions && shouldSendJoinRequest && (
             <Button
-              size="tiny"
+              size="smaller"
               ripple
               fluid
               onClick={handleSubscribeClick}
@@ -351,7 +351,7 @@ const HeaderActions: FC<OwnProps & StateProps> = ({
           )}
           {canExpandActions && canStartBot && (
             <Button
-              size="tiny"
+              size="smaller"
               ripple
               fluid
               onClick={handleStartBot}
@@ -371,7 +371,7 @@ const HeaderActions: FC<OwnProps & StateProps> = ({
           )}
           {canExpandActions && canUnblock && (
             <Button
-              size="tiny"
+              size="smaller"
               ripple
               fluid
               onClick={handleUnblock}
@@ -469,7 +469,7 @@ const HeaderActions: FC<OwnProps & StateProps> = ({
 export default memo(withGlobal<OwnProps>(
   (global, {
     chatId, threadId, messageListType, isMobile,
-  }): StateProps => {
+  }): Complete<StateProps> => {
     const chat = selectChat(global, chatId);
     const isChannel = Boolean(chat && isChatChannel(chat));
     const isSuperGroup = Boolean(chat && isChatSuperGroup(chat));
@@ -485,7 +485,7 @@ export default memo(withGlobal<OwnProps>(
         language,
         translationLanguage,
         doNotTranslate,
-      };
+      } as Complete<StateProps>;
     }
 
     const bot = selectBot(global, chatId);

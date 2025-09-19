@@ -3,17 +3,19 @@ import { getActions, withGlobal } from '../../../global';
 import { getGlobal } from '../../../global';
 
 import type { ApiMessage, ApiSearchPostsFlood } from '../../../api/types';
+import type { AnimationLevel } from '../../../types';
 import { LoadMoreDirection } from '../../../types';
 
 import { selectTabState } from '../../../global/selectors';
+import { selectSharedSettings } from '../../../global/selectors/sharedState.ts';
 import { parseSearchResultKey, type SearchResultKey } from '../../../util/keys/searchResultKey';
 import { MEMO_EMPTY_ARRAY } from '../../../util/memo';
+import { resolveTransitionName } from '../../../util/resolveTransitionName.ts';
 import { throttle } from '../../../util/schedulers';
 import { renderMessageSummary } from '../../common/helpers/renderMessageText';
 
 import useLang from '../../../hooks/useLang';
 import useLastCallback from '../../../hooks/useLastCallback';
-import useOldLang from '../../../hooks/useOldLang';
 
 import NothingFound from '../../common/NothingFound';
 import InfiniteScroll from '../../ui/InfiniteScroll';
@@ -32,6 +34,7 @@ type StateProps = {
   shouldShowSearchLauncher?: boolean;
   isNothingFound?: boolean;
   isLoading?: boolean;
+  animationLevel: AnimationLevel;
 };
 
 const runThrottled = throttle((cb) => cb(), 500, true);
@@ -44,11 +47,11 @@ const PublicPostsResults = ({
   shouldShowSearchLauncher,
   isNothingFound,
   isLoading,
+  animationLevel,
 }: OwnProps & StateProps) => {
   const { searchMessagesGlobal } = getActions();
 
   const lang = useLang();
-  const oldLang = useOldLang();
 
   const handleSearch = useLastCallback(() => {
     if (!searchQuery) return;
@@ -85,7 +88,7 @@ const PublicPostsResults = ({
   function renderFoundMessage(message: ApiMessage) {
     const chatsById = getGlobal().chats.byId;
 
-    const text = renderMessageSummary(oldLang, message);
+    const text = renderMessageSummary(lang, message);
     const chat = chatsById[message.chatId];
 
     if (!text || !chat) {
@@ -104,7 +107,7 @@ const PublicPostsResults = ({
 
   return (
     <Transition
-      name={lang.isRtl ? 'slideOptimizedRtl' : 'slideOptimized'}
+      name={resolveTransitionName('slideOptimized', animationLevel, undefined, lang.isRtl)}
       activeKey={shouldShowSearchLauncher || isLoading ? 0 : 1}
     >
       {shouldShowSearchLauncher || isLoading ? (
@@ -125,8 +128,8 @@ const PublicPostsResults = ({
           >
             {isNothingFound && (
               <NothingFound
-                text={oldLang('ChatList.Search.NoResults')}
-                description={oldLang('ChatList.Search.NoResultsDescription')}
+                text={lang('ChatListSearchNoResults')}
+                description={lang('ChatListSearchNoResultsDescription')}
                 withSticker
               />
             )}
@@ -146,15 +149,15 @@ const PublicPostsResults = ({
 };
 
 export default memo(withGlobal<OwnProps>(
-  (global): StateProps => {
+  (global): Complete<StateProps> => {
     const { messages: { byChatId: globalMessagesByChatId } } = global;
     const { resultsByType, searchFlood, fetchingStatus } = selectTabState(global).globalSearch;
-
     const publicPostsResult = resultsByType?.publicPosts;
     const { foundIds } = publicPostsResult || {};
     const isLoading = Boolean(fetchingStatus?.publicPosts && !publicPostsResult);
     const shouldShowSearchLauncher = !publicPostsResult && !isLoading;
     const isNothingFound = publicPostsResult && !foundIds?.length;
+    const { animationLevel } = selectSharedSettings(global);
 
     return {
       foundIds,
@@ -163,6 +166,7 @@ export default memo(withGlobal<OwnProps>(
       shouldShowSearchLauncher,
       isNothingFound,
       isLoading,
+      animationLevel,
     };
   },
 )(PublicPostsResults));

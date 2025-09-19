@@ -13,7 +13,7 @@ import type {
 
 import { buildApiChatFromPreview } from '../apiBuilders/chats';
 import { buildApiResaleGifts, buildApiSavedStarGift, buildApiStarGift,
-  buildApiStarGiftAttribute, buildInputResaleGiftsAttributes } from '../apiBuilders/gifts';
+  buildApiStarGiftAttribute, buildApiStarGiftCollection, buildInputResaleGiftsAttributes } from '../apiBuilders/gifts';
 import {
   buildApiCurrencyAmount,
   buildApiStarsGiftOptions,
@@ -21,6 +21,7 @@ import {
   buildApiStarsSubscription,
   buildApiStarsTransaction,
   buildApiStarTopupOption,
+  buildApiUniqueStarGiftValueInfo,
 } from '../apiBuilders/payments';
 import { buildApiUser } from '../apiBuilders/users';
 import { buildInputPeer,
@@ -112,11 +113,13 @@ export async function fetchSavedStarGifts({
   offset = DEFAULT_PRIMITIVES.STRING,
   limit = DEFAULT_PRIMITIVES.INT,
   filter,
+  collectionId,
 }: {
   peer: ApiPeer;
   offset?: string;
   limit?: number;
   filter?: GiftProfileFilterOptions;
+  collectionId?: number;
 }) {
   type GetSavedStarGiftsParams = ConstructorParameters<typeof GramJs.payments.GetSavedStarGifts>[0];
 
@@ -124,10 +127,12 @@ export async function fetchSavedStarGifts({
     peer: buildInputPeer(peer.id, peer.accessHash),
     offset,
     limit,
+    collectionId,
     ...(filter && {
       sortByValue: filter.sortType === 'byValue' || undefined,
       excludeUnlimited: !filter.shouldIncludeUnlimited || undefined,
-      excludeLimited: !filter.shouldIncludeLimited || undefined,
+      excludeUpgradable: !filter.shouldIncludeUpgradable || undefined,
+      excludeUnupgradable: !filter.shouldIncludeLimited || undefined,
       excludeUnique: !filter.shouldIncludeUnique || undefined,
       excludeSaved: !filter.shouldIncludeDisplayed || undefined,
       excludeUnsaved: !filter.shouldIncludeHidden || undefined,
@@ -438,6 +443,18 @@ export function updateStarGiftPrice({
   });
 }
 
+export async function fetchUniqueStarGiftValueInfo({ slug }: { slug: string }) {
+  const result = await invokeRequest(new GramJs.payments.GetUniqueStarGiftValueInfo({
+    slug,
+  }));
+
+  if (!result) {
+    return undefined;
+  }
+
+  return buildApiUniqueStarGiftValueInfo(result);
+}
+
 export async function fetchStarGiftWithdrawalUrl({
   inputGift,
   password,
@@ -475,4 +492,25 @@ export async function fetchStarGiftWithdrawalUrl({
   }
 
   return undefined;
+}
+
+export async function fetchStarGiftCollections({
+  peer,
+  hash,
+}: {
+  peer: ApiPeer;
+  hash?: string;
+}) {
+  const result = await invokeRequest(new GramJs.payments.GetStarGiftCollections({
+    peer: buildInputPeer(peer.id, peer.accessHash),
+    hash: hash ? bigInt(hash) : DEFAULT_PRIMITIVES.BIGINT,
+  }));
+
+  if (!result || result instanceof GramJs.payments.StarGiftCollectionsNotModified) {
+    return undefined;
+  }
+
+  return {
+    collections: result.collections.map(buildApiStarGiftCollection).filter(Boolean),
+  };
 }

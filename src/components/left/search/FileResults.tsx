@@ -25,6 +25,7 @@ import Document from '../../common/Document';
 import NothingFound from '../../common/NothingFound';
 import InfiniteScroll from '../../ui/InfiniteScroll';
 import Loading from '../../ui/Loading';
+import Transition from '../../ui/Transition.tsx';
 
 export type OwnProps = {
   searchQuery?: string;
@@ -43,7 +44,7 @@ const FileResults: FC<OwnProps & StateProps> = ({
   globalMessagesByChatId,
   foundIds,
   activeDownloads,
-  shouldWarnAboutSvg,
+  shouldWarnAboutFiles,
 }) => {
   const {
     searchMessagesGlobal,
@@ -116,7 +117,7 @@ const FileResults: FC<OwnProps & StateProps> = ({
               sender={getSenderName(lang, message, chatsById, usersById)}
               className="scroll-item"
               isDownloading={getIsDownloading(activeDownloads, message.content.document!)}
-              shouldWarnAboutSvg={shouldWarnAboutSvg}
+              shouldWarnAboutFiles={shouldWarnAboutFiles}
               observeIntersection={observeIntersectionForMedia}
               onDateClick={handleMessageFocus}
             />
@@ -129,7 +130,13 @@ const FileResults: FC<OwnProps & StateProps> = ({
   const canRenderContents = useAsyncRendering([searchQuery], SLIDE_TRANSITION_DURATION) && !isLoading;
 
   return (
-    <div ref={containerRef} className="LeftSearch--content">
+    <Transition
+      ref={containerRef}
+      slideClassName="LeftSearch--content"
+      name="fade"
+      activeKey={canRenderContents ? 1 : 0}
+      shouldCleanup
+    >
       <InfiniteScroll
         className="search-content documents-list custom-scroll"
         items={canRenderContents ? foundMessages : undefined}
@@ -146,7 +153,7 @@ const FileResults: FC<OwnProps & StateProps> = ({
         )}
         {canRenderContents && foundIds && foundIds.length > 0 && renderList()}
       </InfiniteScroll>
-    </div>
+    </Transition>
   );
 };
 

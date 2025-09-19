@@ -217,7 +217,6 @@ const StarsSubscriptionModal: FC<OwnProps & StateProps> = ({
         )}
         {buttonState !== 'hidden' && (
           <Button
-            size="smaller"
             color={buttonState === 'cancel' ? 'danger' : 'primary'}
             isText={buttonState === 'cancel'}
             onClick={handleButtonClick}
@@ -256,7 +255,7 @@ const StarsSubscriptionModal: FC<OwnProps & StateProps> = ({
 };
 
 export default memo(withGlobal<OwnProps>(
-  (global, { modal }): StateProps => {
+  (global, { modal }): Complete<StateProps> => {
     const peerId = modal?.subscription.peerId;
     const peer = peerId ? selectPeer(global, peerId) : undefined;
 

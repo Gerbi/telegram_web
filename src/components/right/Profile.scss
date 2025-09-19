@@ -7,13 +7,6 @@
   flex-direction: column;
 
   height: 100%;
-  border-top: 1px solid transparent;
-
-  transition: border-top-color 0.2s ease-in-out;
-
-  &.scrolled {
-    border-top-color: var(--color-borders);
-  }
 
   > .profile-info > .ChatInfo {
     grid-area: chat_info;
@@ -47,6 +40,7 @@
 
   .FloatingActionButton {
     z-index: 1;
+
     &.revealed {
       transition-delay: 0.2s;
     }
@@ -87,11 +81,11 @@
 
 .shared-media {
   display: flex;
+  flex: 1;
   flex-direction: column-reverse;
 
   .TabList {
     z-index: 1;
-    top: -1px;
     background: var(--color-background);
   }
 
@@ -107,7 +101,20 @@
     height: 100% !important;
   }
 
+  .shared-media-transition {
+    overflow: hidden;
+  }
+
   .content {
+    transition: transform var(--layer-transition);
+    &.showContentPanel {
+      transform: translateY(3rem);
+      padding-bottom: 3.5rem !important;
+    }
+    &.noTransition {
+      transition: none;
+    }
+
     &.empty-list {
       display: flex;
       align-items: flex-start;
@@ -214,6 +221,24 @@
         font-size: 0.8125rem;
         text-align: center;
       }
+    }
+  }
+
+  .contentCategoriesPanel {
+    position: absolute;
+    top: 0;
+    right: 0;
+    left: 0;
+
+    transition: transform var(--layer-transition), opacity 0.2s ease;
+
+    &.hiddenPanel {
+      transform: translateY(-100%);
+      opacity: 0;
+    }
+
+    &.noTransition {
+      transition: none;
     }
   }
 }

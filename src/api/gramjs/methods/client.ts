@@ -67,7 +67,7 @@ const ABORT_CONTROLLERS = new Map<string, AbortController>();
 let client: TelegramClient;
 let currentUserId: string | undefined;
 
-export async function init(initialArgs: ApiInitialArgs) {
+export async function init(initialArgs: ApiInitialArgs, onConnected?: NoneToVoidFunction) {
   if (DEBUG) {
     // eslint-disable-next-line no-console
     console.log('>>> START INIT API');
@@ -127,12 +127,12 @@ export async function init(initialArgs: ApiInitialArgs) {
         qrCode: onRequestQrCode,
         onError: onAuthError,
         initialMethod: platform === 'iOS' || platform === 'Android' ? 'phoneNumber' : 'qrCode',
-        shouldThrowIfUnauthorized: Boolean(sessionData),
+        shouldThrowIfUnauthorized: Object.values(sessionData?.keys || {}).length > 0,
         webAuthToken,
         webAuthTokenFailed: onWebAuthTokenFailed,
         mockScenario,
         accountIds,
-      });
+      }, onConnected);
     } catch (err: any) {
       // eslint-disable-next-line no-console
       console.error(err);
@@ -339,10 +339,15 @@ export async function downloadMedia(
   onProgress?: ApiOnProgress,
 ) {
   try {
-    return (await downloadMediaWithClient(args, client, onProgress));
+    const result = await downloadMediaWithClient(args, client, onProgress);
+    return result;
   } catch (err: unknown) {
     if (err instanceof RPCError) {
       if (err.errorMessage.startsWith('FILE_REFERENCE')) {
+        if (DEBUG) {
+          // eslint-disable-next-line no-console
+          console.warn('Trying to repair file reference', args.url);
+        }
         const isFileReferenceRepaired = await repairFileReference({ url: args.url });
         if (isFileReferenceRepaired) {
           return downloadMediaWithClient(args, client, onProgress);
@@ -525,20 +530,25 @@ export async function repairFileReference({
 async function repairMessageMedia(peerId: string, messageId: number) {
   const type = getEntityTypeById(peerId);
   const inputChannel = buildInputChannelFromLocalDb(peerId);
-  if (!inputChannel) return false;
-  const result = await invokeRequest(
-    type === 'channel'
-      ? new GramJs.channels.GetMessages({
-        channel: inputChannel,
-        id: [new GramJs.InputMessageID({ id: messageId })],
-      })
-      : new GramJs.messages.GetMessages({
+  let result;
+
+  if (type === 'channel' && inputChannel) {
+    result = await invokeRequest(new GramJs.channels.GetMessages({
+      channel: inputChannel,
+      id: [new GramJs.InputMessageID({ id: messageId })],
+    }), {
+      shouldIgnoreErrors: true,
+    });
+  } else {
+    result = await invokeRequest(
+      new GramJs.messages.GetMessages({
         id: [new GramJs.InputMessageID({ id: messageId })],
       }),
-    {
-      shouldIgnoreErrors: true,
-    },
-  );
+      {
+        shouldIgnoreErrors: true,
+      },
+    );
+  }
 
   if (!result || result instanceof GramJs.messages.MessagesNotModified) return false;
 

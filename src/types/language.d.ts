@@ -58,6 +58,7 @@ export interface LangPair {
   'PremiumLimitAccountsNoPremium': undefined;
   'PremiumLimitAccounts': undefined;
   'SendMessage': undefined;
+  'MessageUnsupported': undefined;
   'ConversationDefaultRestrictedMedia': undefined;
   'AccDescrVoiceMessage': undefined;
   'BotSettings': undefined;
@@ -111,6 +112,7 @@ export interface LangPair {
   'UserRestrictionsNoChangeInfo': undefined;
   'UserRestrictionsInviteUsers': undefined;
   'UserRestrictionsPinMessages': undefined;
+  'ChatPermissionNotAvailable': undefined;
   'StatsMessageInteractionsTitle': undefined;
   'StatsGroupGrowthTitle': undefined;
   'StatsGroupMembersTitle': undefined;
@@ -277,6 +279,7 @@ export interface LangPair {
   'ArchivedChats': undefined;
   'FilterAddTo': undefined;
   'Draft': undefined;
+  'ChatDraftPrefix': undefined;
   'FilterAllChatsShort': undefined;
   'FilterAllChats': undefined;
   'CreateNewContact': undefined;
@@ -291,7 +294,6 @@ export interface LangPair {
   'Search': undefined;
   'Contacts': undefined;
   'Settings': undefined;
-  'MenuNightMode': undefined;
   'SettingsDisableNightTheme': undefined;
   'SettingsEnableNightTheme': undefined;
   'TelegramPremium': undefined;
@@ -320,6 +322,10 @@ export interface LangPair {
   'BlockedUsersBlockUser': undefined;
   'FilterChatTypes': undefined;
   'FilterChats': undefined;
+  'FilterColorTitle': undefined;
+  'FilterColorHint': undefined;
+  'ShowFolderTags': undefined;
+  'ShowFolderTagsHint': undefined;
   'FilterIncludeInfo': undefined;
   'FilterNameHint': undefined;
   'FilterInclude': undefined;
@@ -420,6 +426,7 @@ export interface LangPair {
   'AlwaysShareWith': undefined;
   'NeverShareWith': undefined;
   'SessionsTitle': undefined;
+  'SessionTerminate': undefined;
   'OtherWebSessions': undefined;
   'BlockedUsers': undefined;
   'TwoStepVerification': undefined;
@@ -604,6 +611,7 @@ export interface LangPair {
   'SettingsPerformanceStickerEffects': undefined;
   'SettingsPerformanceAutoplayGif': undefined;
   'SettingsPerformanceAutoplayVideo': undefined;
+  'SettingsPerformanceGranularTitle': undefined;
   'FavoriteStickers': undefined;
   'PremiumStickers': undefined;
   'GroupStickers': undefined;
@@ -623,7 +631,6 @@ export interface LangPair {
   'ErrorUnspecified': undefined;
   'NoStickers': undefined;
   'ClearRecentEmoji': undefined;
-  'TextFormatAddLinkTitle': undefined;
   'Save': undefined;
   'ConversationEmptyPlaceholder': undefined;
   'ConversationGreetingText': undefined;
@@ -828,8 +835,16 @@ export interface LangPair {
   'ChannelPermissionsHeader': undefined;
   'UserRestrictionsSend': undefined;
   'UserRestrictionsSendMedia': undefined;
-  'UserRestrictionsSendStickers': undefined;
-  'UserRestrictionsSendPolls': undefined;
+  'UserRestrictionsCreateTopics': undefined;
+  'SendMediaPermissionFiles': undefined;
+  'SendMediaPermissionPhotos': undefined;
+  'SendMediaPermissionVideos': undefined;
+  'SendMediaPermissionStickersGifs': undefined;
+  'SendMediaPermissionAudios': undefined;
+  'SendMediaPermissionVoices': undefined;
+  'SendMediaPermissionRoundVideos': undefined;
+  'SendMediaPermissionWebPages': undefined;
+  'SendMediaPermissionPolls': undefined;
   'UserRestrictionsEmbedLinks': undefined;
   'UserRestrictionsChangeInfo': undefined;
   'ChannelAddException': undefined;
@@ -940,7 +955,7 @@ export interface LangPair {
   'FilterContacts': undefined;
   'FilterNonContacts': undefined;
   'FromYou': undefined;
-  'InDlgAlbum': undefined;
+  'Album': undefined;
   'AttachPhoto': undefined;
   'AttachGif': undefined;
   'AttachVideo': undefined;
@@ -948,8 +963,10 @@ export interface LangPair {
   'AttachMusic': undefined;
   'AttachContact': undefined;
   'AttachStory': undefined;
-  'MessageLocation': undefined;
-  'MessageLiveLocation': undefined;
+  'AttachLocation': undefined;
+  'AttachGiveaway': undefined;
+  'AttachGiveawayResults': undefined;
+  'AttachTodo': undefined;
   'ServiceNotifications': undefined;
   'Bot': undefined;
   'ALongTimeAgo': undefined;
@@ -1082,6 +1099,7 @@ export interface LangPair {
   'SettingsPasscodeStart1': undefined;
   'SettingsPasscodeStart2': undefined;
   'CurrentPasswordPlaceholder': undefined;
+  'ChangeYourProfilePicture': undefined;
   'TooManyTabsTitle': undefined;
   'TooManyTabsDescription': undefined;
   'TooManyTabsReload': undefined;
@@ -1137,6 +1155,7 @@ export interface LangPair {
   'FormattingMonospaceAria': undefined;
   'FormattingUnderlineAria': undefined;
   'FormattingStrikethroughAria': undefined;
+  'FormattingAddLinkAria': undefined;
   'FormattingEnterUrl': undefined;
   'PreviewWebPageClose': undefined;
   'MediaLocaltionImageAlt': undefined;
@@ -1182,10 +1201,23 @@ export interface LangPair {
   'MenuBetaChangelog': undefined;
   'MenuSwitchToK': undefined;
   'MenuInstallApp': undefined;
+  'MenuMyProfile': undefined;
+  'MenuSavedMessages': undefined;
+  'MenuArchivedChats': undefined;
+  'MenuContacts': undefined;
+  'MenuSettings': undefined;
+  'MenuNightMode': undefined;
+  'AriaMenuEnableNightMode': undefined;
+  'AriaMenuDisableNightMode': undefined;
+  'MenuAnimationsSwitch': undefined;
+  'MenuTelegramFeatures': undefined;
+  'TelegramFeaturesUsername': undefined;
   'RemoveEffect': undefined;
   'ReplyInPrivateMessage': undefined;
   'ProfileOpenAppTerms': undefined;
   'ProfileBotOpenAppInfoLink': undefined;
+  'ProfileBirthday': undefined;
+  'ProfileBirthdayToday': undefined;
   'MonetizationInfoTONTitle': undefined;
   'AriaSearchOlderResult': undefined;
   'AriaSearchNewerResult': undefined;
@@ -1209,7 +1241,7 @@ export interface LangPair {
   'GiftInfoDescriptionRegular': undefined;
   'GiftInfoDescriptionUpgradeRegular': undefined;
   'GiftInfoDescriptionFreeUpgrade': undefined;
-  'GiftInfoDescriptionUpgrade': undefined;
+  'GiftInfoDescriptionUpgrade2': undefined;
   'GiftInfoDescriptionUpgraded': undefined;
   'GiftInfoFrom': undefined;
   'GiftInfoDate': undefined;
@@ -1222,8 +1254,15 @@ export interface LangPair {
   'GiftActionHide': undefined;
   'GiftInfoTonLinkText': undefined;
   'GiftInfoAvailability': undefined;
+  'GiftInfoValueLinkMore': undefined;
   'GiftInfoFirstSale': undefined;
   'GiftInfoLastSale': undefined;
+  'GiftValueTitleInitialSale': undefined;
+  'GiftValueTitleInitialPrice': undefined;
+  'GiftValueTitleLastSale': undefined;
+  'GiftValueTitleLastPrice': undefined;
+  'GiftValueTitleMinimumPrice': undefined;
+  'GiftValueTitleAveragePrice': undefined;
   'GiftInfoSoldOutTitle': undefined;
   'GiftInfoSoldOutDescription': undefined;
   'GiftInfoSenderHidden': undefined;
@@ -1335,6 +1374,9 @@ export interface LangPair {
   'SearchTabVoice': undefined;
   'SearchTabMessages': undefined;
   'SearchTabPublicPosts': undefined;
+  'SearchResultTopics': undefined;
+  'SearchResultMyChannels': undefined;
+  'SearchResultRecommendedChannels': undefined;
   'StarsTransactionsAll': undefined;
   'StarsTransactionsIncoming': undefined;
   'StarsTransactionsOutgoing': undefined;
@@ -1382,12 +1424,15 @@ export interface LangPair {
   'GiftFilterUnique': undefined;
   'GiftFilterDisplayed': undefined;
   'GiftFilterHidden': undefined;
+  'GiftFilterUpgradable': undefined;
   'GiftSearchEmpty': undefined;
   'GiftSearchReset': undefined;
   'SetUp2FA': undefined;
   'CheckPasswordTitle': undefined;
   'CheckPasswordPlaceholder': undefined;
   'CheckPasswordDescription': undefined;
+  'PasswordFormPlaceholder': undefined;
+  'PasswordFormSubmit': undefined;
   'ActionFallbackUser': undefined;
   'ActionFallbackChat': undefined;
   'ActionFallbackChannel': undefined;
@@ -1519,6 +1564,7 @@ export interface LangPair {
   'ActionPaidMessagePriceFreeYou': undefined;
   'NotificationTitleNotSupportedInFrozenAccount': undefined;
   'NotificationMessageNotSupportedInFrozenAccount': undefined;
+  'NotificationMessageTextHidden': undefined;
   'GiftRibbonSale': undefined;
   'StarsGiftBought': undefined;
   'GiftSellTitle': undefined;
@@ -1601,6 +1647,7 @@ export interface LangPair {
   'ToDoListErrorChooseTitle': undefined;
   'ToDoListErrorChooseTasks': undefined;
   'PremiumPreviewTodo': undefined;
+  'NativeDownloadFailed': undefined;
   'DescriptionAboutTon': undefined;
   'ButtonTopUpViaFragment': undefined;
   'TonModalHint': undefined;
@@ -1638,6 +1685,26 @@ export interface LangPair {
   'PublicPostsPremiumFeatureSubtitle': undefined;
   'PublicPostsSubscribeToPremium': undefined;
   'PostsSearchTransaction': undefined;
+  'AllStoriesCategory': undefined;
+  'TitleRating': undefined;
+  'RatingYourReflectsActivity': undefined;
+  'RatingGiftsFromTelegram': undefined;
+  'RatingGiftsFromTelegramDesc': undefined;
+  'RatingGiftsAndPostsFromUsers': undefined;
+  'RatingGiftsAndPostsFromUsersDesc': undefined;
+  'RatingRefundsAndConversions': undefined;
+  'RatingRefundsAndConversionsDesc': undefined;
+  'RatingBadgeAdded': undefined;
+  'RatingBadgeDeducted': undefined;
+  'RatingNegativeLevel': undefined;
+  'LinkDescriptionRatingBack': undefined;
+  'LinkDescriptionRatingPreview': undefined;
+  'ErrorFocusInaccessibleMessage': undefined;
+  'ContextMenuHintMouse': undefined;
+  'ContextMenuHintTouch': undefined;
+  'GiftValueForSaleOnFragment': undefined;
+  'GiftValueForSaleOnTelegram': undefined;
+  'EmbeddedMessageNoCaption': undefined;
 }
 
 export interface LangPairWithVariables<V = LangVariable> {
@@ -1884,6 +1951,9 @@ export interface LangPairWithVariables<V = LangVariable> {
   'NewDiscussionChatTitle': {
     'name': V;
   };
+  'AttachInvoice': {
+    'description': V;
+  };
   'LastSeenTodayAt': {
     'time': V;
   };
@@ -1955,6 +2025,20 @@ export interface LangPairWithVariables<V = LangVariable> {
   };
   'ProfileOpenAppAbout': {
     'terms': V;
+  };
+  'ProfileBirthdayValue': {
+    'date': V;
+  };
+  'ProfileBirthdayValueYear': {
+    'date': V;
+    'age': V;
+  };
+  'ProfileBirthdayTodayValue': {
+    'date': V;
+  };
+  'ProfileBirthdayTodayValueYear': {
+    'date': V;
+    'age': V;
   };
   'ChannelEarnLearnCoinAbout': {
     'link': V;
@@ -2037,6 +2121,9 @@ export interface LangPairWithVariables<V = LangVariable> {
   'GiftInfoTonText': {
     'link': V;
   };
+  'GiftValueDescription': {
+    'giftName': V;
+  };
   'GiftInfoIssued': {
     'issued': V;
     'total': V;
@@ -2117,6 +2204,9 @@ export interface LangPairWithVariables<V = LangVariable> {
   };
   'StarsReactionTerms': {
     'link': V;
+  };
+  'AriaMiniApp': {
+    'bot': V;
   };
   'StarsSubscribeInfo': {
     'link': V;
@@ -2528,8 +2618,8 @@ export interface LangPairWithVariables<V = LangVariable> {
     'amount': V;
   };
   'ActionPaidOneMessageIncoming': {
-    'amount': V;
     'user': V;
+    'amount': V;
   };
   'PaneMessagePaidMessageCharge': {
     'peer': V;
@@ -2671,12 +2761,10 @@ export interface LangPairWithVariables<V = LangVariable> {
   };
   'SuggestedPostReceiveAmount': {
     'peer': V;
-    'currency': V;
     'duration': V;
   };
   'SuggestedPostReceiveAmountYou': {
     'peer': V;
-    'currency': V;
     'duration': V;
   };
   'SuggestedPostRefund': {
@@ -2686,7 +2774,6 @@ export interface LangPairWithVariables<V = LangVariable> {
   'SuggestedPostRefundYou': {
     'peer': V;
     'duration': V;
-    'currency': V;
   };
   'SuggestedPostBalanceTooLow': {
     'peer': V;
@@ -2731,7 +2818,6 @@ export interface LangPairWithVariables<V = LangVariable> {
   };
   'SuggestedPostConfirmDetailsUser': {
     'amount': V;
-    'commission': V;
     'duration': V;
   };
   'SuggestedPostConfirmDetailsWithTimeAdmin': {
@@ -2742,7 +2828,6 @@ export interface LangPairWithVariables<V = LangVariable> {
   };
   'SuggestedPostConfirmDetailsWithTimeUser': {
     'amount': V;
-    'commission': V;
     'time': V;
     'duration': V;
   };
@@ -2802,9 +2887,6 @@ export interface LangPairWithVariables<V = LangVariable> {
     'tasks': V;
     'list': V;
   };
-  'HintTodoListTasksCount': {
-    'count': V;
-  };
   'GiftInfoCollectibleBy': {
     'number': V;
     'owner': V;
@@ -2814,12 +2896,6 @@ export interface LangPairWithVariables<V = LangVariable> {
   };
   'ButtonSensitiveAlways': {
     'years': V;
-  };
-  'NotificationGiftsLimit': {
-    'count': V;
-  };
-  'DescriptionGiftPremiumRequired': {
-    'count': V;
   };
   'DescriptionComposerGiftMinimumCurrencyPrice': {
     'amount': V;
@@ -2845,6 +2921,12 @@ export interface LangPairWithVariables<V = LangVariable> {
   };
   'NotificationPaidExtraSearch': {
     'stars': V;
+  };
+  'RatingReflectsActivity': {
+    'name': V;
+  };
+  'RatingLevel': {
+    'level': V;
   };
 }
 
@@ -2959,6 +3041,9 @@ export interface LangPairPluralWithVariables<V = LangVariable> {
     'count': V;
   };
   'ChannelStatsSharesCount': {
+    'count': V;
+  };
+  'ChatsPlural': {
     'count': V;
   };
   'LastSeenMinutesAgo': {
@@ -3164,7 +3249,16 @@ export interface LangPairPluralWithVariables<V = LangVariable> {
   'MessageActionTodoTaskCount': {
     'count': V;
   };
+  'HintTodoListTasksCount2': {
+    'count': V;
+  };
   'TextAgeVerificationModal': {
+    'count': V;
+  };
+  'NotificationGiftsLimit2': {
+    'count': V;
+  };
+  'DescriptionGiftPremiumRequired2': {
     'count': V;
   };
   'RemainingPublicPostsSearch': {
@@ -3172,6 +3266,16 @@ export interface LangPairPluralWithVariables<V = LangVariable> {
   };
   'HintPublicPostsSearchQuota': {
     'count': V;
+  };
+  'DescriptionPendingRating': {
+    'time': V;
+    'points': V;
+    'link': V;
+  };
+  'DescriptionFutureRating': {
+    'time': V;
+    'points': V;
+    'link': V;
   };
 }
 export type RegularLangKey = keyof LangPair;

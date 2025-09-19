@@ -138,7 +138,6 @@ const GiftStatusInfoModal = ({
     return (
       <div className={styles.footer}>
         <Button
-          size="smaller"
           onClick={onWearClick}
         >
           {lang('UniqueStatusWearButton')}
@@ -161,7 +160,7 @@ const GiftStatusInfoModal = ({
 };
 
 export default memo(withGlobal<OwnProps>(
-  (global): StateProps => {
+  (global): Complete<StateProps> => {
     const currentUser = selectUser(global, global.currentUserId!)!;
     const isCurrentUserPremium = selectIsCurrentUserPremium(global);
 

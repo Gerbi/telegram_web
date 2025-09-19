@@ -182,7 +182,7 @@ const StarGiftAction = ({
 };
 
 export default memo(withGlobal<OwnProps>(
-  (global, { message, action }): StateProps => {
+  (global, { message, action }): Complete<StateProps> => {
     const currentUser = selectUser(global, global.currentUserId!);
     const canPlayAnimatedEmojis = selectCanPlayAnimatedEmojis(global);
     const messageSender = selectSender(global, message);
@@ -194,7 +194,7 @@ export default memo(withGlobal<OwnProps>(
       canPlayAnimatedEmojis,
       sender: giftSender || messageSender,
       recipient: giftRecipient || messageRecipient,
-      starGiftMaxConvertPeriod: global.appConfig?.starGiftMaxConvertPeriod,
+      starGiftMaxConvertPeriod: global.appConfig.starGiftMaxConvertPeriod,
     };
   },
 )(StarGiftAction));

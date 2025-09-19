@@ -47,6 +47,10 @@ type AnyToVoidFunction = (...args: any[]) => void;
 type BooleanToVoidFunction = (value: boolean) => void;
 type NoneToVoidFunction = () => void;
 
+type Complete<T> = {
+  [P in keyof Required<T>]: Pick<T, P> extends Required<Pick<T, P>> ? T[P] : (T[P] | undefined);
+};
+
 type EmojiCategory = {
   id: string;
   name: string;
@@ -168,6 +172,7 @@ interface BooleanConstructor {
 
 interface Array<T> {
   filter<S extends T>(predicate: BooleanConstructor, thisArg?: unknown): Exclude<S, Falsy>[];
+  at(index: number): T; // Make it behave like arr[arr.length - 1]
 }
 interface ReadonlyArray<T> {
   filter<S extends T>(predicate: BooleanConstructor, thisArg?: unknown): Exclude<S, Falsy>[];

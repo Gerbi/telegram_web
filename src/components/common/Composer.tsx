@@ -1,7 +1,5 @@
 import type { FC, TeactNode } from '../../lib/teact/teact';
-import {
-  memo, useEffect, useMemo, useRef, useSignal, useState,
-} from '../../lib/teact/teact';
+import { memo, useEffect, useMemo, useRef, useSignal, useState } from '../../lib/teact/teact';
 import { getActions, getGlobal, withGlobal } from '../../global';
 
 import type {
@@ -32,9 +30,7 @@ import type {
   ApiVideo,
   ApiWebPage,
 } from '../../api/types';
-import type {
-  GlobalState, TabState,
-} from '../../global/types';
+import type { GlobalState, TabState } from '../../global/types';
 import type {
   IAnchorPosition,
   InlineBotSettings,
@@ -47,7 +43,6 @@ import { MAIN_THREAD_ID } from '../../api/types';
 
 import {
   BASE_EMOJI_KEYWORD_LANG,
-  DEFAULT_MAX_MESSAGE_LENGTH,
   EDITABLE_INPUT_MODAL_ID,
   HEART_REACTION,
   MAX_UPLOAD_FILEPART_SIZE,
@@ -81,6 +76,7 @@ import {
   selectChatMessage,
   selectChatType,
   selectCurrentMessageList,
+  selectCustomEmoji,
   selectDraft,
   selectEditingDraft,
   selectEditingMessage,
@@ -126,6 +122,7 @@ import parseHtmlAsFormattedText from '../../util/parseHtmlAsFormattedText';
 import { insertHtmlInSelection } from '../../util/selection';
 import { getServerTime } from '../../util/serverTime';
 import windowSize from '../../util/windowSize';
+import { DEFAULT_MAX_MESSAGE_LENGTH } from '../../limits';
 import applyIosAutoCapitalizationFix from '../middle/composer/helpers/applyIosAutoCapitalizationFix';
 import buildAttachment, { prepareAttachmentsToSend } from '../middle/composer/helpers/buildAttachment';
 import { buildCustomEmojiHtml } from '../middle/composer/helpers/customEmoji';
@@ -558,13 +555,15 @@ const Composer: FC<OwnProps & StateProps> = ({
     canSendStickers, canSendGifs, canAttachMedia, canAttachPolls, canAttachEmbedLinks, canAttachToDoLists,
     canSendVoices, canSendPlainText, canSendAudios, canSendVideos, canSendPhotos, canSendDocuments,
   } = useMemo(
-    () => getAllowedAttachmentOptions(chat,
+    () => getAllowedAttachmentOptions(
+      chat,
       chatFullInfo,
       isChatWithBot,
       isChatWithSelf,
       isInStoryViewer,
       paidMessagesStars,
-      isInScheduledList),
+      isInScheduledList,
+    ),
     [chat, chatFullInfo, isChatWithBot, isChatWithSelf, isInStoryViewer, paidMessagesStars, isInScheduledList],
   );
 
@@ -596,7 +595,9 @@ const Composer: FC<OwnProps & StateProps> = ({
     }
   }, [hasWebPagePreview]);
 
-  const insertHtmlAndUpdateCursor = useLastCallback((newHtml: string, inInputId: string = editableInputId) => {
+  const insertHtmlAndUpdateCursor = useLastCallback((
+    newHtml: string, inInputId: string = editableInputId, shouldPrepend = false,
+  ) => {
     if (inInputId === editableInputId && isComposerBlocked) return;
     const selection = window.getSelection()!;
     let messageInput: HTMLDivElement;
@@ -606,7 +607,7 @@ const Composer: FC<OwnProps & StateProps> = ({
       messageInput = document.getElementById(inInputId) as HTMLDivElement;
     }
 
-    if (selection.rangeCount) {
+    if (selection.rangeCount && !shouldPrepend) {
       const selectionRange = selection.getRangeAt(0);
       if (isSelectionInsideInput(selectionRange, inInputId)) {
         insertHtmlInSelection(newHtml);
@@ -615,7 +616,14 @@ const Composer: FC<OwnProps & StateProps> = ({
       }
     }
 
-    setHtml(`${getHtml()}${newHtml}`);
+    if (shouldPrepend) {
+      const newFirstWord = newHtml.split(' ')[0];
+      const shouldReplace = getHtml().startsWith(newFirstWord);
+
+      setHtml(shouldReplace ? newHtml : `${newHtml}${getHtml()}`);
+    } else {
+      setHtml(`${getHtml()}${newHtml}`);
+    }
 
     // If selection is outside of input, set cursor at the end of input
     requestNextMutation(() => {
@@ -633,10 +641,10 @@ const Composer: FC<OwnProps & StateProps> = ({
   });
 
   const insertFormattedTextAndUpdateCursor = useLastCallback((
-    text: ApiFormattedText, inInputId: string = editableInputId,
+    text: ApiFormattedText, inInputId: string = editableInputId, shouldPrepend = false,
   ) => {
     const newHtml = getTextWithEntitiesAsHtml(text);
-    insertHtmlAndUpdateCursor(newHtml, inInputId);
+    insertHtmlAndUpdateCursor(newHtml, inInputId, shouldPrepend);
   });
 
   const insertCustomEmojiAndUpdateCursor = useLastCallback((emoji: ApiSticker, inInputId: string = editableInputId) => {
@@ -1319,7 +1327,7 @@ const Composer: FC<OwnProps & StateProps> = ({
 
   useEffect(() => {
     if (requestedDraft) {
-      insertFormattedTextAndUpdateCursor(requestedDraft);
+      insertFormattedTextAndUpdateCursor(requestedDraft, undefined, true);
       resetOpenChatWithDraft();
 
       requestNextMutation(() => {
@@ -1432,24 +1440,28 @@ const Composer: FC<OwnProps & StateProps> = ({
 
     if (isInScheduledList || isScheduleRequested) {
       requestCalendar((scheduledAt) => {
-        handleActionWithPaymentConfirmation(handleMessageSchedule,
+        handleActionWithPaymentConfirmation(
+          handleMessageSchedule,
           {
             id: inlineResult.id,
             queryId: inlineResult.queryId,
             isSilent,
           },
           scheduledAt,
-          currentMessageList!);
+          currentMessageList!,
+        );
       });
     } else {
-      handleActionWithPaymentConfirmation(sendInlineBotResult,
+      handleActionWithPaymentConfirmation(
+        sendInlineBotResult,
         {
           id: inlineResult.id,
           queryId: inlineResult.queryId,
           threadId,
           chatId,
           isSilent,
-        });
+        },
+      );
     }
 
     const messageInput = document.querySelector<HTMLDivElement>(editableInputCssSelector);
@@ -1783,7 +1795,7 @@ const Composer: FC<OwnProps & StateProps> = ({
     }
 
     if (reaction.type === 'custom') {
-      const sticker = getGlobal().customEmojis.byId[reaction.documentId];
+      const sticker = selectCustomEmoji(getGlobal(), reaction.documentId);
       if (!sticker) {
         return;
       }
@@ -1845,10 +1857,12 @@ const Composer: FC<OwnProps & StateProps> = ({
   const handleSendScheduledAttachments = useLastCallback(
     (sendCompressed: boolean, sendGrouped: boolean, isInvertedMedia?: true) => {
       requestCalendar((scheduledAt) => {
-        handleActionWithPaymentConfirmation(handleMessageSchedule,
+        handleActionWithPaymentConfirmation(
+          handleMessageSchedule,
           { sendCompressed, sendGrouped, isInvertedMedia },
           scheduledAt,
-          currentMessageList!);
+          currentMessageList!,
+        );
       });
     },
   );
@@ -1864,7 +1878,7 @@ const Composer: FC<OwnProps & StateProps> = ({
   });
 
   const handleStopEffect = useLastCallback(() => {
-    hideEffectInComposer({ });
+    hideEffectInComposer({});
   });
 
   const onSend = useMemo(() => {
@@ -2005,8 +2019,16 @@ const Composer: FC<OwnProps & StateProps> = ({
               </filter>
             </defs>
             <g fill="none" fill-rule="evenodd">
-              <path d="M6 17H0V0c.193 2.84.876 5.767 2.05 8.782.904 2.325 2.446 4.485 4.625 6.48A1 1 0 016 17z" fill="#000" filter="url(#composerAppendix)" />
-              <path d="M6 17H0V0c.193 2.84.876 5.767 2.05 8.782.904 2.325 2.446 4.485 4.625 6.48A1 1 0 016 17z" fill="#FFF" className="corner" />
+              <path
+                d="M6 17H0V0c.193 2.84.876 5.767 2.05 8.782.904 2.325 2.446 4.485 4.625 6.48A1 1 0 016 17z"
+                fill="#000"
+                filter="url(#composerAppendix)"
+              />
+              <path
+                d="M6 17H0V0c.193 2.84.876 5.767 2.05 8.782.904 2.325 2.446 4.485 4.625 6.48A1 1 0 016 17z"
+                fill="#FFF"
+                className="corner"
+              />
             </g>
           </svg>
         )}
@@ -2179,7 +2201,7 @@ const Composer: FC<OwnProps & StateProps> = ({
                         onClick={handleAllScheduledClick}
                         ariaLabel={lang('AriaComposerOpenScheduled')}
                       >
-                        <Icon name="schedule" />
+                        <Icon name="scheduled" />
                       </Button>
                     )}
                     {shouldShowGiftButton && (
@@ -2256,6 +2278,7 @@ const Composer: FC<OwnProps & StateProps> = ({
           {isInMessageList && Boolean(botKeyboardMessageId) && (
             <BotKeyboardMenu
               messageId={botKeyboardMessageId}
+              threadId={threadId}
               isOpen={isBotKeyboardOpen}
               onClose={closeBotKeyboard}
             />
@@ -2443,7 +2466,7 @@ const Composer: FC<OwnProps & StateProps> = ({
 export default memo(withGlobal<OwnProps>(
   (global, {
     chatId, threadId, storyId, messageListType, isMobile, type,
-  }): StateProps => {
+  }): Complete<StateProps> => {
     const appConfig = global.appConfig;
     const chat = selectChat(global, chatId);
     const chatBot = !isSystemBot(chatId) ? selectBot(global, chatId) : undefined;
@@ -2622,7 +2645,7 @@ export default memo(withGlobal<OwnProps>(
       isAccountFrozen,
       isAppConfigLoaded,
       insertingPeerIdMention,
-      pollMaxAnswers: appConfig?.pollMaxAnswers,
+      pollMaxAnswers: appConfig.pollMaxAnswers,
     };
   },
 )(Composer));

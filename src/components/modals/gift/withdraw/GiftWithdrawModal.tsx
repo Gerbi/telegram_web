@@ -133,7 +133,7 @@ const GiftWithdrawModal = ({ modal, hasPassword, passwordHint }: OwnProps & Stat
       {!hasPassword && (
         <>
           <span className={styles.noPassword}>{lang('ErrorPasswordMissing')}</span>
-          <Button className="mt-2" size="smaller" onClick={handleSetUpPassword}>{lang('SetUp2FA')}</Button>
+          <Button className="mt-2" onClick={handleSetUpPassword}>{lang('SetUp2FA')}</Button>
         </>
       )}
       {hasPassword && !exportDelay && (
@@ -142,7 +142,7 @@ const GiftWithdrawModal = ({ modal, hasPassword, passwordHint }: OwnProps & Stat
           placeholder={lang('CheckPasswordPlaceholder')}
           error={renderingModal?.errorKey && lang.withRegular(renderingModal?.errorKey)}
           description={lang('CheckPasswordDescription')}
-          clearError={clearGiftWithdrawError}
+          onClearError={clearGiftWithdrawError}
           isLoading={renderingModal?.isLoading}
           hint={passwordHint}
           isPasswordVisible={shouldShowPassword}
@@ -157,7 +157,7 @@ const GiftWithdrawModal = ({ modal, hasPassword, passwordHint }: OwnProps & Stat
 };
 
 export default memo(withGlobal<OwnProps>(
-  (global): StateProps => {
+  (global): Complete<StateProps> => {
     const {
       settings: {
         byKey: {

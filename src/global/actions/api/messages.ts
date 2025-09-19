@@ -34,7 +34,6 @@ import {
   RE_TELEGRAM_LINK,
   SERVICE_NOTIFICATIONS_USER_ID,
   STARS_CURRENCY_CODE,
-  STARS_SUGGESTED_POST_FUTURE_MIN,
   SUPPORTED_AUDIO_CONTENT_TYPES,
   SUPPORTED_PHOTO_CONTENT_TYPES,
   SUPPORTED_VIDEO_CONTENT_TYPES,
@@ -116,6 +115,7 @@ import {
   selectCurrentChat,
   selectCurrentMessageList,
   selectCurrentViewedStory,
+  selectCustomEmoji,
   selectDraft,
   selectEditingId,
   selectEditingMessage,
@@ -312,6 +312,24 @@ addActionHandler('loadMessage', async (global, actions, payload): Promise<void> 
     );
     setGlobal(global);
   }
+});
+
+addActionHandler('loadMessagesById', async (global, actions, payload): Promise<void> => {
+  const { chatId, messageIds } = payload;
+  const chat = selectChat(global, chatId);
+  if (!chat) {
+    return;
+  }
+
+  const messages = await callApi('fetchMessagesById', {
+    chat,
+    messageIds,
+  });
+  if (!messages) return;
+
+  global = getGlobal();
+  global = addChatMessagesById(global, chatId, buildCollectionByKey(messages, 'id'));
+  setGlobal(global);
 });
 
 addActionHandler('sendMessage', async (global, actions, payload): Promise<void> => {
@@ -816,7 +834,7 @@ addActionHandler('initDraftFromSuggestedMessage', (global, actions, payload): Ac
   if (message.suggestedPostInfo) {
     const { scheduleDate, ...messageSuggestedPost } = message.suggestedPostInfo;
     const now = getServerTime();
-    const futureMin = global.appConfig?.starsSuggestedPostFutureMin || STARS_SUGGESTED_POST_FUTURE_MIN;
+    const futureMin = global.appConfig.starsSuggestedPostFutureMin;
 
     const validScheduleDate = scheduleDate && scheduleDate > now + futureMin ? scheduleDate : undefined;
 
@@ -1535,7 +1553,7 @@ addActionHandler('transcribeAudio', async (global, actions, payload): Promise<vo
 addActionHandler('loadCustomEmojis', async (global, actions, payload): Promise<void> => {
   const { ids, ignoreCache } = payload;
   const newCustomEmojiIds = ignoreCache ? ids
-    : unique(ids.filter((documentId) => !global.customEmojis.byId[documentId]));
+    : unique(ids.filter((documentId) => !selectCustomEmoji(global, documentId)));
   const customEmoji = await callApi('fetchCustomEmoji', {
     documentId: newCustomEmojiIds,
   });
@@ -2355,7 +2373,7 @@ addActionHandler('readAllMentions', (global, actions, payload): ActionReturnType
 
 addActionHandler('openUrl', (global, actions, payload): ActionReturnType => {
   const {
-    url, shouldSkipModal, ignoreDeepLinks, tabId = getCurrentTabId(),
+    url, shouldSkipModal, ignoreDeepLinks, linkContext, tabId = getCurrentTabId(),
   } = payload;
   const urlWithProtocol = ensureProtocol(url);
   const parsedUrl = new URL(urlWithProtocol);
@@ -2365,27 +2383,27 @@ addActionHandler('openUrl', (global, actions, payload): ActionReturnType => {
     actions.closeStoryViewer({ tabId });
     actions.closePaymentModal({ tabId });
 
-    actions.openTelegramLink({ url, tabId });
+    actions.openTelegramLink({ url, linkContext, tabId });
     return;
   }
 
   const { appConfig, config } = global;
-  if (appConfig) {
-    if (config?.autologinToken && appConfig.autologinDomains.includes(parsedUrl.hostname)) {
-      parsedUrl.searchParams.set(AUTOLOGIN_TOKEN_KEY, config.autologinToken);
-      window.open(parsedUrl.href, '_blank', 'noopener');
-      return;
-    }
-
-    if (appConfig.urlAuthDomains.includes(parsedUrl.hostname)) {
-      actions.closeStoryViewer({ tabId });
-
-      actions.requestLinkUrlAuth({ url, tabId });
-      return;
-    }
+  if (config?.autologinToken && appConfig.autologinDomains.includes(parsedUrl.hostname)) {
+    parsedUrl.searchParams.set(AUTOLOGIN_TOKEN_KEY, config.autologinToken);
+    window.open(parsedUrl.href, '_blank', 'noopener');
+    return;
   }
 
-  const shouldDisplayModal = !urlWithProtocol.match(RE_TELEGRAM_LINK) && !shouldSkipModal;
+  if (appConfig.urlAuthDomains.includes(parsedUrl.hostname)) {
+    actions.closeStoryViewer({ tabId });
+
+    actions.requestLinkUrlAuth({ url, tabId });
+    return;
+  }
+
+  const isWhitelisted = appConfig.whitelistedDomains.includes(parsedUrl.hostname);
+
+  const shouldDisplayModal = !urlWithProtocol.match(RE_TELEGRAM_LINK) && !shouldSkipModal && !isWhitelisted;
 
   if (shouldDisplayModal) {
     actions.toggleSafeLinkModal({ url: isMixedScript ? parsedUrl.toString() : urlWithProtocol, tabId });

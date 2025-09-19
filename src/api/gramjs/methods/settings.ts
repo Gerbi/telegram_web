@@ -18,11 +18,12 @@ import type {
 
 import {
   ACCEPTABLE_USERNAME_ERRORS,
-  BLOCKED_LIST_LIMIT,
   LANG_PACK,
-  MAX_INT_32,
+  MUTE_INDEFINITE_TIMESTAMP,
+  UNMUTE_TIMESTAMP,
 } from '../../../config';
 import { buildCollectionByKey } from '../../../util/iteratees';
+import { BLOCKED_LIST_LIMIT } from '../../../limits';
 import { buildAppConfig } from '../apiBuilders/appConfig';
 import { buildApiPhoto, buildPrivacyRules } from '../apiBuilders/common';
 import { buildApiDisallowedGiftsSettings } from '../apiBuilders/gifts';
@@ -394,7 +395,7 @@ export function updateNotificationSettings(peerType: ApiNotifyPeerType, {
 
   const settings = {
     showPreviews: shouldShowPreviews,
-    muteUntil: isMuted ? MAX_INT_32 : 0,
+    muteUntil: isMuted ? MUTE_INDEFINITE_TIMESTAMP : UNMUTE_TIMESTAMP,
   };
 
   return invokeRequest(new GramJs.account.UpdateNotifySettings({

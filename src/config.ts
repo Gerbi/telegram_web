@@ -1,5 +1,5 @@
 import type {
-  ApiLimitType, ApiLimitTypeForPromo, ApiPremiumSection, ApiReactionEmoji,
+  ApiLimitTypeForPromo, ApiPremiumSection, ApiReactionEmoji,
 } from './api/types';
 import type {
   GiftProfileFilterOptions,
@@ -20,10 +20,7 @@ export const IS_MOCKED_CLIENT = process.env.APP_MOCKED_CLIENT === '1';
 export const IS_TEST = process.env.APP_ENV === 'test';
 export const IS_PERF = process.env.APP_ENV === 'perf';
 export const IS_BETA = process.env.APP_ENV === 'staging';
-export const IS_PACKAGED_ELECTRON = process.env.IS_PACKAGED_ELECTRON;
 
-export const ELECTRON_WINDOW_DRAG_EVENT_START = 'tt-electron-window-drag-start';
-export const ELECTRON_WINDOW_DRAG_EVENT_END = 'tt-electron-window-drag-end';
 export const PAID_MESSAGES_PURPOSE = 'paid_messages';
 
 export const DEBUG = process.env.APP_ENV !== 'production';
@@ -33,12 +30,12 @@ export const STRICTERDOM_ENABLED = DEBUG;
 export const BOT_VERIFICATION_PEERS_LIMIT = 20;
 
 export const BETA_CHANGELOG_URL = 'https://telegra.ph/WebA-Beta-03-20';
-export const ELECTRON_HOST_URL = process.env.ELECTRON_HOST_URL!;
 
 export const DEBUG_ALERT_MSG = 'Shoot!\nSomething went wrong, please see the error details in Dev Tools Console.';
 export const DEBUG_GRAMJS = false;
 
 export const PAGE_TITLE = process.env.APP_TITLE!;
+export const PAGE_TITLE_TAURI = 'Telegram Air';
 export const INACTIVE_MARKER = '[Inactive]';
 
 export const DEBUG_PAYMENT_SMART_GLOCAL = false;
@@ -94,40 +91,18 @@ export const CHAT_MEDIA_SLICE = 42;
 export const MESSAGE_SEARCH_SLICE = 42;
 export const GLOBAL_SEARCH_SLICE = 20;
 export const GLOBAL_TOPIC_SEARCH_SLICE = 5;
-export const GLOBAL_SEARCH_CONTACTS_LIMIT = 20;
 export const MEMBERS_SLICE = 30;
 export const MEMBERS_LOAD_SLICE = 200;
-export const PINNED_MESSAGES_LIMIT = 50;
-export const BLOCKED_LIST_LIMIT = 100;
 export const PROFILE_SENSITIVE_AREA = 500;
 export const TOPIC_LIST_SENSITIVE_AREA = 600;
-export const GROUP_CALL_PARTICIPANTS_LIMIT = 100;
-export const STORY_LIST_LIMIT = 100;
-export const API_GENERAL_ID_LIMIT = 100;
-export const STATISTICS_PUBLIC_FORWARDS_LIMIT = 50;
-export const RESALE_GIFTS_LIMIT = 50;
-export const TODO_ITEMS_LIMIT = 30;
-export const TODO_TITLE_LENGTH_LIMIT = 32;
-export const TODO_ITEM_LENGTH_LIMIT = 64;
 
 // Public Posts Search defaults
 export const PUBLIC_POSTS_SEARCH_DEFAULT_STARS_AMOUNT = 10;
 export const PUBLIC_POSTS_SEARCH_DEFAULT_TOTAL_DAILY = 2;
 
 // Suggested Posts defaults
-export const STARS_SUGGESTED_POST_AMOUNT_MAX = 100000;
-export const STARS_SUGGESTED_POST_AMOUNT_MIN = 5;
-export const STARS_SUGGESTED_POST_COMMISSION_PERMILLE = 850;
-export const STARS_SUGGESTED_POST_AGE_MIN = 86400; // 24 hours in seconds
-export const STARS_SUGGESTED_POST_FUTURE_MAX = 2678400; // 31 days in seconds
-export const STARS_SUGGESTED_POST_FUTURE_MIN = 300; // 5 minutes in seconds
 export const TON_CURRENCY_CODE = 'TON';
-export const TON_SUGGESTED_POST_COMMISSION_PERMILLE = 850;
-export const TON_USD_RATE_DEFAULT = 3;
 export const VERIFY_AGE_MIN_DEFAULT = 18;
-export const TON_TOPUP_URL_DEFAULT = 'https://fragment.com/ads/topup';
-export const TON_SUGGESTED_POST_AMOUNT_MIN = 10000000; // 0.01 TON in nanos
-export const TON_SUGGESTED_POST_AMOUNT_MAX = 10000000000000; // 10 000 TON in nanos
 
 export const STORY_VIEWS_MIN_SEARCH = 15;
 export const STORY_MIN_REACTIONS_SORT = 10;
@@ -138,13 +113,7 @@ export const MEDIA_TIMESTAMP_SAVE_MINIMUM_DURATION = 30; // 30s
 export const GLOBAL_SUGGESTED_CHANNELS_ID = 'global';
 
 // As in Telegram for Android
-// https://github.com/DrKLO/Telegram/blob/51e9947527/TMessagesProj/src/main/java/org/telegram/messenger/MediaDataController.java#L7799
-export const TOP_REACTIONS_LIMIT = 100;
-
-// As in Telegram for Android
 // https://github.com/DrKLO/Telegram/blob/51e9947527/TMessagesProj/src/main/java/org/telegram/messenger/MediaDataController.java#L7781
-export const RECENT_REACTIONS_LIMIT = 50;
-export const REACTION_LIST_LIMIT = 100;
 export const REACTION_UNREAD_SLICE = 100;
 export const MENTION_UNREAD_SLICE = 100;
 export const TOPICS_SLICE = 20;
@@ -166,7 +135,7 @@ export const ANIMATION_LEVEL_CUSTOM = -1;
 export const ANIMATION_LEVEL_MIN = 0;
 export const ANIMATION_LEVEL_MED = 1;
 export const ANIMATION_LEVEL_MAX = 2;
-export const ANIMATION_LEVEL_DEFAULT = ANIMATION_LEVEL_MAX;
+export const ANIMATION_LEVEL_DEFAULT = ANIMATION_LEVEL_MED;
 
 export const DEFAULT_MESSAGE_TEXT_SIZE_PX = 16;
 export const IOS_DEFAULT_MESSAGE_TEXT_SIZE_PX = 17;
@@ -210,6 +179,9 @@ export const MOBILE_SCREEN_LANDSCAPE_MAX_HEIGHT = 450; // px
 
 export const MAX_INT_32 = 2 ** 31 - 1;
 export const TMP_CHAT_ID = '0';
+
+export const MUTE_INDEFINITE_TIMESTAMP = MAX_INT_32;
+export const UNMUTE_TIMESTAMP = 0;
 
 export const ANIMATION_END_DELAY = 100;
 export const ANIMATION_WAVE_MIN_INTERVAL = 200;
@@ -312,8 +284,6 @@ export const CONTENT_TYPES_WITH_PREVIEW = new Set([
   ...SUPPORTED_VIDEO_CONTENT_TYPES,
 ]);
 
-export const CONTENT_NOT_SUPPORTED = 'The message is not supported on this version of Telegram.';
-
 // Taken from https://github.com/telegramdesktop/tdesktop/blob/41d9a9fcbd0c809c60ddbd9350791b1436aff7d9/Telegram/SourceFiles/ui/boxes/choose_language_box.cpp#L28
 export const SUPPORTED_TRANSLATION_LANGUAGES = [
   // Official
@@ -372,6 +342,7 @@ export const DEFAULT_GIF_SEARCH_BOT_USERNAME = 'gif';
 export const ALL_FOLDER_ID = 0;
 export const ARCHIVED_FOLDER_ID = 1;
 export const SAVED_FOLDER_ID = -1;
+export const FOLDER_TITLE_MAX_LENGTH = 12;
 export const DELETED_COMMENTS_CHANNEL_ID = '-1000000000777';
 export const MAX_MEDIA_FILES_FOR_ALBUM = 10;
 export const MAX_ACTIVE_PINNED_CHATS = 5;
@@ -402,7 +373,6 @@ export const PEER_COLOR_BG_OPACITY = '1a';
 export const PEER_COLOR_BG_ACTIVE_OPACITY = '2b';
 export const PEER_COLOR_GRADIENT_STEP = 5; // px
 export const MAX_UPLOAD_FILEPART_SIZE = 524288;
-export const MAX_UNIQUE_REACTIONS = 11;
 
 export const IGNORE_UNHANDLED_ERRORS = new Set([
   'USER_CANCELED',
@@ -411,25 +381,6 @@ export const IGNORE_UNHANDLED_ERRORS = new Set([
 // Group calls
 export const GROUP_CALL_VOLUME_MULTIPLIER = 100;
 export const GROUP_CALL_DEFAULT_VOLUME = 100 * GROUP_CALL_VOLUME_MULTIPLIER;
-
-export const DEFAULT_LIMITS: Record<ApiLimitType, readonly [number, number]> = {
-  uploadMaxFileparts: [4000, 8000],
-  stickersFaved: [5, 10],
-  savedGifs: [200, 400],
-  dialogFiltersChats: [100, 200],
-  dialogFilters: [10, 20],
-  dialogFolderPinned: [5, 10],
-  captionLength: [1024, 4096],
-  channels: [500, 1000],
-  channelsPublic: [10, 20],
-  aboutLength: [70, 140],
-  chatlistInvites: [3, 100],
-  chatlistJoined: [2, 20],
-  recommendedChannels: [10, 100],
-  savedDialogsPinned: [5, 100],
-  moreAccounts: [3, MULTIACCOUNT_MAX_SLOTS],
-};
-export const DEFAULT_MAX_MESSAGE_LENGTH = 4096;
 
 export const ONE_TIME_MEDIA_TTL_SECONDS = 2147483647;
 
@@ -493,6 +444,7 @@ export const DEFAULT_GIFT_PROFILE_FILTER_OPTIONS: GiftProfileFilterOptions = {
   shouldIncludeUnique: true,
   shouldIncludeDisplayed: true,
   shouldIncludeHidden: true,
+  shouldIncludeUpgradable: true,
 } as const;
 
 export const DEFAULT_RESALE_GIFTS_FILTER_OPTIONS: ResaleGiftsFilterOptions = {

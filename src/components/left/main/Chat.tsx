@@ -4,6 +4,7 @@ import { getActions, withGlobal } from '../../../global';
 
 import type {
   ApiChat,
+  ApiChatFolder,
   ApiDraft,
   ApiMessage,
   ApiMessageOutgoingStatus,
@@ -19,6 +20,7 @@ import type { ChatAnimationTypes } from './hooks';
 import { MAIN_THREAD_ID } from '../../../api/types';
 import { StoryViewerOrigin } from '../../../types';
 
+import { UNMUTE_TIMESTAMP } from '../../../config';
 import {
   groupStatefulContent,
   isUserOnline,
@@ -33,6 +35,7 @@ import {
   selectCurrentMessageList,
   selectDraft,
   selectIsCurrentUserFrozen,
+  selectIsCurrentUserPremium,
   selectIsForumPanelClosed,
   selectIsForumPanelOpen,
   selectMonoforumChannel,
@@ -52,6 +55,7 @@ import {
 import { IS_OPEN_IN_NEW_TAB_SUPPORTED } from '../../../util/browser/windowEnvironment';
 import buildClassName from '../../../util/buildClassName';
 import { isUserId } from '../../../util/entities/ids';
+import { getChatFolderIds } from '../../../util/folderManager';
 import { createLocationHash } from '../../../util/routing';
 
 import useSelectorSignal from '../../../hooks/data/useSelectorSignal';
@@ -75,6 +79,7 @@ import ChatFolderModal from '../ChatFolderModal.async';
 import MuteChatModal from '../MuteChatModal.async';
 import ChatBadge from './ChatBadge';
 import ChatCallStatus from './ChatCallStatus';
+import ChatTags from './ChatTags';
 
 import './Chat.scss';
 
@@ -91,6 +96,7 @@ type OwnProps = {
   className?: string;
   observeIntersection?: ObserveFn;
   onDragEnter?: (chatId: string) => void;
+  withTags?: boolean;
 };
 
 type StateProps = {
@@ -118,6 +124,11 @@ type StateProps = {
   currentUserId: string;
   isSynced?: boolean;
   isAccountFrozen?: boolean;
+  folderIds?: number[];
+  orderedIds?: number[];
+  chatFoldersById?: Record<number, ApiChatFolder>;
+  activeChatFolder?: number;
+  areTagsEnabled?: boolean;
 };
 
 const Chat: FC<OwnProps & StateProps> = ({
@@ -157,6 +168,12 @@ const Chat: FC<OwnProps & StateProps> = ({
   isSynced,
   onDragEnter,
   isAccountFrozen,
+  folderIds,
+  orderedIds,
+  chatFoldersById,
+  activeChatFolder,
+  areTagsEnabled,
+  withTags,
 }) => {
   const {
     openChat,
@@ -170,6 +187,7 @@ const Chat: FC<OwnProps & StateProps> = ({
     setShouldCloseRightColumn,
     reportMessages,
     openFrozenAccountModal,
+    updateChatMutedState,
   } = getActions();
 
   const { isMobile } = useAppLayout();
@@ -183,6 +201,8 @@ const Chat: FC<OwnProps & StateProps> = ({
   const { isForum, isForumAsMessages, isMonoforum } = chat || {};
 
   useEnsureMessage(isSavedDialog ? currentUserId : chatId, lastMessageId, lastMessage);
+
+  const shouldRenderTags = areTagsEnabled && withTags && folderIds && folderIds.length > 1;
 
   const { renderSubtitle, ref } = useChatListEntry({
     chat,
@@ -200,6 +220,7 @@ const Chat: FC<OwnProps & StateProps> = ({
     isSavedDialog,
     isPreview,
     topics,
+    noForumTitle: shouldRenderTags,
   });
 
   const getIsForumPanelClosed = useSelectorSignal(selectIsForumPanelClosed);
@@ -274,6 +295,15 @@ const Chat: FC<OwnProps & StateProps> = ({
     openMuteModal();
   });
 
+  const handleUnmute = useLastCallback(() => {
+    if (isAccountFrozen) {
+      openFrozenAccountModal();
+      return;
+    }
+
+    updateChatMutedState({ chatId, mutedUntil: UNMUTE_TIMESTAMP });
+  });
+
   const handleChatFolderChange = useLastCallback(() => {
     markRenderChatFolderModal();
     openChatFolderModal();
@@ -294,6 +324,7 @@ const Chat: FC<OwnProps & StateProps> = ({
     user,
     handleDelete,
     handleMute,
+    handleUnmute,
     handleChatFolderChange,
     handleReport,
     folderId,
@@ -341,6 +372,7 @@ const Chat: FC<OwnProps & StateProps> = ({
     isSelected && 'selected',
     isSelectedForum && 'selected-forum',
     isPreview && 'standalone',
+    shouldRenderTags && 'chat-item-with-tags',
     className,
   );
 
@@ -388,7 +420,7 @@ const Chat: FC<OwnProps & StateProps> = ({
           <ChatCallStatus isMobile={isMobile} isSelected={isSelected} isActive={withInterfaceAnimations} />
         )}
       </div>
-      <div className="info">
+      <div className={buildClassName('info', shouldRenderTags && 'has-tags')}>
         <div className="info-row">
           <FullNameTitle
             peer={isMonoforum ? monoforumChannel! : peer}
@@ -423,6 +455,14 @@ const Chat: FC<OwnProps & StateProps> = ({
             />
           )}
         </div>
+        {shouldRenderTags && (
+          <ChatTags
+            folderIds={folderIds}
+            orderedIds={orderedIds}
+            chatFoldersById={chatFoldersById}
+            activeChatFolder={activeChatFolder}
+          />
+        )}
       </div>
       {shouldRenderDeleteModal && (
         <DeleteChatModal
@@ -456,14 +496,18 @@ const Chat: FC<OwnProps & StateProps> = ({
 export default memo(withGlobal<OwnProps>(
   (global, {
     chatId, isSavedDialog, isPreview, previewMessageId,
-  }): StateProps => {
+  }): Complete<StateProps> => {
     const chat = selectChat(global, chatId);
     const user = selectUser(global, chatId);
     if (!chat) {
       return {
         currentUserId: global.currentUserId!,
-      };
+      } as Complete<StateProps>;
     }
+
+    const folderIds = getChatFolderIds(chatId);
+    const { areTagsEnabled } = global.chatFolders;
+    const isPremium = selectIsCurrentUserPremium(global);
 
     const lastMessageId = previewMessageId || selectChatLastMessageId(global, chatId, isSavedDialog ? 'saved' : 'all');
     const lastMessage = previewMessageId
@@ -497,6 +541,8 @@ export default memo(withGlobal<OwnProps>(
 
     const monoforumChannel = selectMonoforumChannel(global, chatId);
 
+    const activeChatFolder = selectTabState(global).activeChatFolder;
+
     return {
       chat,
       isMuted: getIsChatMuted(chat, selectNotifyDefaults(global), selectNotifyException(global, chat.id)),
@@ -507,9 +553,7 @@ export default memo(withGlobal<OwnProps>(
       isForumPanelOpen: selectIsForumPanelOpen(global),
       canScrollDown: isSelected && messageListType === 'thread',
       canChangeFolder: (global.chatFolders.orderedIds?.length || 0) > 1,
-      ...(isOutgoing && lastMessage && {
-        lastMessageOutgoingStatus: selectOutgoingStatus(global, lastMessage),
-      }),
+      lastMessageOutgoingStatus: isOutgoing && lastMessage ? selectOutgoingStatus(global, lastMessage) : undefined,
       user,
       userStatus,
       lastMessageTopic,
@@ -524,6 +568,11 @@ export default memo(withGlobal<OwnProps>(
       lastMessageStory,
       isAccountFrozen,
       monoforumChannel,
+      folderIds,
+      orderedIds: global.chatFolders.orderedIds,
+      activeChatFolder,
+      chatFoldersById: global.chatFolders.byId,
+      areTagsEnabled: areTagsEnabled && isPremium,
     };
   },
 )(Chat));

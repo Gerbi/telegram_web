@@ -26,6 +26,7 @@ import GiftResalePriceComposerModal from './gift/resale/GiftResalePriceComposerM
 import GiftStatusInfoModal from './gift/status/GiftStatusInfoModal.async';
 import GiftTransferModal from './gift/transfer/GiftTransferModal.async';
 import GiftUpgradeModal from './gift/upgrade/GiftUpgradeModal.async';
+import GiftInfoValueModal from './gift/value/GiftInfoValueModal.async';
 import GiftWithdrawModal from './gift/withdraw/GiftWithdrawModal.async';
 import GiftCodeModal from './giftcode/GiftCodeModal.async';
 import InviteViaLinkModal from './inviteViaLink/InviteViaLinkModal.async';
@@ -35,6 +36,7 @@ import OneTimeMediaModal from './oneTimeMedia/OneTimeMediaModal.async';
 import PaidReactionModal from './paidReaction/PaidReactionModal.async';
 import PreparedMessageModal from './preparedMessage/PreparedMessageModal.async';
 import PriceConfirmModal from './priceConfirm/PriceConfirmModal.async';
+import ProfileRatingModal from './profileRating/ProfileRatingModal.async';
 import ReportAdModal from './reportAd/ReportAdModal.async';
 import ReportModal from './reportModal/ReportModal.async';
 import SharePreparedMessageModal from './sharePreparedMessage/SharePreparedMessageModal.async';
@@ -77,6 +79,7 @@ type ModalKey = keyof Pick<TabState,
   'isGiftRecipientPickerOpen' |
   'isWebAppsCloseConfirmationModalOpen' |
   'giftInfoModal' |
+  'giftInfoValueModal' |
   'giftResalePriceComposerModal' |
   'suggestedStatusModal' |
   'emojiStatusAccessModal' |
@@ -93,7 +96,8 @@ type ModalKey = keyof Pick<TabState,
   'priceConfirmModal' |
   'isFrozenAccountModalOpen' |
   'deleteAccountModal' |
-  'isAgeVerificationModalOpen'
+  'isAgeVerificationModalOpen' |
+  'profileRatingModal'
 >;
 
 type StateProps = {
@@ -134,6 +138,7 @@ const MODALS: ModalRegistry = {
   isGiftRecipientPickerOpen: GiftRecipientPicker,
   isWebAppsCloseConfirmationModalOpen: WebAppsCloseConfirmationModal,
   giftInfoModal: GiftInfoModal,
+  giftInfoValueModal: GiftInfoValueModal,
   giftResalePriceComposerModal: GiftResalePriceComposerModal,
   suggestedStatusModal: SuggestedStatusModal,
   emojiStatusAccessModal: EmojiStatusAccessModal,
@@ -151,6 +156,7 @@ const MODALS: ModalRegistry = {
   isFrozenAccountModalOpen: FrozenAccountModal,
   deleteAccountModal: DeleteAccountModal,
   isAgeVerificationModalOpen: AgeVerificationModal,
+  profileRatingModal: ProfileRatingModal,
 };
 const MODAL_KEYS = Object.keys(MODALS) as ModalKey[];
 const MODAL_ENTRIES = Object.entries(MODALS) as Entries<ModalRegistry>;
@@ -163,7 +169,7 @@ const ModalContainer = (modalProps: StateProps) => {
 };
 
 export default memo(withGlobal(
-  (global): StateProps => (
-    pick(selectTabState(global), MODAL_KEYS)
+  (global): Complete<StateProps> => (
+    pick(selectTabState(global), MODAL_KEYS) as Complete<StateProps>
   ),
 )(ModalContainer));

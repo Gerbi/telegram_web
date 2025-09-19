@@ -46,7 +46,7 @@ import type { OnIntersectPinnedMessage } from '../hooks/usePinnedMessage';
 import { MAIN_THREAD_ID } from '../../../api/types';
 import { AudioOrigin } from '../../../types';
 
-import { EMOJI_STATUS_LOOP_LIMIT, MESSAGE_APPEARANCE_DELAY, STARS_SUGGESTED_POST_FUTURE_MIN } from '../../../config';
+import { EMOJI_STATUS_LOOP_LIMIT, MESSAGE_APPEARANCE_DELAY } from '../../../config';
 import {
   areReactionsEmpty,
   getIsDownloading,
@@ -124,7 +124,8 @@ import {
   selectMessageTimestampableDuration,
 } from '../../../global/selectors/media';
 import { selectSharedSettings } from '../../../global/selectors/sharedState';
-import { IS_ANDROID, IS_ELECTRON, IS_TRANSLATION_SUPPORTED } from '../../../util/browser/windowEnvironment';
+import { IS_TAURI } from '../../../util/browser/globalEnvironment';
+import { IS_ANDROID, IS_TRANSLATION_SUPPORTED } from '../../../util/browser/windowEnvironment';
 import buildClassName from '../../../util/buildClassName';
 import { isUserId } from '../../../util/entities/ids';
 import { getMessageKey } from '../../../util/keys/messageKey';
@@ -296,7 +297,6 @@ type StateProps = {
   hasUnreadReaction?: boolean;
   isTranscribing?: boolean;
   transcribedText?: string;
-  isTranscriptionError?: boolean;
   isPremium: boolean;
   senderAdminMember?: ApiChatMember;
   messageTopic?: ApiTopic;
@@ -310,7 +310,7 @@ type StateProps = {
   webPageStory?: ApiTypeStory;
   isConnected: boolean;
   isLoadingComments?: boolean;
-  shouldWarnAboutSvg?: boolean;
+  shouldWarnAboutFiles?: boolean;
   senderBoosts?: number;
   tags?: Record<ApiReactionKey, ApiSavedReactionTag>;
   canTranscribeVoice?: boolean;
@@ -438,7 +438,7 @@ const Message: FC<OwnProps & StateProps> = ({
   webPageStory,
   isConnected,
   getIsMessageListReady,
-  shouldWarnAboutSvg,
+  shouldWarnAboutFiles,
   senderBoosts,
   tags,
   canTranscribeVoice,
@@ -496,7 +496,7 @@ const Message: FC<OwnProps & StateProps> = ({
   } = useContextMenuHandlers(
     ref,
     (isTouchScreen && isInSelectMode) || isAccountFrozen,
-    !IS_ELECTRON,
+    !IS_TAURI,
     IS_ANDROID,
     getIsMessageListReady,
   );
@@ -1026,7 +1026,11 @@ const Message: FC<OwnProps & StateProps> = ({
 
     return (
       <div
-        className={buildClassName('quick-reaction', isQuickReactionVisible && !hasActiveReactions && 'visible')}
+        className={buildClassName(
+          'quick-reaction',
+          'no-selection',
+          isQuickReactionVisible && !hasActiveReactions && 'visible',
+        )}
         onClick={handleSendQuickReaction}
         ref={quickReactionRef}
       >
@@ -1257,7 +1261,7 @@ const Message: FC<OwnProps & StateProps> = ({
             onMediaClick={handleDocumentClick}
             onCancelUpload={handleCancelUpload}
             isDownloading={isDownloading}
-            shouldWarnAboutSvg={shouldWarnAboutSvg}
+            shouldWarnAboutFiles={shouldWarnAboutFiles}
           />
         )}
         {storyData && !isStoryMention && (
@@ -1282,6 +1286,7 @@ const Message: FC<OwnProps & StateProps> = ({
         {game && (
           <Game
             message={message}
+            threadId={threadId}
             canAutoLoadMedia={canAutoLoadMedia}
           />
         )}
@@ -1426,7 +1431,7 @@ const Message: FC<OwnProps & StateProps> = ({
         isConnected={isConnected}
         lastPlaybackTimestamp={lastPlaybackTimestamp}
         backgroundEmojiId={messageColorPeer?.color?.backgroundEmojiId}
-        shouldWarnAboutSvg={shouldWarnAboutSvg}
+        shouldWarnAboutFiles={shouldWarnAboutFiles}
         autoLoadFileMaxSizeMb={autoLoadFileMaxSizeMb}
         onAudioPlay={handleAudioPlay}
         onMediaClick={handleMediaClick}
@@ -1758,7 +1763,7 @@ const Message: FC<OwnProps & StateProps> = ({
                   color="translucent-white"
                   round
                   size="tiny"
-                  ariaLabel="Focus message"
+                  ariaLabel={lang('FocusMessage')}
                   onClick={isPinnedList ? handleFocus : handleFocusForwarded}
                 >
                   <Icon name="arrow-right" />
@@ -1865,7 +1870,7 @@ const Message: FC<OwnProps & StateProps> = ({
 };
 
 export default memo(withGlobal<OwnProps>(
-  (global, ownProps): StateProps => {
+  (global, ownProps): Complete<StateProps> => {
     const {
       focusedMessage, forwardMessages, activeReactions, activeEmojiInteractions,
       loadingThread,
@@ -1880,7 +1885,7 @@ export default memo(withGlobal<OwnProps>(
 
     const webPage = selectFullWebPageFromMessage(global, message);
 
-    const { shouldWarnAboutSvg } = selectSharedSettings(global);
+    const { shouldWarnAboutFiles } = selectSharedSettings(global);
     const isChatWithUser = isUserId(chatId);
 
     const chat = selectChat(global, chatId);
@@ -1991,7 +1996,7 @@ export default memo(withGlobal<OwnProps>(
       ? (chatFullInfo?.boostsApplied ?? message.senderBoosts) : message.senderBoosts;
 
     const chatLevel = chat?.boostLevel || 0;
-    const transcribeMinLevel = global.appConfig?.groupTranscribeLevelMin;
+    const transcribeMinLevel = global.appConfig.groupTranscribeLevelMin;
     const canTranscribeVoice = isPremium || Boolean(transcribeMinLevel && chatLevel >= transcribeMinLevel);
 
     const viaBusinessBot = viaBusinessBotId ? selectUser(global, viaBusinessBotId) : undefined;
@@ -2005,7 +2010,7 @@ export default memo(withGlobal<OwnProps>(
     const lastPlaybackTimestamp = selectMessageLastPlaybackTimestamp(global, chatId, message.id);
     const isAccountFrozen = selectIsCurrentUserFrozen(global);
 
-    const minFutureTime = global.appConfig?.starsSuggestedPostFutureMin || STARS_SUGGESTED_POST_FUTURE_MIN;
+    const minFutureTime = global.appConfig.starsSuggestedPostFutureMin;
 
     const isMediaNsfw = selectIsMediaNsfw(global, message);
     const isReplyMediaNsfw = replyMessage && selectIsMediaNsfw(global, replyMessage);
@@ -2081,17 +2086,15 @@ export default memo(withGlobal<OwnProps>(
       isLoadingComments: repliesThreadInfo?.isCommentsInfo
         && loadingThread?.loadingChatId === repliesThreadInfo?.originChannelId
         && loadingThread?.loadingMessageId === repliesThreadInfo?.originMessageId,
-      shouldWarnAboutSvg,
-      ...(isOutgoing && { outgoingStatus: selectOutgoingStatus(global, message, messageListType === 'scheduled') }),
-      ...(typeof uploadProgress === 'number' && { uploadProgress }),
-      ...(isFocused && {
-        focusDirection,
-        noFocusHighlight,
-        isResizingContainer,
-        focusedQuote,
-        focusedQuoteOffset,
-        scrollTargetPosition,
-      }),
+      shouldWarnAboutFiles,
+      outgoingStatus: isOutgoing ? selectOutgoingStatus(global, message, messageListType === 'scheduled') : undefined,
+      uploadProgress: typeof uploadProgress === 'number' ? uploadProgress : undefined,
+      focusDirection: isFocused ? focusDirection : undefined,
+      noFocusHighlight: isFocused ? noFocusHighlight : undefined,
+      isResizingContainer: isFocused ? isResizingContainer : undefined,
+      focusedQuote: isFocused ? focusedQuote : undefined,
+      focusedQuoteOffset: isFocused ? focusedQuoteOffset : undefined,
+      scrollTargetPosition: isFocused ? scrollTargetPosition : undefined,
       senderBoosts,
       tags: global.savedReactionTags?.byKey,
       canTranscribeVoice,

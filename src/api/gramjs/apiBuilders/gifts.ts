@@ -9,6 +9,7 @@ import type {
   ApiStarGiftAttribute,
   ApiStarGiftAttributeCounter,
   ApiStarGiftAttributeId,
+  ApiStarGiftCollection,
   ApiTypeResaleStarGifts,
 } from '../../types';
 
@@ -25,7 +26,7 @@ export function buildApiStarGift(starGift: GramJs.TypeStarGift): ApiStarGift {
   if (starGift instanceof GramJs.StarGiftUnique) {
     const {
       id, num, ownerId, ownerName, title, attributes, availabilityIssued, availabilityTotal, slug, ownerAddress,
-      giftAddress, resellAmount, releasedBy, resaleTonOnly, requirePremium,
+      giftAddress, resellAmount, releasedBy, resaleTonOnly, requirePremium, valueCurrency, valueAmount, giftId,
     } = starGift;
 
     return {
@@ -45,6 +46,9 @@ export function buildApiStarGift(starGift: GramJs.TypeStarGift): ApiStarGift {
       releasedByPeerId: releasedBy && getApiChatIdFromMtpPeer(releasedBy),
       requirePremium,
       resaleTonOnly,
+      valueCurrency,
+      valueAmount: valueAmount?.toJSNumber(),
+      regularGiftId: giftId.toString(),
     };
   }
 
@@ -286,4 +290,22 @@ GramJs.TypeStarGiftAttributeId[] {
         throw new Error(`Unknown attribute type: ${(attr as any).type}`);
     }
   });
+}
+
+export function buildApiStarGiftCollection(collection: GramJs.StarGiftCollection): ApiStarGiftCollection | undefined {
+  if (!collection) return undefined;
+
+  const { collectionId, title, icon, giftsCount, hash } = collection;
+
+  if (icon) {
+    addDocumentToLocalDb(icon);
+  }
+
+  return {
+    collectionId,
+    title,
+    icon: icon && buildStickerFromDocument(icon),
+    giftsCount,
+    hash: hash.toString(),
+  };
 }

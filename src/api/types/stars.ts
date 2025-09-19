@@ -31,6 +31,7 @@ export interface ApiStarGiftRegular {
 export interface ApiStarGiftUnique {
   type: 'starGiftUnique';
   id: string;
+  regularGiftId: string;
   title: string;
   number: number;
   ownerId?: string;
@@ -45,6 +46,8 @@ export interface ApiStarGiftUnique {
   releasedByPeerId?: string;
   requirePremium?: true;
   resaleTonOnly?: true;
+  valueCurrency?: string;
+  valueAmount?: number;
 }
 
 export type ApiStarGift = ApiStarGiftRegular | ApiStarGiftUnique;
@@ -280,4 +283,19 @@ export interface ApiDisallowedGiftsSettings {
   shouldDisallowLimitedStarGifts?: true;
   shouldDisallowUniqueStarGifts?: true;
   shouldDisallowPremiumGifts?: true;
+}
+
+export interface ApiStarGiftCollection {
+  collectionId: number;
+  title: string;
+  icon?: ApiSticker;
+  giftsCount: number;
+  hash: string;
+}
+
+export interface ApiStarsRating {
+  level: number;
+  currentLevelStars: number;
+  stars: number;
+  nextLevelStars?: number;
 }

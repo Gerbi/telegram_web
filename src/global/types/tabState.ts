@@ -41,6 +41,7 @@ import type {
   ApiStarGift,
   ApiStarGiftAttribute,
   ApiStarGiftAttributeCounter,
+  ApiStarGiftUnique,
   ApiStarGiveawayOption,
   ApiStarsSubscription,
   ApiStarsTransaction,
@@ -49,6 +50,7 @@ import type {
   ApiTypeCurrencyAmount,
   ApiTypePrepaidGiveaway,
   ApiTypeStoryView,
+  ApiUniqueStarGiftValueInfo,
   ApiUser,
   ApiVideo,
 } from '../../api/types';
@@ -92,6 +94,7 @@ import type {
 import type { WebApp, WebAppModalStateType } from '../../types/webapp';
 import type { SearchResultKey } from '../../util/keys/searchResultKey';
 import type { RegularLangFnParameters } from '../../util/localization';
+import type { ProfileCollectionKey } from '../selectors/payments';
 import type { CallbackAction } from './actions';
 
 export type TabState = {
@@ -218,7 +221,8 @@ export type TabState = {
   };
 
   savedGifts: {
-    giftsByPeerId: Record<string, ApiSavedGifts>;
+    collectionsByPeerId: Record<string, Record<ProfileCollectionKey, ApiSavedGifts>>;
+    activeCollectionByPeerId: Record<string, number | undefined>;
     filter: GiftProfileFilterOptions;
   };
 
@@ -341,6 +345,8 @@ export type TabState = {
       storyIdsByPeerId: Record<string, number[]>;
     };
   };
+
+  selectedStoryAlbumId?: number;
 
   mediaViewer: {
     chatId?: string;
@@ -689,6 +695,7 @@ export type TabState = {
   giftModal?: {
     forPeerId: string;
     gifts?: ApiPremiumGiftCodeOption[];
+    selectedResaleGift?: ApiStarGift;
   };
   chatRefundModal?: {
     userId: string;
@@ -820,6 +827,11 @@ export type TabState = {
     gift: ApiSavedStarGift | ApiStarGift;
   };
 
+  giftInfoValueModal?: {
+    valueInfo: ApiUniqueStarGiftValueInfo;
+    gift: ApiStarGiftUnique;
+  };
+
   giftResalePriceComposerModal?: {
     peerId?: string;
     gift: ApiSavedStarGift | ApiStarGift;
@@ -850,6 +862,11 @@ export type TabState = {
     webAppKey?: string;
     customEmojiId: string;
     duration?: number;
+  };
+
+  profileRatingModal?: {
+    userId: string;
+    level: number;
   };
 
   monetizationVerificationModal?: {

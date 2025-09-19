@@ -4,13 +4,13 @@ import type { ActionReturnType } from '../../types';
 
 import {
   DEFAULT_RESALE_GIFTS_FILTER_OPTIONS,
-  RESALE_GIFTS_LIMIT,
   STARS_CURRENCY_CODE,
   TON_CURRENCY_CODE,
 } from '../../../config';
 import { getCurrentTabId } from '../../../util/establishMultitabRole';
 import { buildCollectionByKey } from '../../../util/iteratees';
 import { callApi } from '../../../api/gramjs';
+import { RESALE_GIFTS_LIMIT } from '../../../limits';
 import { areInputSavedGiftsEqual, getRequestInputSavedStarGift } from '../../helpers/payments';
 import { addActionHandler, getGlobal, setGlobal } from '../../index';
 import {
@@ -18,12 +18,14 @@ import {
   appendStarsTransactions,
   replacePeerSavedGifts,
   updateChats,
+  updatePeerStarGiftCollections,
   updateStarsBalance,
   updateStarsSubscriptionLoading,
   updateUsers,
 } from '../../reducers';
 import { updateTabState } from '../../reducers/tabs';
 import {
+  selectActiveGiftsCollectionId,
   selectGiftProfileFilter,
   selectPeer,
   selectPeerSavedGifts,
@@ -301,17 +303,20 @@ addActionHandler('loadPeerSavedGifts', async (global, actions, payload): Promise
   if (!shouldRefresh && currentGifts && !localNextOffset) return; // Already loaded all
 
   const fetchingFilter = selectGiftProfileFilter(global, peerId, tabId);
+  const fetchingCollectionId = selectActiveGiftsCollectionId(global, peerId, tabId);
 
   const result = await callApi('fetchSavedStarGifts', {
     peer,
     offset: !shouldRefresh ? localNextOffset : '',
     filter: fetchingFilter,
+    collectionId: fetchingCollectionId === 'all' ? undefined : fetchingCollectionId,
   });
 
   global = getGlobal();
   const currentFilter = selectGiftProfileFilter(global, peerId, tabId);
+  const currentCollectionId = selectActiveGiftsCollectionId(global, peerId, tabId);
 
-  if (!result || currentFilter !== fetchingFilter) {
+  if (!result || currentCollectionId !== fetchingCollectionId || currentFilter !== fetchingFilter) {
     return;
   }
 
@@ -395,7 +400,8 @@ addActionHandler('changeGiftVisibility', async (global, actions, payload): Promi
   const requestInputGift = getRequestInputSavedStarGift(global, gift);
   if (!requestInputGift) return;
 
-  const oldGifts = selectTabState(global, tabId).savedGifts.giftsByPeerId[peerId];
+  const activeCollectionId = selectActiveGiftsCollectionId(global, peerId, tabId);
+  const oldGifts = selectTabState(global, tabId).savedGifts.collectionsByPeerId[peerId]?.[activeCollectionId];
   if (oldGifts?.gifts?.length) {
     const newGifts = oldGifts.gifts.map((g) => {
       if (g.inputGift && areInputSavedGiftsEqual(g.inputGift, gift)) {
@@ -485,7 +491,7 @@ addActionHandler('toggleSavedGiftPinned', async (global, actions, payload): Prom
 
   const savedGifts = selectPeerSavedGifts(global, peerId, tabId);
   if (!savedGifts) return;
-  const pinLimit = global.appConfig?.savedGiftPinLimit;
+  const pinLimit = global.appConfig.savedGiftPinLimit;
   const currentPinnedGifts = savedGifts.gifts.filter((g) => g.isPinned);
   const newPinnedGifts = gift.isPinned
     ? currentPinnedGifts.filter((g) => (g.gift as ApiStarGiftUnique).slug !== (gift.gift as ApiStarGiftUnique).slug)
@@ -529,4 +535,26 @@ addActionHandler('updateStarGiftPrice', async (global, actions, payload): Promis
   if (!result) return;
 
   actions.reloadPeerSavedGifts({ peerId: global.currentUserId! });
+});
+
+addActionHandler('loadStarGiftCollections', async (global, actions, payload): Promise<void> => {
+  const {
+    peerId,
+    hash,
+  } = payload;
+
+  const peer = selectPeer(global, peerId);
+  if (!peer) return;
+
+  const result = await callApi('fetchStarGiftCollections', {
+    peer,
+    hash,
+  });
+
+  if (!result) return;
+
+  global = getGlobal();
+
+  global = updatePeerStarGiftCollections(global, peerId, result.collections);
+  setGlobal(global);
 });

@@ -9,7 +9,7 @@ import type {
 } from '../../types';
 import { PaymentStep } from '../../../types';
 
-import { DEBUG_PAYMENT_SMART_GLOCAL } from '../../../config';
+import { DEBUG_PAYMENT_SMART_GLOCAL, STARS_CURRENCY_CODE, TON_CURRENCY_CODE } from '../../../config';
 import { getCurrentTabId } from '../../../util/establishMultitabRole';
 import * as langProvider from '../../../util/oldLangProvider';
 import { getStripeError } from '../../../util/payments/stripe';
@@ -548,7 +548,7 @@ addActionHandler('openGiveawayModal', async (global, actions, payload): Promise<
 
 addActionHandler('openGiftModal', async (global, actions, payload): Promise<void> => {
   const {
-    forUserId, tabId = getCurrentTabId(),
+    forUserId, selectedResaleGift, tabId = getCurrentTabId(),
   } = payload;
 
   if (selectIsCurrentUserFrozen(global)) {
@@ -564,6 +564,7 @@ addActionHandler('openGiftModal', async (global, actions, payload): Promise<void
     giftModal: {
       forPeerId: forUserId,
       gifts,
+      selectedResaleGift,
     },
   }, tabId);
   setGlobal(global);
@@ -1001,7 +1002,7 @@ addActionHandler('launchPrepaidStarsGiveaway', async (global, actions, payload):
   actions.openBoostStatistics({ chatId, tabId });
 });
 
-addActionHandler('upgradeGift', (global, actions, payload): ActionReturnType => {
+addActionHandler('upgradeGift', async (global, actions, payload): Promise<void> => {
   const {
     gift, shouldKeepOriginalDetails, upgradeStars, tabId = getCurrentTabId(),
   } = payload;
@@ -1022,10 +1023,15 @@ addActionHandler('upgradeGift', (global, actions, payload): ActionReturnType => 
   actions.closeGiftInfoModal({ tabId });
 
   if (!upgradeStars) {
-    callApi('upgradeStarGift', {
+    const result = await callApi('upgradeStarGift', {
       inputSavedGift: requestSavedGift,
       shouldKeepOriginalDetails: shouldKeepOriginalDetails || undefined,
     });
+
+    global = getGlobal();
+    if (result && global.currentUserId) {
+      actions.reloadPeerSavedGifts({ peerId: global.currentUserId });
+    }
 
     return;
   }
@@ -1084,13 +1090,14 @@ async function payInputStarInvoice<T extends GlobalState>(
   ...[tabId = getCurrentTabId()]: TabArgs<T>
 ) {
   const actions = getActions();
-  const isTon = inputInvoice.type === 'stargiftResale' && inputInvoice.currency === 'TON';
+  const isTon = inputInvoice.type === 'stargiftResale' && inputInvoice.currency === TON_CURRENCY_CODE;
   const balance = isTon ? global.ton?.balance : global.stars?.balance;
+  const currency = isTon ? TON_CURRENCY_CODE : STARS_CURRENCY_CODE;
 
   if (balance === undefined) return;
 
   if (balance.amount < price) {
-    actions.openStarsBalanceModal({ currency: isTon ? 'TON' : 'XTR', tabId });
+    actions.openStarsBalanceModal({ currency, tabId });
     return;
   }
 
@@ -1125,12 +1132,10 @@ async function payInputStarInvoice<T extends GlobalState>(
 
   const formPrice = form.invoice.totalAmount;
   if (formPrice !== price) {
-    const isTon = inputInvoice.type === 'stargiftResale' && inputInvoice.currency === 'TON';
-
     actions.openPriceConfirmModal({
       originalAmount: price,
       newAmount: formPrice,
-      currency: isTon ? 'TON' : 'XTR',
+      currency,
       directInfo: {
         inputInvoice,
         formId: form.formId,
@@ -1213,7 +1218,7 @@ addActionHandler('processStarGiftWithdrawal', async (global, actions, payload): 
     return;
   }
 
-  actions.openUrl({ url: result.url, shouldSkipModal: true, tabId });
+  actions.openUrl({ url: result.url, tabId });
   actions.closeGiftWithdrawModal({ tabId });
 });
 

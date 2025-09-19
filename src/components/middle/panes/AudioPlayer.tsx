@@ -167,6 +167,12 @@ const AudioPlayer: FC<OwnProps & StateProps> = ({
     }
   }, [timestamp, setCurrentTime]);
 
+  useEffect(() => {
+    if (isPlaying && message?.isDeleting) {
+      playPause();
+    }
+  }, [isPlaying, message?.isDeleting, playPause]);
+
   const handleClick = useLastCallback(() => {
     const { chatId, id } = renderingMessage!;
     focusMessage({ chatId, messageId: id });
@@ -414,7 +420,7 @@ function renderPlaybackRateMenuItem(
 }
 
 export default withGlobal<OwnProps>(
-  (global, { isHidden }): StateProps => {
+  (global, { isHidden }): Complete<StateProps> => {
     const { audioPlayer } = selectTabState(global);
     const { chatId, messageId } = audioPlayer;
     const message = !isHidden && chatId && messageId ? selectChatMessage(global, chatId, messageId) : undefined;
