@@ -48,6 +48,8 @@ type AnyToVoidFunction = (...args: any[]) => void;
 type BooleanToVoidFunction = (value: boolean) => void;
 type NoneToVoidFunction = () => void;
 
+type StringAutocomplete<T> = T | (string & {});
+
 type Complete<T> = {
   [P in keyof Required<T>]: Pick<T, P> extends Required<Pick<T, P>> ? T[P] : (T[P] | undefined);
 };
@@ -114,7 +116,7 @@ declare module 'opus-recorder' {
 
     sourceNode: MediaStreamAudioSourceNode;
 
-    ondataavailable: (typedArray: Uint8Array) => void;
+    ondataavailable: (typedArray: Uint8Array<ArrayBuffer>) => void;
   }
 
   const recorder: IOpusRecorder;
@@ -173,7 +175,6 @@ interface BooleanConstructor {
 
 interface Array<T> {
   filter<S extends T>(predicate: BooleanConstructor, thisArg?: unknown): Exclude<S, Falsy>[];
-  at(index: number): T; // Make it behave like arr[arr.length - 1]
 }
 interface ReadonlyArray<T> {
   filter<S extends T>(predicate: BooleanConstructor, thisArg?: unknown): Exclude<S, Falsy>[];

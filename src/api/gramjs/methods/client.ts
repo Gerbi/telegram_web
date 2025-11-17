@@ -21,6 +21,7 @@ import {
   DEBUG, DEBUG_GRAMJS, IS_TEST, LANG_PACK, UPLOAD_WORKERS,
 } from '../../../config';
 import { pause } from '../../../util/schedulers';
+import { buildWebPage } from '../apiBuilders/messageContent';
 import {
   buildApiMessage,
   setMessageBuilderCurrentUserId,
@@ -28,9 +29,15 @@ import {
 import { buildApiPeerId } from '../apiBuilders/peers';
 import { buildApiStory } from '../apiBuilders/stories';
 import { buildApiUser, buildApiUserFullInfo } from '../apiBuilders/users';
-import { buildInputChannelFromLocalDb, buildInputPeerFromLocalDb, getEntityTypeById } from '../gramjsBuilders';
+import {
+  buildInputChannelFromLocalDb,
+  buildInputPeerFromLocalDb,
+  DEFAULT_PRIMITIVES,
+  getEntityTypeById,
+} from '../gramjsBuilders';
 import {
   addStoryToLocalDb, addUserToLocalDb,
+  addWebPageMediaToLocalDb,
 } from '../helpers/localDb';
 import {
   isResponseUpdate, log,
@@ -187,11 +194,11 @@ export async function destroy(noLogOut = false, noClearLocalDb = false) {
     resetUpdatesManager();
   }
 
-  await client.destroy();
+  client.destroy();
 }
 
-export async function disconnect() {
-  await client.disconnect();
+export function disconnect() {
+  client.disconnect();
 }
 
 export function getClient() {
@@ -459,7 +466,7 @@ function dispatchNotSupportedInFrozenAccountUpdate<T extends GramJs.AnyRequest>(
     || request instanceof GramJs.phone.GetGroupParticipants
     || request instanceof GramJs.channels.GetParticipant
     || request instanceof GramJs.channels.GetParticipants
-    || request instanceof GramJs.channels.GetForumTopics) {
+    || request instanceof GramJs.messages.GetForumTopics) {
     return;
   }
 
@@ -520,6 +527,11 @@ export async function repairFileReference({
 
     if (localRepairInfo.type === 'message') {
       const result = await repairMessageMedia(localRepairInfo.peerId, localRepairInfo.id);
+      return result;
+    }
+
+    if (localRepairInfo.type === 'webPage') {
+      const result = await repairWebPageMedia(localRepairInfo.url);
       return result;
     }
   }
@@ -597,6 +609,27 @@ async function repairStoryMedia(peerId: string, storyId: number) {
     });
   });
   return true;
+}
+
+export async function repairWebPageMedia(url: string) {
+  const result = await invokeRequest(new GramJs.messages.GetWebPage({
+    url,
+    hash: DEFAULT_PRIMITIVES.INT,
+  }), {
+    shouldIgnoreErrors: true,
+  });
+
+  if (!result?.webpage) return false;
+  const webPage = buildWebPage(result.webpage);
+  if (!webPage) return false;
+
+  addWebPageMediaToLocalDb(result.webpage);
+  sendApiUpdate({
+    '@type': 'updateWebPage',
+    webPage,
+  });
+
+  return webPage.webpageType === 'full';
 }
 
 export function setForceHttpTransport(forceHttpTransport: boolean) {

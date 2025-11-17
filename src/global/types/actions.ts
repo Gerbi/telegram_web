@@ -22,7 +22,6 @@ import type {
   ApiInputSavedStarGift,
   ApiInputSuggestedPostInfo,
   ApiKeyboardButton,
-  ApiKeyboardButtonSuggestedMessage,
   ApiLimitTypeWithModal,
   ApiMessage,
   ApiMessageEntity,
@@ -37,6 +36,7 @@ import type {
   ApiPreparedInlineMessage,
   ApiPrivacyKey,
   ApiPrivacySettings,
+  ApiProfileTab,
   ApiReaction,
   ApiReactionWithPaid,
   ApiReportReason,
@@ -44,6 +44,7 @@ import type {
   ApiSendMessageAction,
   ApiSessionData,
   ApiStarGift,
+  ApiStarGiftAttributeOriginalDetails,
   ApiStarGiftUnique,
   ApiStarsSubscription,
   ApiStarsTransaction,
@@ -58,6 +59,7 @@ import type {
   ApiUser,
   ApiVideo,
   BotsPrivacyType,
+  KeyboardButtonSuggestedMessage,
   LinkContext,
   PrivacyVisibility,
 } from '../../api/types';
@@ -67,6 +69,7 @@ import type { ReducerAction } from '../../hooks/useReducer';
 import type { P2pMessage } from '../../lib/secret-sauce';
 import type {
   AccountSettings,
+  AttachmentCompression,
   AudioOrigin,
   CallSound,
   ChatListType,
@@ -310,7 +313,7 @@ export interface ActionPayloads {
     hashtag: string;
   } & WithTabId;
   setSharedMediaSearchType: {
-    mediaType: SharedMediaType;
+    mediaType?: SharedMediaType;
   } & WithTabId;
   searchSharedMediaMessages: WithTabId | undefined;
   searchChatMediaMessages: {
@@ -359,8 +362,13 @@ export interface ActionPayloads {
   openChatWithInfo: ActionPayloads['openChat'] & {
     profileTab?: ProfileTabType;
     forceScrollProfileTab?: boolean;
+    isOwnProfile?: boolean;
   } & WithTabId;
-  openThreadWithInfo: ActionPayloads['openThread'] & WithTabId;
+  openThreadWithInfo: ActionPayloads['openThread'] & {
+    profileTab?: ProfileTabType;
+    forceScrollProfileTab?: boolean;
+    isOwnProfile?: boolean;
+  } & WithTabId;
   openLinkedChat: { id: string } & WithTabId;
   loadMoreMembers: {
     chatId: string;
@@ -462,6 +470,7 @@ export interface ActionPayloads {
     chatId?: string;
     threadId?: ThreadId;
     shouldForceRender?: boolean;
+    forceLastSlice?: boolean;
     onLoaded?: NoneToVoidFunction;
     onError?: NoneToVoidFunction;
   } & WithTabId;
@@ -1017,8 +1026,8 @@ export interface ActionPayloads {
     scrollTargetPosition?: ScrollTargetPosition;
     timestamp?: number;
   } & WithTabId;
+  scrollMessageListToBottom: WithTabId | undefined;
 
-  focusLastMessage: WithTabId | undefined;
   updateDraftReplyInfo: Partial<ApiInputMessageReplyInfo> & WithTabId;
   resetDraftReplyInfo: WithTabId | undefined;
   updateDraftSuggestedPostInfo: Partial<ApiInputSuggestedPostInfo> & WithTabId;
@@ -1136,6 +1145,10 @@ export interface ActionPayloads {
     chatId: string;
     isEnabled: boolean;
   } & WithTabId;
+  setMainProfileTab: {
+    chatId: string;
+    tab: ApiProfileTab;
+  };
 
   updateChat: {
     chatId: string;
@@ -1185,6 +1198,7 @@ export interface ActionPayloads {
     chatId?: string;
     originMessageId: number;
     originChannelId: string;
+    threadId?: never;
   } | {
     isComments?: false;
     chatId: string;
@@ -1240,7 +1254,10 @@ export interface ActionPayloads {
     chatId: string;
     isEnabled: boolean;
   };
-  resetNextProfileTab: WithTabId | undefined;
+  changeProfileTab: {
+    profileTab: ProfileTabType | undefined;
+    shouldScrollTo?: boolean;
+  } & WithTabId;
 
   openForumPanel: {
     chatId: string;
@@ -1683,9 +1700,10 @@ export interface ActionPayloads {
     reaction?: ApiReaction;
     shouldAddToRecent?: boolean;
   } & WithTabId;
-  toggleStealthModal: {
-    isOpen: boolean;
-  } & WithTabId;
+  openStealthModal: ({
+    targetPeerId: string;
+  } | Record<string, never>) & WithTabId;
+  closeStealthModal: WithTabId | undefined;
   activateStealthMode: {
     isForPast?: boolean;
     isForFuture?: boolean;
@@ -1852,6 +1870,11 @@ export interface ActionPayloads {
     firstName: string;
     lastName?: string;
     shouldSharePhoneNumber?: boolean;
+    note?: ApiFormattedText;
+  } & WithTabId;
+  updateContactNote: {
+    userId: string;
+    note: ApiFormattedText;
   } & WithTabId;
   toggleNoPaidMessagesException: {
     userId: string;
@@ -2062,7 +2085,7 @@ export interface ActionPayloads {
   clickSuggestedMessageButton: {
     chatId: string;
     messageId: number;
-    button: ApiKeyboardButtonSuggestedMessage;
+    button: KeyboardButtonSuggestedMessage;
   } & WithTabId;
 
   switchBotInline: {
@@ -2280,12 +2303,15 @@ export interface ActionPayloads {
   } & WithTabId;
 
   updateAttachmentSettings: {
+    defaultAttachmentCompression?: AttachmentCompression;
     shouldCompress?: boolean;
     shouldSendGrouped?: boolean;
     isInvertedMedia?: true;
     webPageMediaSize?: WebPageMediaSize;
     shouldSendInHighQuality?: boolean;
   };
+  updateShouldSaveAttachmentsCompression: { shouldSave: boolean } & WithTabId;
+  applyDefaultAttachmentsCompression: undefined;
 
   saveEffectInDraft: {
     chatId: string;
@@ -2509,6 +2535,12 @@ export interface ActionPayloads {
   } & WithTabId;
   closeSuggestedPostApprovalModal: WithTabId | undefined;
 
+  openQuickPreview: {
+    id: string;
+    threadId?: ThreadId;
+  } & WithTabId;
+  closeQuickPreview: WithTabId | undefined;
+
   openDeleteMessageModal: ({
     chatId: string;
     messageIds: number[];
@@ -2525,6 +2557,9 @@ export interface ActionPayloads {
   loadPremiumGifts: undefined;
   loadTonGifts: undefined;
   loadStarGifts: undefined;
+  loadMyUniqueGifts: {
+    shouldRefresh?: true;
+  } | undefined;
   updateResaleGiftsFilter: {
     filter: ResaleGiftsFilterOptions;
   } & WithTabId;
@@ -2565,11 +2600,20 @@ export interface ActionPayloads {
   } | {
     gift: ApiStarGift;
   }) & WithTabId;
+  openLockedGiftModalInfo: {
+    untilDate?: number;
+    reason?: ApiFormattedText;
+  } & WithTabId;
+  checkCanSendGift: {
+    gift: ApiStarGift;
+    onSuccess: () => void;
+  } & WithTabId;
   openGiftResalePriceComposerModal: ({
     peerId: string;
     gift: ApiSavedStarGift;
   }) & WithTabId;
   closeGiftInfoModal: WithTabId | undefined;
+  closeLockedGiftModal: WithTabId | undefined;
   closeGiftResalePriceComposerModal: WithTabId | undefined;
   openGiftInMarket: {
     gift: ApiStarGift;
@@ -2586,6 +2630,11 @@ export interface ActionPayloads {
     gift: ApiInputSavedStarGift;
     shouldKeepOriginalDetails?: boolean;
     upgradeStars?: number;
+  } & WithTabId;
+  upgradePrepaidGift: {
+    peerId: string;
+    hash: string;
+    stars: number;
   } & WithTabId;
 
   openGiftWithdrawModal: {
@@ -2614,7 +2663,22 @@ export interface ActionPayloads {
     transferStars?: number;
     recipientId: string;
   } & WithTabId;
+  removeGiftDescription: {
+    gift: ApiInputSavedStarGift;
+    price: number;
+  } & WithTabId;
   closeGiftTransferModal: WithTabId | undefined;
+  openGiftTransferConfirmModal: {
+    gift: ApiSavedStarGift;
+    recipientId: string;
+  } & WithTabId;
+  closeGiftTransferConfirmModal: WithTabId | undefined;
+  openGiftDescriptionRemoveModal: {
+    gift: ApiSavedStarGift;
+    price: number;
+    details: ApiStarGiftAttributeOriginalDetails;
+  } & WithTabId;
+  closeGiftDescriptionRemoveModal: WithTabId | undefined;
   updateSelectedGiftCollection: {
     peerId: string;
     collectionId: number;

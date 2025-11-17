@@ -1,4 +1,4 @@
-import { memo } from '../../lib/teact/teact';
+import { memo, useRef } from '../../lib/teact/teact';
 
 import buildClassName from '../../util/buildClassName';
 import buildStyle from '../../util/buildStyle';
@@ -89,9 +89,12 @@ const Sparkles = ({
   noAnimation,
   ...presetSettings
 }: OwnProps) => {
+  const ref = useRef<HTMLDivElement>();
+
   if (presetSettings.preset === 'button') {
     return (
       <div
+        ref={ref}
         className={buildClassName(styles.root, styles.button, className, noAnimation && styles.noAnimation)}
         style={style}
       >
@@ -121,7 +124,7 @@ const Sparkles = ({
 
   if (presetSettings.preset === 'progress') {
     return (
-      <div className={buildClassName(styles.root, styles.progress, className)} style={style}>
+      <div ref={ref} className={buildClassName(styles.root, styles.progress, className)} style={style}>
         {PROGRESS_POSITIONS.map((position) => {
           return (
             <div

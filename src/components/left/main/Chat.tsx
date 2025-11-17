@@ -94,9 +94,12 @@ type OwnProps = {
   isPreview?: boolean;
   previewMessageId?: number;
   className?: string;
+  withTags?: boolean;
   observeIntersection?: ObserveFn;
   onDragEnter?: (chatId: string) => void;
-  withTags?: boolean;
+  onDragLeave?: NoneToVoidFunction;
+  onReorderAnimationEnd?: NoneToVoidFunction;
+  isFoldersSidebarShown?: boolean;
 };
 
 type StateProps = {
@@ -166,18 +169,20 @@ const Chat: FC<OwnProps & StateProps> = ({
   className,
   isSynced,
   onDragEnter,
+  onDragLeave,
   isAccountFrozen,
   chatFolderIds,
   orderedFolderIds,
   chatFoldersById,
   areTagsEnabled,
   withTags,
+  onReorderAnimationEnd,
+  isFoldersSidebarShown,
 }) => {
   const {
     openChat,
     openSavedDialog,
     toggleChatInfo,
-    focusLastMessage,
     focusMessage,
     loadTopics,
     openForumPanel,
@@ -186,6 +191,8 @@ const Chat: FC<OwnProps & StateProps> = ({
     reportMessages,
     openFrozenAccountModal,
     updateChatMutedState,
+    openQuickPreview,
+    scrollMessageListToBottom,
   } = getActions();
 
   const { isMobile } = useAppLayout();
@@ -216,7 +223,8 @@ const Chat: FC<OwnProps & StateProps> = ({
     });
   }, [orderedFolderIds, folderId, chatFoldersById, chatFolderIds]);
 
-  const shouldRenderTags = areTagsEnabled && withTags && Boolean(tagFolderIds?.length);
+  const isTagsMode = areTagsEnabled && withTags;
+  const shouldRenderTags = isTagsMode && Boolean(tagFolderIds?.length);
 
   const { renderSubtitle, ref } = useChatListEntry({
     chat,
@@ -233,13 +241,20 @@ const Chat: FC<OwnProps & StateProps> = ({
     orderDiff,
     isSavedDialog,
     isPreview,
+    onReorderAnimationEnd,
     topics,
-    noForumTitle: shouldRenderTags,
+    hasTags: shouldRenderTags,
   });
 
   const getIsForumPanelClosed = useSelectorSignal(selectIsForumPanelClosed);
 
-  const handleClick = useLastCallback(() => {
+  const handleClick = useLastCallback((e: React.MouseEvent) => {
+    if (e.altKey && !isSavedDialog && !isForum && !isPreview) {
+      e.preventDefault();
+      openQuickPreview({ id: chatId });
+      return;
+    }
+
     const noForumTopicPanel = isMobile && isForumAsMessages;
 
     if (isMobile) {
@@ -280,7 +295,7 @@ const Chat: FC<OwnProps & StateProps> = ({
     openChat({ id: chatId, noForumTopicPanel, shouldReplaceHistory: true }, { forceOnHeavyAnimation: true });
 
     if (isSelected && canScrollDown) {
-      focusLastMessage();
+      scrollMessageListToBottom();
     }
   });
 
@@ -398,9 +413,10 @@ const Chat: FC<OwnProps & StateProps> = ({
       style={`top: ${offsetTop}px`}
       ripple={!isForum && !isMobile}
       contextActions={contextActions}
+      withPortalForMenu
       onClick={handleClick}
       onDragEnter={handleDragEnter}
-      withPortalForMenu
+      onDragLeave={onDragLeave}
     >
       <div className={buildClassName('status', 'status-clickable')}>
         <Avatar
@@ -428,13 +444,14 @@ const Chat: FC<OwnProps & StateProps> = ({
             forceHidden={getIsForumPanelClosed}
             topics={topics}
             isSelected={isSelected}
+            isOnAvatar
           />
         </div>
         {chat.isCallActive && chat.isCallNotEmpty && (
           <ChatCallStatus isMobile={isMobile} isSelected={isSelected} isActive={withInterfaceAnimations} />
         )}
       </div>
-      <div className={buildClassName('info', areTagsEnabled && withTags && 'has-tags')}>
+      <div className={buildClassName('info', isTagsMode && 'has-tags')}>
         <div className="info-row">
           <FullNameTitle
             peer={isMonoforum ? monoforumChannel! : peer}
@@ -467,13 +484,16 @@ const Chat: FC<OwnProps & StateProps> = ({
               hasMiniApp={user?.hasMainMiniApp}
               topics={topics}
               isSelected={isSelected}
+              transitionClassName="chat-badge-transition"
             />
           )}
         </div>
         {shouldRenderTags && (
           <ChatTags
+            itemClassName="chat-tag"
             orderedFolderIds={tagFolderIds}
             chatFoldersById={chatFoldersById}
+            isFoldersSidebarShown={isFoldersSidebarShown}
           />
         )}
       </div>

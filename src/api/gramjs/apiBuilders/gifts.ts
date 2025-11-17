@@ -1,4 +1,3 @@
-import bigInt from 'big-integer';
 import { Api as GramJs } from '../../../lib/gramjs';
 
 import type {
@@ -13,7 +12,8 @@ import type {
   ApiTypeResaleStarGifts,
 } from '../../types';
 
-import { numberToHexColor } from '../../../util/colors';
+import { int2hex } from '../../../util/colors';
+import { toJSNumber } from '../../../util/numbers';
 import { buildApiChatFromPreview } from '../apiBuilders/chats';
 import { addDocumentToLocalDb } from '../helpers/localDb';
 import { buildApiFormattedText } from './common';
@@ -47,7 +47,7 @@ export function buildApiStarGift(starGift: GramJs.TypeStarGift): ApiStarGift {
       requirePremium,
       resaleTonOnly,
       valueCurrency,
-      valueAmount: valueAmount?.toJSNumber(),
+      valueAmount: toJSNumber(valueAmount),
       regularGiftId: giftId.toString(),
     };
   }
@@ -55,7 +55,7 @@ export function buildApiStarGift(starGift: GramJs.TypeStarGift): ApiStarGift {
   const {
     id, limited, stars, availabilityRemains, availabilityTotal, convertStars, firstSaleDate, lastSaleDate, soldOut,
     birthday, upgradeStars, resellMinStars, title, availabilityResale, releasedBy,
-    requirePremium, limitedPerUser, perUserTotal, perUserRemains,
+    requirePremium, limitedPerUser, perUserTotal, perUserRemains, lockedUntilDate,
   } = starGift;
 
   addDocumentToLocalDb(starGift.sticker);
@@ -67,23 +67,24 @@ export function buildApiStarGift(starGift: GramJs.TypeStarGift): ApiStarGift {
     id: id.toString(),
     isLimited: limited,
     sticker,
-    stars: stars.toJSNumber(),
+    stars: toJSNumber(stars),
     availabilityRemains,
     availabilityTotal,
-    starsToConvert: convertStars.toJSNumber(),
+    starsToConvert: toJSNumber(convertStars),
     firstSaleDate,
     lastSaleDate,
     isSoldOut: soldOut,
     isBirthday: birthday,
-    upgradeStars: upgradeStars?.toJSNumber(),
+    upgradeStars: upgradeStars !== undefined ? toJSNumber(upgradeStars) : undefined,
     title,
-    resellMinStars: resellMinStars?.toJSNumber(),
+    resellMinStars: resellMinStars !== undefined ? toJSNumber(resellMinStars) : undefined,
     releasedByPeerId: releasedBy && getApiChatIdFromMtpPeer(releasedBy),
-    availabilityResale: availabilityResale?.toJSNumber(),
+    availabilityResale: availabilityResale !== undefined ? toJSNumber(availabilityResale) : undefined,
     requirePremium,
     limitedPerUser,
     perUserTotal,
     perUserRemains,
+    lockedUntilDate,
   };
 }
 
@@ -130,10 +131,10 @@ export function buildApiStarGiftAttribute(attribute: GramJs.TypeStarGiftAttribut
       backdropId,
       name,
       rarityPercent: rarityPermille / 10,
-      centerColor: numberToHexColor(centerColor),
-      edgeColor: numberToHexColor(edgeColor),
-      patternColor: numberToHexColor(patternColor),
-      textColor: numberToHexColor(textColor),
+      centerColor: int2hex(centerColor),
+      edgeColor: int2hex(edgeColor),
+      patternColor: int2hex(patternColor),
+      textColor: int2hex(textColor),
     };
   }
 
@@ -157,7 +158,7 @@ export function buildApiStarGiftAttribute(attribute: GramJs.TypeStarGiftAttribut
 export function buildApiSavedStarGift(userStarGift: GramJs.SavedStarGift, peerId: string): ApiSavedStarGift {
   const {
     gift, date, convertStars, fromId, message, msgId, nameHidden, unsaved, upgradeStars, transferStars, canUpgrade,
-    savedId, canExportAt, pinnedToTop, canResellAt, canTransferAt,
+    savedId, canExportAt, pinnedToTop, canResellAt, canTransferAt, prepaidUpgradeHash, dropOriginalDetailsStars,
   } = userStarGift;
 
   const inputGift: ApiInputSavedStarGift | undefined = savedId && peerId
@@ -167,21 +168,23 @@ export function buildApiSavedStarGift(userStarGift: GramJs.SavedStarGift, peerId
   return {
     gift: buildApiStarGift(gift),
     date,
-    starsToConvert: convertStars?.toJSNumber(),
+    starsToConvert: toJSNumber(convertStars),
     fromId: fromId && getApiChatIdFromMtpPeer(fromId),
     message: message && buildApiFormattedText(message),
     messageId: msgId,
     isNameHidden: nameHidden,
     isUnsaved: unsaved,
     canUpgrade,
-    alreadyPaidUpgradeStars: upgradeStars?.toJSNumber(),
-    transferStars: transferStars?.toJSNumber(),
+    alreadyPaidUpgradeStars: toJSNumber(upgradeStars),
+    transferStars: toJSNumber(transferStars),
     inputGift,
     savedId: savedId?.toString(),
     canExportAt,
     canResellAt,
     canTransferAt,
     isPinned: pinnedToTop,
+    dropOriginalDetailsStars: dropOriginalDetailsStars !== undefined ? toJSNumber(dropOriginalDetailsStars) : undefined,
+    prepaidUpgradeHash,
   };
 }
 
@@ -278,16 +281,19 @@ GramJs.TypeStarGiftAttributeId[] {
   return attributes.map((attr) => {
     switch (attr.type) {
       case 'model':
-        return new GramJs.StarGiftAttributeIdModel({ documentId: bigInt(attr.documentId) });
+        return new GramJs.StarGiftAttributeIdModel({ documentId: BigInt(attr.documentId) });
 
       case 'pattern':
-        return new GramJs.StarGiftAttributeIdPattern({ documentId: bigInt(attr.documentId) });
+        return new GramJs.StarGiftAttributeIdPattern({ documentId: BigInt(attr.documentId) });
 
       case 'backdrop':
         return new GramJs.StarGiftAttributeIdBackdrop({ backdropId: attr.backdropId });
 
-      default:
-        throw new Error(`Unknown attribute type: ${(attr as any).type}`);
+      default: {
+        // Exhaustive check
+        const _exhaustive: never = attr;
+        return _exhaustive;
+      }
     }
   });
 }

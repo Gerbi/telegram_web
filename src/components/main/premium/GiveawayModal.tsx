@@ -37,7 +37,7 @@ import useLastCallback from '../../../hooks/useLastCallback';
 import useOldLang from '../../../hooks/useOldLang';
 
 import CalendarModal from '../../common/CalendarModal';
-import CountryPickerModal from '../../common/CountryPickerModal';
+import CountryPickerModal from '../../common/CountryPickerModal.async';
 import GroupChatInfo from '../../common/GroupChatInfo';
 import Icon from '../../common/icons/Icon';
 import StarTopupOptionList from '../../modals/stars/StarTopupOptionList';
@@ -158,7 +158,7 @@ const GiveawayModal: FC<OwnProps & StateProps> = ({
     });
   }
 
-  const [customExpireDate, setCustomExpireDate] = useState<number>(Date.now() + DEFAULT_CUSTOM_EXPIRE_DATE);
+  const [customExpireDate, setCustomExpireDate] = useState<number>(() => Date.now() + DEFAULT_CUSTOM_EXPIRE_DATE);
   const [isHeaderHidden, setHeaderHidden] = useState(true);
   const [selectedRandomUserCount, setSelectedRandomUserCount] = useState<number>(DEFAULT_BOOST_COUNT);
   const [selectedGiveawayOption, setGiveawayOption] = useState<ApiGiveawayType>(TYPE_OPTIONS[0].value);

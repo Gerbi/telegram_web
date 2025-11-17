@@ -4,12 +4,12 @@ import type {
   ApiBotInlineResult,
   ApiWebDocument,
 } from './bots';
-import type { ApiPeerColor } from './chats';
 import type { ApiMessageAction } from './messageActions';
-import type { ApiRestrictionReason } from './misc';
+import type { ApiPeerNotifySettings, ApiRestrictionReason } from './misc';
 import type {
   ApiLabeledPrice,
 } from './payments';
+import type { ApiTypePeerColor } from './peers';
 import type { ApiStarGiftUnique, ApiTypeCurrencyAmount } from './stars';
 import type {
   ApiMessageStoryData, ApiStory, ApiWebPageStickerData, ApiWebPageStoryData,
@@ -489,7 +489,7 @@ export type ApiMessageEntityDefault = {
   type: Exclude<
   `${ApiMessageEntityTypes}`,
   `${ApiMessageEntityTypes.Pre}` | `${ApiMessageEntityTypes.TextUrl}` | `${ApiMessageEntityTypes.MentionName}` |
-  `${ApiMessageEntityTypes.CustomEmoji}` | `${ApiMessageEntityTypes.Blockquote}` | `${ApiMessageEntityTypes.Timestamp}`
+  `${ApiMessageEntityTypes.Blockquote}` | `${ApiMessageEntityTypes.CustomEmoji}` | `${ApiMessageEntityTypes.Timestamp}`
   >;
   offset: number;
   length: number;
@@ -538,15 +538,8 @@ export type ApiMessageEntityTimestamp = {
   timestamp: number;
 };
 
-export type ApiMessageEntityQuoteFocus = {
-  type: 'quoteFocus';
-  offset: number;
-  length: number;
-};
-
 export type ApiMessageEntity = ApiMessageEntityDefault | ApiMessageEntityPre | ApiMessageEntityTextUrl |
-  ApiMessageEntityMentionName | ApiMessageEntityCustomEmoji | ApiMessageEntityBlockquote | ApiMessageEntityTimestamp |
-  ApiMessageEntityQuoteFocus;
+  ApiMessageEntityMentionName | ApiMessageEntityCustomEmoji | ApiMessageEntityBlockquote | ApiMessageEntityTimestamp;
 
 export enum ApiMessageEntityTypes {
   Bold = 'MessageEntityBold',
@@ -577,8 +570,12 @@ export interface ApiFormattedText {
   entities?: ApiMessageEntity[];
 }
 
+export interface ApiFormattedTextWithEmojiOnlyCount extends ApiFormattedText {
+  emojiOnlyCount?: number;
+}
+
 export type MediaContent = {
-  text?: ApiFormattedText;
+  text?: ApiFormattedTextWithEmojiOnlyCount;
   photo?: ApiPhoto;
   video?: ApiVideo;
   altVideos?: ApiVideo[];
@@ -661,7 +658,6 @@ export interface ApiMessage {
   isForwardingAllowed?: boolean;
   transcriptionId?: string;
   isTranscriptionError?: boolean;
-  emojiOnlyCount?: number;
   reactors?: {
     nextOffset?: string;
     count: number;
@@ -680,6 +676,8 @@ export interface ApiMessage {
   reportDeliveryUntilDate?: number;
   paidMessageStars?: number;
   restrictionReasons?: ApiRestrictionReason[];
+
+  isTypingDraft?: boolean; // Local field
 }
 
 export interface ApiReactions {
@@ -848,7 +846,7 @@ export type ApiSponsoredMessage = {
   url: string;
   photo?: ApiPhoto;
   content: MediaContent;
-  peerColor?: ApiPeerColor;
+  peerColor?: ApiTypePeerColor;
 };
 
 // KeyboardButtons
@@ -919,11 +917,16 @@ interface ApiKeyboardButtonCopy {
   copyText: string;
 }
 
-export interface ApiKeyboardButtonSuggestedMessage {
+export interface KeyboardButtonSuggestedMessage {
   type: 'suggestedMessage';
   text: string;
   buttonType: 'approve' | 'decline' | 'suggestChanges';
   disabled?: boolean;
+}
+
+export interface KeyboardButtonOpenThread {
+  type: 'openThread';
+  text: string;
 }
 
 export type ApiKeyboardButton = (
@@ -938,7 +941,8 @@ export type ApiKeyboardButton = (
   | ApiKeyboardButtonSimpleWebView
   | ApiKeyboardButtonUrlAuth
   | ApiKeyboardButtonCopy
-  | ApiKeyboardButtonSuggestedMessage
+  | KeyboardButtonSuggestedMessage
+  | KeyboardButtonOpenThread
 );
 
 export type ApiKeyboardButtons = ApiKeyboardButton[][];
@@ -954,7 +958,8 @@ export type ApiTranscription = {
   transcriptionId: string;
 };
 
-export type ApiMessageSearchType = 'text' | 'media' | 'documents' | 'links' | 'audio' | 'voice' | 'profilePhoto';
+export type ApiMessageSearchType = 'text' | 'media' | 'documents' | 'links' | 'audio' | 'voice' | 'gif'
+  | 'profilePhoto';
 export type ApiGlobalMessageSearchType = 'text' |
   'channels' | 'media' | 'documents' | 'links' | 'audio' | 'voice' | 'publicPosts';
 export type ApiMessageSearchContext = 'all' | 'users' | 'groups' | 'channels';
@@ -1044,6 +1049,28 @@ export type LinkContext = {
   chatId: string;
   messageId: number;
 };
+
+export interface ApiTopic {
+  id: number;
+  isClosed?: boolean;
+  isPinned?: boolean;
+  isHidden?: boolean;
+  isOwner?: boolean;
+
+  // TODO[forums] https://github.com/telegramdesktop/tdesktop/blob/1aece79a471d99a8b63d826b1bce1f36a04d7293/Telegram/SourceFiles/data/data_forum_topic.cpp#L318
+  isMin?: boolean;
+  date: number;
+  title: string;
+  iconColor: number;
+  iconEmojiId?: string;
+  lastMessageId: number;
+  unreadCount: number;
+  unreadMentionsCount: number;
+  unreadReactionsCount: number;
+  fromId: string;
+  notifySettings: ApiPeerNotifySettings;
+  isTitleMissing?: boolean;
+}
 
 export const MAIN_THREAD_ID = -1;
 

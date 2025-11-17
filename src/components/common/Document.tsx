@@ -36,21 +36,22 @@ type OwnProps = {
   isSelectable?: boolean;
   canAutoLoad?: boolean;
   uploadProgress?: number;
-  withDate?: boolean;
   datetime?: number;
   className?: string;
   sender?: string;
   autoLoadFileMaxSizeMb?: number;
   isDownloading?: boolean;
   shouldWarnAboutFiles?: boolean;
-  onCancelUpload?: () => void;
-  onMediaClick?: () => void;
+  id?: string;
+  onCancelUpload?: NoneToVoidFunction;
 } & ({
   message: ApiMessage;
   onDateClick: (arg: ApiMessage) => void;
+  onMediaClick?: (messageId: number) => void;
 } | {
   message?: ApiMessage;
   onDateClick?: never;
+  onMediaClick?: NoneToVoidFunction;
 });
 
 const BYTES_PER_MB = 1024 * 1024;
@@ -62,7 +63,6 @@ const Document = ({
   canAutoLoad,
   autoLoadFileMaxSizeMb,
   uploadProgress,
-  withDate,
   datetime,
   className,
   sender,
@@ -71,6 +71,7 @@ const Document = ({
   shouldWarnAboutFiles,
   isDownloading,
   message,
+  id,
   onCancelUpload,
   onMediaClick,
   onDateClick,
@@ -83,7 +84,7 @@ const Document = ({
   const [isFileIpDialogOpen, openFileIpDialog, closeFileIpDialog] = useFlag();
   const [shouldNotWarnAboutFiles, setShouldNotWarnAboutFiles] = useState(false);
 
-  const { fileName, size, timestamp, mimeType } = document;
+  const { fileName, size, mimeType } = document;
   const extension = getDocumentExtension(document) || '';
 
   const isIntersecting = useIsIntersecting(ref, observeIntersection);
@@ -163,7 +164,11 @@ const Document = ({
     }
 
     if (withMediaViewer) {
-      onMediaClick();
+      if (message) {
+        onMediaClick?.(message.id);
+      } else if (onMediaClick) {
+        (onMediaClick as NoneToVoidFunction)();
+      }
       return;
     }
 
@@ -189,10 +194,11 @@ const Document = ({
     <>
       <File
         ref={ref}
+        id={id}
         name={fileName}
         extension={extension}
         size={size}
-        timestamp={withDate ? datetime || timestamp : undefined}
+        timestamp={datetime}
         thumbnailDataUri={thumbDataUri}
         previewData={localBlobUrl || previewData}
         smaller={smaller}

@@ -8,6 +8,8 @@ import { selectIsCurrentUserPremium } from '../../../global/selectors';
 import { IS_TOUCH_ENV } from '../../../util/browser/windowEnvironment.ts';
 import buildClassName from '../../../util/buildClassName';
 import { formatStarsAsIcon, formatTonAsIcon } from '../../../util/localization/format';
+
+import Icon from '../../common/icons/Icon'; ;
 import { getGiftAttributes, getStickerFromGift } from '../../common/helpers/gifts';
 
 import useFlag from '../../../hooks/useFlag.ts';
@@ -24,9 +26,10 @@ import styles from './GiftItem.module.scss';
 
 export type OwnProps = {
   gift: ApiStarGift;
+  isResale?: boolean;
+  withTransferBadge?: boolean;
   observeIntersection?: ObserveFn;
   onClick: (gift: ApiStarGift, target: 'original' | 'resell') => void;
-  isResale?: boolean;
 };
 
 type StateProps = {
@@ -36,9 +39,9 @@ type StateProps = {
 const GIFT_STICKER_SIZE = 90;
 
 function GiftItemStar({
-  gift, observeIntersection, onClick, isResale, isCurrentUserPremium,
+  gift, isResale, isCurrentUserPremium, withTransferBadge, observeIntersection, onClick,
 }: OwnProps & StateProps) {
-  const { openGiftInfoModal, openPremiumModal, showNotification } = getActions();
+  const { openGiftInfoModal, openPremiumModal, showNotification, checkCanSendGift } = getActions();
 
   const ref = useRef<HTMLDivElement>();
   const stickerRef = useRef<HTMLDivElement>();
@@ -70,7 +73,7 @@ function GiftItemStar({
     : getPriceAmount(uniqueGift?.resellPrice);
   const priceCurrency = priceInfo?.currency || STARS_CURRENCY_CODE;
   const resellMinStars = regularGift?.resellMinStars;
-  const priceInStarsAsString = !isGiftUnique && isResale && resellMinStars
+  const formattedPrice = !isGiftUnique && isResale && resellMinStars
     ? lang.number(resellMinStars) + '+' : priceInfo?.amount || 0;
   const isLimited = !isGiftUnique && Boolean(regularGift?.isLimited);
   const isSoldOut = !isGiftUnique && Boolean(regularGift?.isSoldOut);
@@ -104,6 +107,14 @@ function GiftItemStar({
       return;
     }
 
+    if (isLocked) {
+      checkCanSendGift({
+        gift,
+        onSuccess: () => onClick(gift, isResale ? 'resell' : 'original'),
+      });
+      return;
+    }
+
     onClick(gift, isResale ? 'resell' : 'original');
   });
 
@@ -115,19 +126,20 @@ function GiftItemStar({
     }
 
     const backdropColors = [backdrop.centerColor, backdrop.edgeColor];
-    const patternColor = backdrop.patternColor;
 
     return (
       <RadialPatternBackground
         className={styles.radialPattern}
         backgroundColors={backdropColors}
-        patternColor={patternColor}
         patternIcon={pattern.sticker}
+        ringsCount={1}
+        ovalFactor={1}
       />
     );
   }, [gift]);
 
   const giftNumber = isGiftUnique ? gift.number : 0;
+  const isLocked = Boolean(gift.type === 'starGift' && gift.lockedUntilDate);
 
   const giftRibbon = useMemo(() => {
     if (isGiftUnique) {
@@ -163,6 +175,24 @@ function GiftItemStar({
     const visible = entry.isIntersecting;
     setIsVisible(visible);
   });
+
+  const badgeContent = useMemo(() => {
+    if (withTransferBadge) {
+      return lang('GiftTransferTitle');
+    }
+
+    if (priceCurrency === TON_CURRENCY_CODE) {
+      return formatTonAsIcon(lang, formattedPrice || 0, {
+        shouldConvertFromNanos: true,
+        className: styles.star,
+      });
+    }
+
+    return formatStarsAsIcon(lang, formattedPrice || 0, {
+      asFont: true,
+      className: styles.star,
+    });
+  }, [withTransferBadge, priceCurrency, formattedPrice, lang]);
 
   return (
     <div
@@ -201,19 +231,21 @@ function GiftItemStar({
 
       </div>
       <Button
-        className={styles.buy}
+        className={buildClassName(
+          styles.buy,
+          withTransferBadge && styles.transferBadge,
+        )}
         nonInteractive
         size="tiny"
         color={isGiftUnique ? 'bluredStarsBadge' : 'stars'}
-        withSparkleEffect={isVisible}
+        withSparkleEffect={isVisible && !withTransferBadge}
         pill
         fluid
       >
-        {priceCurrency === TON_CURRENCY_CODE
-          ? formatTonAsIcon(lang, priceInStarsAsString || 0, { shouldConvertFromNanos: true, className: styles.star })
-          : formatStarsAsIcon(lang, priceInStarsAsString || 0, { asFont: true, className: styles.star })}
+        {badgeContent}
       </Button>
       {giftRibbon}
+      {isLocked && <Icon name="lock-badge" className={styles.lockIcon} />}
     </div>
   );
 }

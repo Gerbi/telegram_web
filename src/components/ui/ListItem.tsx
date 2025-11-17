@@ -12,8 +12,8 @@ import renderText from '../common/helpers/renderText';
 import useContextMenuHandlers from '../../hooks/useContextMenuHandlers';
 import { useFastClick } from '../../hooks/useFastClick';
 import useFlag from '../../hooks/useFlag';
+import useLang from '../../hooks/useLang';
 import useLastCallback from '../../hooks/useLastCallback';
-import useOldLang from '../../hooks/useOldLang';
 
 import Icon from '../common/icons/Icon';
 import Button from './Button';
@@ -69,13 +69,14 @@ interface OwnProps {
   withPortalForMenu?: boolean;
   menuBubbleClassName?: string;
   href?: string;
-  onMouseDown?: (e: React.MouseEvent<HTMLDivElement>) => void;
+  nonInteractive?: boolean;
   onClick?: (e: React.MouseEvent<HTMLElement>, arg?: any) => void;
-  onContextMenu?: (e: React.MouseEvent<HTMLElement>) => void;
   clickArg?: any;
+  onMouseDown?: (e: React.MouseEvent<HTMLDivElement>) => void;
+  onContextMenu?: (e: React.MouseEvent<HTMLElement>) => void;
   onSecondaryIconClick?: (e: React.MouseEvent<HTMLButtonElement>) => void;
   onDragEnter?: (e: React.DragEvent<HTMLDivElement>) => void;
-  nonInteractive?: boolean;
+  onDragLeave?: NoneToVoidFunction;
 }
 
 const ListItem = ({
@@ -107,13 +108,14 @@ const ListItem = ({
   contextActions,
   withPortalForMenu,
   href,
-  onMouseDown,
+  nonInteractive,
   onClick,
-  onContextMenu,
   clickArg,
+  onMouseDown,
+  onContextMenu,
   onSecondaryIconClick,
   onDragEnter,
-  nonInteractive,
+  onDragLeave,
 }: OwnProps) => {
   let containerRef = useRef<HTMLDivElement>();
   if (ref) {
@@ -199,7 +201,7 @@ const ListItem = ({
     }
   });
 
-  const lang = useOldLang();
+  const lang = useLang();
 
   const fullClassName = buildClassName(
     'ListItem',
@@ -229,6 +231,7 @@ const ListItem = ({
       style={style}
       onMouseDown={onMouseDown}
       onDragEnter={onDragEnter}
+      onDragLeave={onDragLeave}
     >
       <ButtonElementTag
         className={buildClassName('ListItem-button', isTouched && 'active', buttonClassName)}

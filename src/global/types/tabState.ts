@@ -10,6 +10,7 @@ import type {
   ApiCheckedGiftCode,
   ApiCollectibleInfo,
   ApiContact,
+  ApiEmojiStatusCollectible,
   ApiError,
   ApiFormattedText,
   ApiGeoPoint,
@@ -41,6 +42,7 @@ import type {
   ApiStarGift,
   ApiStarGiftAttribute,
   ApiStarGiftAttributeCounter,
+  ApiStarGiftAttributeOriginalDetails,
   ApiStarGiftUnique,
   ApiStarGiveawayOption,
   ApiStarsSubscription,
@@ -54,7 +56,6 @@ import type {
   ApiUser,
   ApiVideo,
 } from '../../api/types';
-import type { ApiEmojiStatusCollectible } from '../../api/types/users';
 import type { FoldersActions } from '../../hooks/reducers/useFoldersReducer';
 import type { ReducerAction } from '../../hooks/useReducer';
 import type {
@@ -101,11 +102,10 @@ export type TabState = {
   id: number;
   isBlurred?: boolean;
   isMasterTab: boolean;
-  isInactive?: boolean;
+  inactiveReason?: 'auth' | 'otherClient';
   shouldPreventComposerAnimation?: boolean;
   inviteHash?: string;
   canInstall?: boolean;
-  isChatInfoShown: boolean;
   isStatisticsShown?: boolean;
   isLeftColumnShown: boolean;
   newChatMembersProgress?: NewChatMembersProgress;
@@ -126,8 +126,12 @@ export type TabState = {
   };
 
   shouldCloseRightColumn?: boolean;
-  nextProfileTab?: ProfileTabType;
-  forceScrollProfileTab?: boolean;
+  chatInfo: {
+    isOpen: boolean;
+    profileTab?: ProfileTabType;
+    forceScrollProfileTab?: boolean;
+    isOwnProfile?: boolean;
+  };
   nextFoldersAction?: ReducerAction<FoldersActions>;
   shareFolderScreen?: {
     folderId: number;
@@ -331,7 +335,6 @@ export type TabState = {
     lastViewedByPeerId?: Record<string, number>;
     isPrivacyModalOpen?: boolean;
     isPaymentConfirmDialogOpen?: boolean;
-    isStealthModalOpen?: boolean;
     viewModal?: {
       storyId: number;
       views?: ApiTypeStoryView[];
@@ -345,6 +348,9 @@ export type TabState = {
       storyIdsByPeerId: Record<string, number[]>;
     };
   };
+  storyStealthModal?: {
+    targetPeerId: string;
+  } | Record<string, never>;
 
   selectedStoryAlbumId?: number;
 
@@ -832,6 +838,11 @@ export type TabState = {
     gift: ApiStarGiftUnique;
   };
 
+  lockedGiftModal?: {
+    untilDate?: number;
+    reason?: ApiFormattedText;
+  };
+
   giftResalePriceComposerModal?: {
     peerId?: string;
     gift: ApiSavedStarGift | ApiStarGift;
@@ -839,6 +850,17 @@ export type TabState = {
 
   giftTransferModal?: {
     gift: ApiSavedStarGift;
+  };
+
+  giftTransferConfirmModal?: {
+    gift: ApiSavedStarGift;
+    recipientId: string;
+  };
+
+  giftDescriptionRemoveModal?: {
+    gift: ApiSavedStarGift;
+    price: number;
+    details: ApiStarGiftAttributeOriginalDetails;
   };
 
   giftUpgradeModal?: {
@@ -875,7 +897,13 @@ export type TabState = {
     errorKey?: RegularLangFnParameters;
   };
 
+  quickPreview?: {
+    chatId: string;
+    threadId?: ThreadId;
+  };
+
   isWaitingForStarGiftUpgrade?: true;
   isWaitingForStarGiftTransfer?: true;
   insertingPeerIdMention?: string;
+  shouldSaveAttachmentsCompression?: boolean;
 };

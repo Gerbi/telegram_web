@@ -2,6 +2,7 @@ import { type ElementRef, useEffect, useRef, useSignal } from '@teact';
 
 import { requestMutation } from '../../lib/fasterdom/fasterdom';
 import stopEvent from '../../util/stopEvent';
+import useEffectWithPrevDeps from '../useEffectWithPrevDeps';
 import useLastCallback from '../useLastCallback';
 
 type State = 'overscroll' | 'animating' | 'normal';
@@ -30,11 +31,19 @@ const initialActiveScrollContext: ActiveScrollContext = {
   timeout: undefined,
 };
 
-export default function useTopOverscroll(
-  containerRef: ElementRef<HTMLDivElement>,
-  onOverscroll?: AnyToVoidFunction,
-  onReset?: AnyToVoidFunction,
-  isDisabled?: boolean,
+export default function useTopOverscroll({
+  containerRef,
+  isOverscrolled,
+  isDisabled,
+  onOverscroll,
+  onReset,
+}: {
+  containerRef: ElementRef<HTMLDivElement>;
+  isOverscrolled?: boolean;
+  onOverscroll?: AnyToVoidFunction;
+  onReset?: AnyToVoidFunction;
+  isDisabled?: boolean;
+},
 ) {
   const [getState, setState] = useSignal<State>('normal');
   const activeScrollRef = useRef<ActiveScrollContext>({ ...initialActiveScrollContext });
@@ -196,6 +205,15 @@ export default function useTopOverscroll(
       });
     };
   }, [containerRef, isDisabled, getState]);
+
+  useEffectWithPrevDeps(([prevIsOverscrolled]) => {
+    if (prevIsOverscrolled === isOverscrolled) return;
+    if (!isOverscrolled && getState() === 'animating') {
+      return; // We're animating towards this state
+    }
+
+    setState(isOverscrolled ? 'overscroll' : 'normal');
+  }, [isOverscrolled, getState, setState]);
 
   useEffect(() => {
     const container = containerRef.current;

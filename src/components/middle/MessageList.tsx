@@ -1,4 +1,3 @@
-import type { FC } from '@teact';
 import { beginHeavyAnimation, memo, useEffect, useMemo, useRef } from '@teact';
 import { addExtraClass, removeExtraClass } from '@teact/teact-dom';
 import { getActions, getGlobal, withGlobal } from '../../global';
@@ -14,7 +13,7 @@ import {
   MESSAGE_LIST_SLICE,
   SERVICE_NOTIFICATIONS_USER_ID,
 } from '../../config';
-import { forceMeasure, requestForcedReflow, requestMeasure } from '../../lib/fasterdom/fasterdom';
+import { forceMeasure, requestForcedReflow, requestMeasure, requestMutation } from '../../lib/fasterdom/fasterdom';
 import {
   getIsSavedDialog,
   getMessageHtmlId,
@@ -52,8 +51,9 @@ import {
   selectUserFullInfo,
 } from '../../global/selectors';
 import { selectIsChatRestricted } from '../../global/selectors/chats';
-import { selectActiveRestrictionReasons } from '../../global/selectors/messages';
+import { selectActiveRestrictionReasons, selectCurrentMessageList } from '../../global/selectors/messages';
 import animateScroll, { isAnimatingScroll, restartCurrentScrollAnimation } from '../../util/animateScroll';
+import { IS_FIREFOX } from '../../util/browser/windowEnvironment';
 import buildClassName from '../../util/buildClassName';
 import { isUserId } from '../../util/entities/ids';
 import { orderBy } from '../../util/iteratees';
@@ -61,6 +61,7 @@ import { isLocalMessageId } from '../../util/keys/messageKey';
 import resetScroll from '../../util/resetScroll';
 import { debounce, onTickEnd } from '../../util/schedulers';
 import getOffsetToContainer from '../../util/visibility/getOffsetToContainer';
+import { REM } from '../common/helpers/mediaDimensions';
 import { groupMessages } from './helpers/groupMessages';
 import { preventMessageInputBlur } from './helpers/preventMessageInputBlur';
 
@@ -76,7 +77,7 @@ import useContainerHeight from './hooks/useContainerHeight';
 import useStickyDates from './hooks/useStickyDates';
 
 import Loading from '../ui/Loading';
-import Transition from '../ui/Transition.tsx';
+import Transition from '../ui/Transition';
 import ContactGreeting from './ContactGreeting';
 import MessageListAccountInfo from './MessageListAccountInfo';
 import MessageListContent from './MessageListContent';
@@ -96,9 +97,10 @@ type OwnProps = {
   withDefaultBg: boolean;
   isContactRequirePremium?: boolean;
   paidMessagesStars?: number;
-  onScrollDownToggle: BooleanToVoidFunction;
-  onNotchToggle: BooleanToVoidFunction;
-  onIntersectPinnedMessage: OnIntersectPinnedMessage;
+  isQuickPreview?: boolean;
+  onScrollDownToggle?: BooleanToVoidFunction;
+  onNotchToggle?: AnyToVoidFunction;
+  onIntersectPinnedMessage?: OnIntersectPinnedMessage;
 };
 
 type StateProps = {
@@ -142,6 +144,9 @@ type StateProps = {
   canTranslate?: boolean;
   translationLanguage?: string;
   shouldAutoTranslate?: boolean;
+  isActive?: boolean;
+  isBotForum?: boolean;
+  shouldScrollToBottom?: boolean;
 };
 
 enum Content {
@@ -162,17 +167,23 @@ const MESSAGE_REACTIONS_POLLING_INTERVAL = 20 * 1000;
 const MESSAGE_COMMENTS_POLLING_INTERVAL = 20 * 1000;
 const MESSAGE_FACT_CHECK_UPDATE_INTERVAL = 5 * 1000;
 const MESSAGE_STORY_POLLING_INTERVAL = 5 * 60 * 1000;
+
 const BOTTOM_THRESHOLD = 50;
+const BOTTOM_SNAP_THRESHOLD = 7;
+
 const UNREAD_DIVIDER_TOP = 10;
 const SCROLL_DEBOUNCE = 200;
 const MESSAGE_ANIMATION_DURATION = 500;
-const BOTTOM_FOCUS_MARGIN = 20;
+const BOTTOM_FOCUS_MARGIN = 0.5 * REM;
 const SELECT_MODE_ANIMATION_DURATION = 200;
+
 const UNREAD_DIVIDER_CLASS = 'unread-divider';
+const FORCE_MESSAGES_SCROLL_CLASS = 'force-messages-scroll';
+const BOTTOM_SNAP_CLASS = 'with-bottom-snap';
 
 const runDebouncedForScroll = debounce((cb) => cb(), SCROLL_DEBOUNCE, false);
 
-const MessageList: FC<OwnProps & StateProps> = ({
+const MessageList = ({
   chatId,
   threadId,
   type,
@@ -183,6 +194,9 @@ const MessageList: FC<OwnProps & StateProps> = ({
   isChannelWithAvatars,
   canPost,
   isSynced,
+  isActive,
+  isBotForum,
+  shouldScrollToBottom,
   // eslint-disable-next-line @typescript-eslint/no-shadow
   isChatMonoforum,
   isReady,
@@ -224,10 +238,11 @@ const MessageList: FC<OwnProps & StateProps> = ({
   canTranslate,
   translationLanguage,
   shouldAutoTranslate,
+  isQuickPreview,
   onIntersectPinnedMessage,
   onScrollDownToggle,
   onNotchToggle,
-}) => {
+}: OwnProps & StateProps) => {
   const {
     loadViewportMessages, setScrollOffset, loadSponsoredMessages, loadMessageReactions, copyMessagesByIds,
     loadMessageViews, loadPeerStoriesByIds, loadFactChecks, requestChatTranslation,
@@ -251,6 +266,7 @@ const MessageList: FC<OwnProps & StateProps> = ({
   const memoFocusingIdRef = useRef<number>();
   const isScrollTopJustUpdatedRef = useRef(false);
   const shouldAnimateAppearanceRef = useRef(Boolean(lastMessage));
+  const scrollSnapDisabledTimerRef = useRef<number>();
 
   const isSavedDialog = getIsSavedDialog(chatId, threadId, currentUserId);
   const hasOpenChatButton = isSavedDialog && threadId !== ANONYMOUS_USER_ID;
@@ -379,7 +395,7 @@ const MessageList: FC<OwnProps & StateProps> = ({
     threadId, isChatWithSelf, channelJoinInfo]);
 
   useInterval(() => {
-    if (!messageIds || !messagesById || type === 'scheduled' || isAccountFrozen) return;
+    if (!messageIds || !messagesById || type === 'scheduled' || isAccountFrozen || !isActive) return;
     if (!isChannelChat && !isGroupChat) return;
 
     const ids = messageIds.filter((id) => {
@@ -393,7 +409,7 @@ const MessageList: FC<OwnProps & StateProps> = ({
   }, MESSAGE_REACTIONS_POLLING_INTERVAL);
 
   useInterval(() => {
-    if (!messageIds || !messagesById || type === 'scheduled') {
+    if (!messageIds || !messagesById || type === 'scheduled' || !isActive) {
       return;
     }
     const storyDataList = messageIds.map((id) => messagesById[id]?.content.storyData).filter(Boolean);
@@ -415,7 +431,7 @@ const MessageList: FC<OwnProps & StateProps> = ({
   }, MESSAGE_STORY_POLLING_INTERVAL);
 
   useInterval(() => {
-    if (!messageIds || !messagesById || threadId !== MAIN_THREAD_ID || type === 'scheduled') {
+    if (!messageIds || !messagesById || threadId !== MAIN_THREAD_ID || type === 'scheduled' || !isActive) {
       return;
     }
     const global = getGlobal();
@@ -428,7 +444,7 @@ const MessageList: FC<OwnProps & StateProps> = ({
   }, MESSAGE_COMMENTS_POLLING_INTERVAL, true);
 
   useInterval(() => {
-    if (!messageIds || !messagesById || threadId !== MAIN_THREAD_ID || type === 'scheduled') {
+    if (!messageIds || !messagesById || threadId !== MAIN_THREAD_ID || type === 'scheduled' || !isActive) {
       return;
     }
     const ids = messageIds.filter((id) => messagesById[id]?.factCheck?.shouldFetch);
@@ -443,11 +459,44 @@ const MessageList: FC<OwnProps & StateProps> = ({
       return undefined;
     }
 
-    return debounce(() => loadViewportMessages({ direction: LoadMoreDirection.Around }), 1000, true, false);
+    return debounce(
+      () => loadViewportMessages({ direction: LoadMoreDirection.Around, chatId, threadId }),
+      1000,
+      true,
+      false,
+    );
     // eslint-disable-next-line react-hooks-static-deps/exhaustive-deps
   }, [loadViewportMessages, messageIds]);
 
   const { isScrolled, updateStickyDates } = useStickyDates();
+
+  const updateBottomSnapClass = useLastCallback(() => {
+    const container = containerRef.current;
+    const bottomTrigger = container?.querySelector<HTMLDivElement>('.fab-trigger');
+    if (!container || !bottomTrigger) return;
+
+    // Check if fab-trigger + threshold are entering the viewport
+    const viewportBottom = container.scrollTop + container.offsetHeight;
+    const triggerPosition = bottomTrigger.offsetTop;
+    // Scroll is near fab-trigger + threshold. Prevents snap on sponsored message
+    const shouldSnapBeActive = triggerPosition - BOTTOM_SNAP_THRESHOLD <= viewportBottom
+      && viewportBottom <= triggerPosition + BOTTOM_SNAP_THRESHOLD * 2;
+
+    const hasSnap = container.classList.contains(BOTTOM_SNAP_CLASS);
+    if (hasSnap === shouldSnapBeActive) return;
+
+    if (shouldSnapBeActive) {
+      requestMutation(() => {
+        addExtraClass(container, BOTTOM_SNAP_CLASS);
+      });
+    } else {
+      clearTimeout(scrollSnapDisabledTimerRef.current);
+      scrollSnapDisabledTimerRef.current = undefined;
+      requestMutation(() => {
+        removeExtraClass(container, BOTTOM_SNAP_CLASS);
+      });
+    }
+  });
 
   const handleScroll = useLastCallback(() => {
     if (isScrollTopJustUpdatedRef.current) {
@@ -464,12 +513,17 @@ const MessageList: FC<OwnProps & StateProps> = ({
       updateStickyDates(container);
     }
 
+    // Check if scroll should be snapped, but only if there's no new message animation in progress
+    if (scrollSnapDisabledTimerRef.current === undefined) {
+      updateBottomSnapClass();
+    }
+
     runDebouncedForScroll(() => {
       const global = getGlobal();
 
       const isFocusing = Boolean(selectTabState(global).focusedMessage?.chatId);
       if (!isFocusing) {
-        onIntersectPinnedMessage({ shouldCancelWaiting: true });
+        onIntersectPinnedMessage?.({ shouldCancelWaiting: true });
       }
 
       if (!container.parentElement) {
@@ -478,13 +532,26 @@ const MessageList: FC<OwnProps & StateProps> = ({
 
       scrollOffsetRef.current = container.scrollHeight - container.scrollTop;
 
-      if (type === 'thread') {
+      if (type === 'thread' && !isQuickPreview) {
         setScrollOffset({ chatId, threadId, scrollOffset: scrollOffsetRef.current });
       }
     });
   });
 
   const [getContainerHeight, prevContainerHeightRef] = useContainerHeight(containerRef, canPost && !isSelectModeActive);
+
+  const handleWheel = useLastCallback((e: React.WheelEvent<HTMLDivElement>) => {
+    // Remove snap when scrolling up to avoid scroll bug
+    // https://bugzilla.mozilla.org/show_bug.cgi?id=1753188
+    if (IS_FIREFOX && e.deltaY < 0) {
+      const container = containerRef.current;
+      if (!container) return;
+
+      requestMutation(() => {
+        removeExtraClass(container, BOTTOM_SNAP_CLASS);
+      });
+    }
+  });
 
   // Initial message loading
   useEffect(() => {
@@ -579,18 +646,31 @@ const MessageList: FC<OwnProps & StateProps> = ({
       isViewportNewest
       && wasMessageAdded
       && (messageIds && messageIds.length < MESSAGE_LIST_SLICE / 2)
-      && !container.parentElement!.classList.contains('force-messages-scroll')
+      && !container.parentElement!.classList.contains(FORCE_MESSAGES_SCROLL_CLASS)
       && forceMeasure(() => (
         (container.firstElementChild as HTMLDivElement).clientHeight <= container.offsetHeight * 2
       ))
     ) {
-      addExtraClass(container.parentElement!, 'force-messages-scroll');
-      container.parentElement!.classList.add('force-messages-scroll');
+      addExtraClass(container.parentElement!, FORCE_MESSAGES_SCROLL_CLASS);
 
       setTimeout(() => {
         if (container.parentElement) {
-          removeExtraClass(container.parentElement, 'force-messages-scroll');
+          removeExtraClass(container.parentElement, FORCE_MESSAGES_SCROLL_CLASS);
         }
+      }, MESSAGE_ANIMATION_DURATION);
+    }
+
+    if (wasMessageAdded) {
+      clearTimeout(scrollSnapDisabledTimerRef.current);
+      scrollSnapDisabledTimerRef.current = undefined;
+
+      removeExtraClass(container, BOTTOM_SNAP_CLASS);
+
+      scrollSnapDisabledTimerRef.current = window.setTimeout(() => {
+        requestMutation(() => {
+          addExtraClass(container, BOTTOM_SNAP_CLASS);
+          scrollSnapDisabledTimerRef.current = undefined;
+        });
       }, MESSAGE_ANIMATION_DURATION);
     }
 
@@ -613,11 +693,11 @@ const MessageList: FC<OwnProps & StateProps> = ({
       if (wasMessageAdded && isAtBottom && !isAlreadyFocusing) {
         // Break out of `forceLayout`
         requestMeasure(() => {
-          const shouldScrollToBottom = !isBackgroundModeActive() || !firstUnreadElement;
+          const isScrollToBottom = !isBackgroundModeActive() || !firstUnreadElement;
           animateScroll({
             container,
-            element: shouldScrollToBottom ? lastItemElement : firstUnreadElement,
-            position: shouldScrollToBottom ? 'end' : 'start',
+            element: isScrollToBottom ? lastItemElement : firstUnreadElement,
+            position: isScrollToBottom ? 'end' : 'start',
             margin: BOTTOM_FOCUS_MARGIN,
             forceDuration: noMessageSendingAnimation ? 0 : undefined,
           });
@@ -717,7 +797,7 @@ const MessageList: FC<OwnProps & StateProps> = ({
   useEffect(() => {
     if (hasMessages) return;
 
-    onScrollDownToggle(false);
+    onScrollDownToggle?.(false);
   }, [hasMessages, onScrollDownToggle]);
 
   const activeKey = isRestricted ? (
@@ -790,10 +870,13 @@ const MessageList: FC<OwnProps & StateProps> = ({
         nameChangeDate={nameChangeDate}
         photoChangeDate={photoChangeDate}
         noAppearanceAnimation={!messageGroups || !shouldAnimateAppearanceRef.current}
+        isQuickPreview={isQuickPreview}
+        canPost={canPost}
+        isBotForum={isBotForum}
+        shouldScrollToBottom={shouldScrollToBottom}
         onScrollDownToggle={onScrollDownToggle}
         onNotchToggle={onNotchToggle}
         onIntersectPinnedMessage={onIntersectPinnedMessage}
-        canPost={canPost}
       />
     ) : (
       <Loading color="white" backgroundColor="dark" />
@@ -808,6 +891,7 @@ const MessageList: FC<OwnProps & StateProps> = ({
       activeKey={activeKey}
       shouldCleanup
       onScroll={handleScroll}
+      onWheel={handleWheel}
       onMouseDown={preventMessageInputBlur}
     >
       {renderContent()}
@@ -817,6 +901,7 @@ const MessageList: FC<OwnProps & StateProps> = ({
 
 export default memo(withGlobal<OwnProps>(
   (global, { chatId, threadId, type }): Complete<StateProps> => {
+    const tabState = selectTabState(global);
     const currentUserId = global.currentUserId!;
     const chat = selectChat(global, chatId);
     const userFullInfo = selectUserFullInfo(global, chatId);
@@ -869,7 +954,19 @@ export default memo(withGlobal<OwnProps>(
     const shouldAutoTranslate = chat?.hasAutoTranslation;
     const translationLanguage = selectTranslationLanguage(global);
 
+    const currentMessageList = selectCurrentMessageList(global);
+    const isActive = currentMessageList && currentMessageList.chatId === chatId
+      && currentMessageList.threadId === threadId && currentMessageList.type === type;
+
+    const {
+      chatId: focusedChatId,
+      threadId: focusedThreadId,
+      messageId: focusedMessageId,
+    } = tabState.focusedMessage || {};
+    const shouldScrollToBottom = focusedChatId === chatId && focusedThreadId === threadId && !focusedMessageId;
+
     return {
+      isActive,
       areAdsEnabled,
       isChatLoaded: true,
       isRestricted,
@@ -910,6 +1007,8 @@ export default memo(withGlobal<OwnProps>(
       canTranslate,
       translationLanguage,
       shouldAutoTranslate,
+      isBotForum: chat.isBotForum,
+      shouldScrollToBottom,
     };
   },
 )(MessageList));

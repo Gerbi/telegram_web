@@ -100,6 +100,7 @@ export type ThreadId = string | number;
 
 export type ThemeKey = 'light' | 'dark';
 export type AnimationLevel = 0 | 1 | 2;
+export type TabsPosition = 'top' | 'left';
 export type PerformanceTypeKey = (
   'pageTransitions' | 'messageSendingAnimations' | 'mediaViewerAnimations'
   | 'messageComposerAnimations' | 'contextMenuAnimations' | 'contextMenuBlur' | 'rightColumnAnimations'
@@ -394,13 +395,14 @@ export type ProfileTabType =
   | 'links'
   | 'audio'
   | 'voice'
+  | 'gif'
   | 'stories'
   | 'storiesArchive'
   | 'similarChannels'
   | 'similarBots'
   | 'dialogs'
   | 'gifts';
-export type SharedMediaType = 'media' | 'documents' | 'links' | 'audio' | 'voice';
+export type SharedMediaType = 'media' | 'documents' | 'links' | 'audio' | 'voice' | 'gif';
 export type MiddleSearchType = 'chat' | 'myChats' | 'channels';
 export type MiddleSearchParams = {
   requestedQuery?: string;
@@ -587,6 +589,13 @@ export type StarGiftInfo = {
   shouldUpgrade?: boolean;
 };
 
+export type TypingDraft = {
+  senderId: string;
+  id: string;
+  date: number;
+  text: ApiFormattedText;
+};
+
 export interface TabThread {
   scrollOffset?: number;
   replyStack?: number[];
@@ -609,6 +618,7 @@ export interface Thread {
   threadInfo?: ApiThreadInfo;
   firstMessageId?: number;
   typingStatus?: ApiTypingStatus;
+  typingDraftIdByRandomId?: Record<string, number>;
 }
 
 export interface ServiceNotification {
@@ -649,11 +659,11 @@ export type ConfettiParams = OptionalCombine<{
   style?: ConfettiStyle;
   withStars?: boolean;
 }, {
-    top?: number;
-    left?: number;
-    width?: number;
-    height?: number;
-  }>;
+  top?: number;
+  left?: number;
+  width?: number;
+  height?: number;
+}>;
 
 export interface Size {
   width: number;
@@ -667,7 +677,9 @@ export interface Point {
 
 export type WebPageMediaSize = 'large' | 'small';
 
-export type StarGiftCategory = number | 'all' | 'limited' | 'stock' | 'resale';
+export type AttachmentCompression = 'compress' | 'original';
+
+export type StarGiftCategory = 'all' | 'myUnique' | 'collectible';
 
 export type CallSound = (
   'join' | 'allowTalk' | 'leave' | 'connecting' | 'incoming' | 'end' | 'connect' | 'busy' | 'ringing'

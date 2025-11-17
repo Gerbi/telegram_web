@@ -59,7 +59,7 @@ export function selectRightColumnContentKey<T extends GlobalState>(
     RightColumnContent.GifSearch
   ) : tabState.newChatMembersProgress !== NewChatMembersProgress.Closed ? (
     RightColumnContent.AddingMembers
-  ) : tabState.isChatInfoShown && tabState.messageLists.length ? (
+  ) : tabState.chatInfo.isOpen && tabState.messageLists.length ? (
     RightColumnContent.ChatInfo
   ) : undefined;
 }
@@ -188,7 +188,12 @@ export function selectSettingsScreen<T extends GlobalState>(
 }
 
 export function selectPeerProfileColor<T extends GlobalState>(global: T, peer: ApiPeer | CustomPeer) {
-  const key = 'isCustomPeer' in peer ? peer.peerColorId : peer.profileColor?.color;
-  if (!key) return undefined;
+  const isCustomPeer = 'isCustomPeer' in peer;
+  const peerColorId = isCustomPeer ? peer.peerColorId : undefined;
+  const profileColor = !isCustomPeer ? peer.profileColor : undefined;
+  if (profileColor?.type === 'collectible') return undefined;
+
+  const key = profileColor?.color ?? peerColorId;
+  if (key === undefined) return undefined;
   return global.peerColors?.profile?.[key];
 }

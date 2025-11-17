@@ -14,6 +14,7 @@ import {
 import { IS_TOUCH_ENV } from '../../../util/browser/windowEnvironment.ts';
 import buildClassName from '../../../util/buildClassName';
 import buildStyle from '../../../util/buildStyle';
+import { REM } from '../../common/helpers/mediaDimensions.ts';
 
 import { useTransitionActiveKey } from '../../../hooks/animations/useTransitionActiveKey';
 import useFlag from '../../../hooks/useFlag';
@@ -66,14 +67,13 @@ const UniqueGiftHeader = ({
 
   const radialPatternBackdrop = useMemo(() => {
     const backdropColors = [backdropAttribute.centerColor, backdropAttribute.edgeColor];
-    const patternColor = backdropAttribute.patternColor;
 
     return (
       <RadialPatternBackground
         className={styles.radialPattern}
         backgroundColors={backdropColors}
-        patternColor={patternColor}
         patternIcon={patternAttribute.sticker}
+        yPosition={6.5 * REM}
       />
     );
   }, [backdropAttribute, patternAttribute]);

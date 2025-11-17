@@ -13,6 +13,7 @@ import {
   DEFAULT_VOLUME,
   IOS_DEFAULT_MESSAGE_TEXT_SIZE_PX,
   MACOS_DEFAULT_MESSAGE_TEXT_SIZE_PX,
+  TABS_POSITION_DEFAULT,
 } from '../config';
 import { IS_IOS, IS_MAC_OS } from '../util/browser/windowEnvironment';
 import { DEFAULT_APP_CONFIG } from '../limits';
@@ -79,6 +80,7 @@ export const INITIAL_SHARED_STATE: SharedState = {
       ? IOS_DEFAULT_MESSAGE_TEXT_SIZE_PX
       : (IS_MAC_OS ? MACOS_DEFAULT_MESSAGE_TEXT_SIZE_PX : DEFAULT_MESSAGE_TEXT_SIZE_PX),
     animationLevel: ANIMATION_LEVEL_DEFAULT,
+    tabsPosition: TABS_POSITION_DEFAULT,
     messageSendKeyCombo: 'enter',
     performance: INITIAL_PERFORMANCE_STATE_MAX,
     shouldSkipWebAppCloseConfirmation: false,
@@ -180,6 +182,7 @@ export const INITIAL_GLOBAL_STATE: GlobalState = {
 
   attachmentSettings: {
     shouldCompress: true,
+    defaultAttachmentCompression: 'compress',
     shouldSendGrouped: true,
     isInvertedMedia: undefined,
     webPageMediaSize: undefined,
@@ -338,7 +341,6 @@ export const INITIAL_TAB_STATE: TabState = {
   id: 0,
   isMasterTab: false,
   isLeftColumnShown: true,
-  isChatInfoShown: false,
   newChatMembersProgress: NewChatMembersProgress.Closed,
   uiReadyState: 0,
   shouldInit: true,
@@ -387,6 +389,10 @@ export const INITIAL_TAB_STATE: TabState = {
 
   management: {
     byChatId: {},
+  },
+
+  chatInfo: {
+    isOpen: false,
   },
 
   savedGifts: {

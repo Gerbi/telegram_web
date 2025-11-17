@@ -20,22 +20,24 @@ import type {
   ApiSponsoredMessageReportResult,
   ApiSponsoredPeer,
   ApiStarsSubscriptionPricing,
-  ApiTopic,
 } from '../../types';
 
 import { pickTruthy } from '../../../util/iteratees';
+import { toJSNumber } from '../../../util/numbers';
 import { getServerTimeOffset } from '../../../util/serverTime';
 import { addPhotoToLocalDb, addUserToLocalDb } from '../helpers/localDb';
 import { serializeBytes } from '../helpers/misc';
 import {
-  buildApiBotVerification, buildApiFormattedText, buildApiPhoto, buildApiUsernames, buildAvatarPhotoId,
+  buildApiFormattedText, buildApiPhoto, buildApiUsernames,
 } from './common';
 import { omitVirtualClassFields } from './helpers';
-import { buildApiPeerNotifySettings, buildApiRestrictionReasons } from './misc';
+import { buildApiRestrictionReasons } from './misc';
 import {
+  buildApiBotVerification,
   buildApiEmojiStatus,
   buildApiPeerColor,
   buildApiPeerId,
+  buildAvatarPhotoId,
   getApiChatIdFromMtpPeer,
   isMtpPeerChat,
   isMtpPeerUser,
@@ -87,6 +89,7 @@ function buildApiChatFieldsFromPeerEntity(
   const emojiStatus = userOrChannel?.emojiStatus ? buildApiEmojiStatus(userOrChannel.emojiStatus) : undefined;
   const paidMessagesStars = userOrChannel?.sendPaidMessagesStars;
   const isVerified = userOrChannel?.verified;
+  const isForum = channel?.forum || user?.botForumView;
 
   return {
     isMin,
@@ -111,9 +114,11 @@ function buildApiChatFieldsFromPeerEntity(
     profileColor,
     isJoinToSend: channel?.joinToSend,
     isJoinRequest: channel?.joinRequest,
-    isForum: channel?.forum,
+    isForum,
+    isBotForum: user?.botForumView,
     isMonoforum: channel?.monoforum,
-    linkedMonoforumId: channel?.linkedMonoforumId && buildApiPeerId(channel.linkedMonoforumId, 'channel'),
+    linkedMonoforumId: channel?.linkedMonoforumId !== undefined
+      ? buildApiPeerId(channel.linkedMonoforumId, 'channel') : undefined,
     areChannelMessagesAllowed: channel?.broadcastMessagesAllowed,
     areStoriesHidden,
     maxStoryId,
@@ -123,7 +128,7 @@ function buildApiChatFieldsFromPeerEntity(
     botVerificationIconId,
     hasGeo: channel?.hasGeo,
     subscriptionUntil: channel?.subscriptionUntilDate,
-    paidMessagesStars: paidMessagesStars?.toJSNumber(),
+    paidMessagesStars: toJSNumber(paidMessagesStars),
     level: channel?.level,
     hasAutoTranslation: channel?.autotranslation,
     withForumTabs: channel?.forumTabs,
@@ -547,50 +552,6 @@ export function buildApiSendAsPeerId(sendAs: GramJs.SendAsPeer): ApiSendAsPeerId
   };
 }
 
-export function buildApiTopic(forumTopic: GramJs.TypeForumTopic): ApiTopic | undefined {
-  if (forumTopic instanceof GramJs.ForumTopicDeleted) {
-    return undefined;
-  }
-
-  const {
-    id,
-    my,
-    closed,
-    pinned,
-    hidden,
-    short,
-    date,
-    title,
-    iconColor,
-    iconEmojiId,
-    topMessage,
-    unreadCount,
-    unreadMentionsCount,
-    unreadReactionsCount,
-    fromId,
-    notifySettings,
-  } = forumTopic;
-
-  return {
-    id,
-    isClosed: closed,
-    isPinned: pinned,
-    isHidden: hidden,
-    isOwner: my,
-    isMin: short,
-    date,
-    title,
-    iconColor,
-    iconEmojiId: iconEmojiId?.toString(),
-    lastMessageId: topMessage,
-    unreadCount,
-    unreadMentionsCount,
-    unreadReactionsCount,
-    fromId: getApiChatIdFromMtpPeer(fromId),
-    notifySettings: buildApiPeerNotifySettings(notifySettings),
-  };
-}
-
 export function buildApiChatlistInvite(
   invite: GramJs.chatlists.TypeChatlistInvite | undefined, slug: string,
 ): ApiChatlistInvite | undefined {
@@ -713,7 +674,7 @@ export function buildApiStarsSubscriptionPricing(
 ): ApiStarsSubscriptionPricing {
   return {
     period: pricing.period,
-    amount: pricing.amount.toJSNumber(),
+    amount: toJSNumber(pricing.amount),
   };
 }
 

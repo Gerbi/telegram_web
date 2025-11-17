@@ -86,8 +86,6 @@ type StateProps = {
   botAppPermissions?: BotAppPermissions;
 };
 
-const NBSP = '\u00A0';
-
 const MAIN_BUTTON_ANIMATION_TIME = 250;
 const ANIMATION_WAIT = 400;
 const COLLAPSING_WAIT = 350;
@@ -108,6 +106,8 @@ const DEFAULT_BUTTON_TEXT: Record<string, string> = {
   cancel: 'Cancel',
   close: 'Close',
 };
+
+const NBSP = '\u00A0';
 
 const WebAppModalTabContent: FC<OwnProps & StateProps> = ({
   modal,
@@ -1112,11 +1112,11 @@ const WebAppModalTabContent: FC<OwnProps & StateProps> = ({
         <Modal
           isOpen={Boolean(popupParameters)}
           title={popupParameters.title || NBSP}
-          onClose={handleAppPopupModalClose}
-          hasCloseButton
           className={
             buildClassName(styles.webAppPopup, !popupParameters.title?.trim().length && styles.withoutTitle)
           }
+          hasAbsoluteCloseButton
+          onClose={handleAppPopupModalClose}
         >
           {popupParameters.message}
           <div className="dialog-buttons mt-2">
@@ -1138,10 +1138,14 @@ const WebAppModalTabContent: FC<OwnProps & StateProps> = ({
       <ConfirmDialog
         isOpen={isRequestingPhone}
         onClose={handleRejectPhone}
-        title={oldLang('ShareYouPhoneNumberTitle')}
-        text={oldLang('AreYouSureShareMyContactInfoBot')}
+        title={lang('ShareYouPhoneNumberTitle')}
+        textParts={lang(
+          'AreYouSureShareMyContactInfoBot',
+          undefined,
+          { withNodes: true, withMarkdown: true, renderTextFilters: ['br', 'emoji'],
+          })}
         confirmHandler={handleAcceptPhone}
-        confirmLabel={oldLang('ContactShare')}
+        confirmLabel={lang('ContactShare')}
       />
       <ConfirmDialog
         isOpen={isRequestingWriteAccess}

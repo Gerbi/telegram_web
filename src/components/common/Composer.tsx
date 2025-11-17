@@ -127,7 +127,6 @@ import applyIosAutoCapitalizationFix from '../middle/composer/helpers/applyIosAu
 import buildAttachment, { prepareAttachmentsToSend } from '../middle/composer/helpers/buildAttachment';
 import { buildCustomEmojiHtml } from '../middle/composer/helpers/customEmoji';
 import { isSelectionInsideInput } from '../middle/composer/helpers/selection';
-import { getPeerColorClass } from './helpers/peerColor';
 import renderText from './helpers/renderText';
 import { getTextWithEntitiesAsHtml } from './helpers/renderTextWithEntities';
 
@@ -137,10 +136,12 @@ import useContextMenuHandlers from '../../hooks/useContextMenuHandlers';
 import useDerivedState from '../../hooks/useDerivedState';
 import useEffectWithPrevDeps from '../../hooks/useEffectWithPrevDeps';
 import useFlag from '../../hooks/useFlag';
+import useForceUpdate from '../../hooks/useForceUpdate';
 import useGetSelectionRange from '../../hooks/useGetSelectionRange';
 import useLang from '../../hooks/useLang';
 import useLastCallback from '../../hooks/useLastCallback';
 import useOldLang from '../../hooks/useOldLang';
+import usePeerColor from '../../hooks/usePeerColor';
 import usePrevious from '../../hooks/usePrevious';
 import usePreviousDeprecated from '../../hooks/usePreviousDeprecated';
 import useSchedule from '../../hooks/useSchedule';
@@ -187,6 +188,7 @@ import ReactionSelector from '../middle/message/reactions/ReactionSelector';
 import Button from '../ui/Button';
 import ResponsiveHoverButton from '../ui/ResponsiveHoverButton';
 import Spinner from '../ui/Spinner';
+import TextTimer from '../ui/TextTimer';
 import Transition from '../ui/Transition';
 import AnimatedCounter from './AnimatedCounter';
 import Avatar from './Avatar';
@@ -466,6 +468,8 @@ const Composer: FC<OwnProps & StateProps> = ({
     updateChatSilentPosting,
     updateInsertingPeerIdMention,
     updateDraftSuggestedPostInfo,
+    updateShouldSaveAttachmentsCompression,
+    applyDefaultAttachmentsCompression,
   } = getActions();
 
   const oldLang = useOldLang();
@@ -482,6 +486,7 @@ const Composer: FC<OwnProps & StateProps> = ({
   const lastMessageSendTimeSeconds = useRef<number>();
   const prevDropAreaState = usePreviousDeprecated(dropAreaState);
   const { width: windowWidth } = windowSize.get();
+  const forceUpdate = useForceUpdate();
 
   const isInMessageList = type === 'messageList';
   const isInStoryViewer = type === 'story';
@@ -550,6 +555,12 @@ const Composer: FC<OwnProps & StateProps> = ({
   const [attachments, setAttachments] = useState<ApiAttachment[]>([]);
   const hasAttachments = Boolean(attachments.length);
   const [nextText, setNextText] = useState<ApiFormattedText | undefined>(undefined);
+
+  useEffect(() => {
+    if (!attachments.length || !attachments) {
+      updateShouldSaveAttachmentsCompression({ shouldSave: false });
+    }
+  }, [attachments]);
 
   const {
     canSendStickers, canSendGifs, canAttachMedia, canAttachPolls, canAttachEmbedLinks, canAttachToDoLists,
@@ -973,6 +984,11 @@ const Composer: FC<OwnProps & StateProps> = ({
     }
   }, [chatId, handleStoryPickerContextMenuHide, isReactionPickerOpen, storyId, storyReactionPickerAnchor]);
 
+  const { className: peerColorClass, style: peerColorStyle } = usePeerColor({
+    peer: sendAsPeer || currentUser,
+    theme,
+  });
+
   useClipboardPaste(
     isForCurrentMessageList || isInStoryViewer,
     insertFormattedTextAndUpdateCursor,
@@ -981,6 +997,7 @@ const Composer: FC<OwnProps & StateProps> = ({
     editingMessage,
     !isCurrentUserPremium && !isChatWithSelf,
     showCustomEmojiPremiumNotification,
+    !attachments.length,
   );
 
   const handleEmbeddedClear = useLastCallback(() => {
@@ -1103,7 +1120,7 @@ const Composer: FC<OwnProps & StateProps> = ({
 
     lastMessageSendTimeSeconds.current = getServerTime();
 
-    clearDraft({ chatId, isLocalOnly: true });
+    clearDraft({ chatId, threadId, isLocalOnly: true });
 
     // Wait until message animation starts
     requestMeasure(() => {
@@ -1344,6 +1361,15 @@ const Composer: FC<OwnProps & StateProps> = ({
     }
   }, [handleFileSelect, requestedDraftFiles, resetOpenChatWithDraft]);
 
+  useEffect(() => {
+    if (requestedDraftFiles?.length) {
+      updateShouldSaveAttachmentsCompression({ shouldSave: true });
+      applyDefaultAttachmentsCompression();
+    } else {
+      updateShouldSaveAttachmentsCompression({ shouldSave: false });
+    }
+  }, [requestedDraftFiles, updateShouldSaveAttachmentsCompression, applyDefaultAttachmentsCompression]);
+
   const handleCustomEmojiSelect = useLastCallback((emoji: ApiSticker, inInputId?: string) => {
     const emojiSetId = 'id' in emoji.stickerSetInfo && emoji.stickerSetInfo.id;
     if (!emoji.isFree && !isCurrentUserPremium && !isChatWithSelf && emojiSetId !== chatEmojiSetId) {
@@ -1380,6 +1406,8 @@ const Composer: FC<OwnProps & StateProps> = ({
         resetComposer(true);
       });
     }
+
+    clearDraft({ chatId, threadId, isLocalOnly: true });
   });
 
   const handleStickerSelect = useLastCallback((
@@ -1469,14 +1497,14 @@ const Composer: FC<OwnProps & StateProps> = ({
       applyIosAutoCapitalizationFix(messageInput);
     }
 
-    clearDraft({ chatId, isLocalOnly: true });
+    clearDraft({ chatId, threadId, isLocalOnly: true });
     requestMeasure(() => {
       resetComposer();
     });
   });
 
   const handleBotCommandSelect = useLastCallback(() => {
-    clearDraft({ chatId, isLocalOnly: true });
+    clearDraft({ chatId, threadId, isLocalOnly: true });
     requestMeasure(() => {
       resetComposer();
     });
@@ -1637,18 +1665,6 @@ const Composer: FC<OwnProps & StateProps> = ({
     && messageListType === 'thread';
   const isBotMenuButtonOpen = withBotMenuButton && !hasText && !activeVoiceRecording;
 
-  const [timedPlaceholderLangKey, timedPlaceholderDate] = useMemo(() => {
-    if (slowMode?.nextSendDate) {
-      return ['SlowModeWait', slowMode.nextSendDate];
-    }
-
-    if (stealthMode?.activeUntil && isInStoryViewer) {
-      return ['StealthModeActiveHint', stealthMode.activeUntil];
-    }
-
-    return [];
-  }, [isInStoryViewer, slowMode?.nextSendDate, stealthMode?.activeUntil]);
-
   const isComposerHasFocus = isBotKeyboardOpen || isSymbolMenuOpen || isEmojiTooltipOpen || isSendAsMenuOpen
     || isMentionTooltipOpen || isInlineBotTooltipOpen || isBotCommandMenuOpen || isAttachMenuOpen
     || isStickerTooltipOpen || isChatCommandTooltipOpen || isCustomEmojiTooltipOpen || isBotMenuButtonOpen
@@ -1656,12 +1672,21 @@ const Composer: FC<OwnProps & StateProps> = ({
   const isReactionSelectorOpen = isComposerHasFocus && !isReactionPickerOpen && isInStoryViewer && !isAttachMenuOpen
     && !isSymbolMenuOpen;
 
+  const slowModePlaceholder = (() => {
+    if (!slowMode?.nextSendDate || slowMode.nextSendDate < getServerTime()) return undefined;
+
+    return lang('SlowModePlaceholder', {
+      timer: <TextTimer endsAt={slowMode.nextSendDate} onEnd={forceUpdate} />,
+    }, { withNodes: true });
+  })();
+
   const placeholder = useMemo(() => {
     if (activeVoiceRecording && windowWidth <= SCREEN_WIDTH_TO_HIDE_PLACEHOLDER) {
       return '';
     }
 
     if (!isComposerBlocked) {
+      if (slowModePlaceholder) return slowModePlaceholder;
       if (botKeyboardPlaceholder) return botKeyboardPlaceholder;
       if (inputPlaceholder) return inputPlaceholder;
       if (paidMessagesStars) {
@@ -1676,11 +1701,17 @@ const Composer: FC<OwnProps & StateProps> = ({
         return lang('ComposerPlaceholderCaption');
       }
 
+      if (stealthMode?.activeUntil && isInStoryViewer && stealthMode.activeUntil > getServerTime()) {
+        return lang('StealthModeComposerPlaceholder', {
+          timer: <TextTimer endsAt={stealthMode.activeUntil} onEnd={forceUpdate} />,
+        }, { withNodes: true });
+      }
+
       if (chat?.adminRights?.anonymous) {
         return lang('ComposerPlaceholderAnonymous');
       }
 
-      if (chat?.isForum && chat?.isForumAsMessages && threadId === MAIN_THREAD_ID) {
+      if (chat?.isForum && !chat.isBotForum && chat.isForumAsMessages && threadId === MAIN_THREAD_ID) {
         return replyToTopic
           ? lang('ComposerPlaceholderTopic', { topic: replyToTopic.title })
           : lang('ComposerPlaceholderTopicGeneral');
@@ -1697,7 +1728,7 @@ const Composer: FC<OwnProps & StateProps> = ({
   }, [
     activeVoiceRecording, botKeyboardPlaceholder, chat, inputPlaceholder, isChannel, isComposerBlocked,
     isInStoryViewer, isSilentPosting, lang, replyToTopic, isReplying, threadId, windowWidth, paidMessagesStars,
-    hasSuggestedPost,
+    hasSuggestedPost, slowModePlaceholder, stealthMode?.activeUntil,
   ]);
 
   useEffect(() => {
@@ -2063,7 +2094,7 @@ const Composer: FC<OwnProps & StateProps> = ({
             />
           </>
         )}
-        <div className={buildClassName('message-input-wrapper', getPeerColorClass(currentUser))}>
+        <div className={buildClassName('message-input-wrapper', peerColorClass)} style={peerColorStyle}>
           {isInMessageList && (
             <>
               {withBotMenuButton && (
@@ -2147,8 +2178,6 @@ const Composer: FC<OwnProps & StateProps> = ({
             isActive={!hasAttachments}
             getHtml={getHtml}
             placeholder={placeholder}
-            timedPlaceholderDate={timedPlaceholderDate}
-            timedPlaceholderLangKey={timedPlaceholderLangKey}
             forcedPlaceholder={inlineBotHelp}
             canAutoFocus={isReady && isForCurrentMessageList && !hasAttachments && isInMessageList}
             noFocusInterception={hasAttachments}

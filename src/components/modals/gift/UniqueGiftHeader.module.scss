@@ -3,6 +3,7 @@
 
   display: flex;
   flex-direction: column;
+  gap: 0.25rem;
   align-items: center;
 
   width: 100%;
@@ -12,10 +13,6 @@
 
   &.withManageButtons {
     --_height: 18.5rem;
-
-    .radialPattern {
-      inset: -8rem -5% -5% -5%;
-    }
 
     .sticker {
       margin-top: 2.5rem;
@@ -32,8 +29,10 @@
 .subtitleBadge {
   margin-top: 0.25rem;
   padding: 0.75rem;
-  padding-block: 0.125rem;
+  padding-block: 0.25rem;
   border-radius: 1rem;
+
+  line-height: 1rem;
 
   background-color: rgba(0, 0, 0, 0.2);
   backdrop-filter: blur(50px);
@@ -49,8 +48,7 @@
 .radialPattern {
   position: absolute;
   z-index: -1;
-  inset: -5rem -5% -5% -5%;
-  height: calc(var(--height) * 1.05);
+  inset: 0;
 }
 
 .amount {
@@ -90,7 +88,7 @@
 }
 
 .subtitle {
-  max-width: 75%;
+  max-width: 85%;
 
   font-size: 0.875rem;
   text-align: center;

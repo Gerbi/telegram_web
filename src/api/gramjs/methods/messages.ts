@@ -1,6 +1,6 @@
-import BigInt from 'big-integer';
 import { Api as GramJs } from '../../../lib/gramjs';
 import { RPCError } from '../../../lib/gramjs/errors';
+import { generateRandomBigInt } from '../../../lib/gramjs/Helpers';
 
 import type {
   ForwardMessagesParams,
@@ -75,6 +75,7 @@ import {
   buildLocalMessage,
   buildPreparedInlineMessage,
   buildUploadingMedia,
+  incrementLocalMessageCounter,
 } from '../apiBuilders/messages';
 import { getApiChatIdFromMtpPeer } from '../apiBuilders/peers';
 import { buildApiUser, buildApiUserStatuses } from '../apiBuilders/users';
@@ -98,7 +99,6 @@ import {
   buildPeer,
   buildSendMessageAction,
   DEFAULT_PRIMITIVES,
-  generateRandomBigInt,
   getEntityTypeById,
 } from '../gramjsBuilders';
 import {
@@ -1256,23 +1256,21 @@ export async function markMessageListRead({
 }) {
   const isChannel = getEntityTypeById(chat.id) === 'channel';
 
-  // Workaround for local message IDs overflowing some internal `Buffer` range check
-  const fixedMaxId = Math.min(maxId, MAX_INT_32);
   if (isChannel && threadId === MAIN_THREAD_ID) {
     await invokeRequest(new GramJs.channels.ReadHistory({
       channel: buildInputChannel(chat.id, chat.accessHash),
-      maxId: fixedMaxId,
+      maxId,
     }));
-  } else if (isChannel) {
+  } else if (threadId !== MAIN_THREAD_ID) {
     await invokeRequest(new GramJs.messages.ReadDiscussion({
       peer: buildInputPeer(chat.id, chat.accessHash),
       msgId: Number(threadId),
-      readMaxId: fixedMaxId,
+      readMaxId: maxId,
     }));
   } else {
     const result = await invokeRequest(new GramJs.messages.ReadHistory({
       peer: buildInputPeer(chat.id, chat.accessHash),
-      maxId: fixedMaxId,
+      maxId,
     }));
 
     if (result) {
@@ -1494,6 +1492,9 @@ export async function searchMessagesInChat({
       break;
     case 'profilePhoto':
       filter = new GramJs.InputMessagesFilterChatPhotos();
+      break;
+    case 'gif':
+      filter = new GramJs.InputMessagesFilterGif();
       break;
     case 'text':
     default: {
@@ -1888,7 +1889,7 @@ export async function forwardApiMessages(params: ForwardMessagesParams) {
 
   const priceInStars = messagePriceInStars ? messagePriceInStars * messageIds.length : undefined;
 
-  const randomIds = messageIds.map(generateRandomBigInt);
+  const randomIds = messageIds.map(() => generateRandomBigInt());
   try {
     const update = await invokeRequest(new GramJs.messages.ForwardMessages({
       fromPeer: buildInputPeer(fromChat.id, fromChat.accessHash),
@@ -2498,7 +2499,7 @@ export async function sendQuickReply({
   if (!messages || messages instanceof GramJs.messages.MessagesNotModified) return;
 
   const ids = messages.messages.map((m) => m.id);
-  const randomIds = ids.map(generateRandomBigInt);
+  const randomIds = ids.map(() => generateRandomBigInt());
 
   const result = await invokeRequest(new GramJs.messages.SendQuickReplyMessages({
     peer: buildInputPeer(chat.id, chat.accessHash),
@@ -2552,4 +2553,8 @@ export async function fetchPreparedInlineMessage({
   if (!result) return undefined;
 
   return buildPreparedInlineMessage(result);
+}
+
+export function incrementLocalMessagesCounter() {
+  incrementLocalMessageCounter();
 }
