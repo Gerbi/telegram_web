@@ -1006,6 +1006,12 @@ export interface LangPair {
   'WeekdayYesterday': undefined;
   'User': undefined;
   'SecretChat': undefined;
+  'MessageRepeatPeriodDaily': undefined;
+  'MessageRepeatPeriodWeekly': undefined;
+  'MessageRepeatPeriodBiweekly': undefined;
+  'MessageRepeatPeriodMonthly': undefined;
+  'MessageRepeatPeriodYearly': undefined;
+  'MessageScheduledRepeatPremium': undefined;
   'ChatListFilterErrorEmpty': undefined;
   'ChatListFilterErrorTitleEmpty': undefined;
   'FilterMuted': undefined;
@@ -1052,6 +1058,12 @@ export interface LangPair {
   'Archive': undefined;
   'WaitingForNetwork': undefined;
   'ScheduleSendWhenOnline': undefined;
+  'ScheduleRepeatNever': undefined;
+  'ScheduleRepeatDaily': undefined;
+  'ScheduleRepeatWeekly': undefined;
+  'ScheduleRepeatBiweekly': undefined;
+  'ScheduleRepeatMonthly': undefined;
+  'ScheduleRepeatYearly': undefined;
   'VoipIncoming': undefined;
   'LiveLocationUpdatedJustNow': undefined;
   'RightNow': undefined;
@@ -2057,6 +2069,9 @@ export interface LangPairWithVariables<V = LangVariable> {
     'count': V;
     'total': V;
   };
+  'ScheduleRepeat': {
+    'value': V;
+  };
   'MessageTimerShortHours': {
     'count': V;
   };
@@ -2645,6 +2660,21 @@ export interface LangPairWithVariables<V = LangVariable> {
     'from': V;
     'amount': V;
   };
+  'ActionGiveawayResultPremiumDuration': {
+    'channel': V;
+    'duration': V;
+  };
+  'ActionGiftCodeSubscriptionDuration': {
+    'peer': V;
+    'duration': V;
+  };
+  'ActionGiftCodeSubscriptionDurationYou': {
+    'peer': V;
+    'duration': V;
+  };
+  'ActionGiftPremiumDuration': {
+    'duration': V;
+  };
   'TonAmount': {
     'amount': V;
   };
@@ -2979,6 +3009,14 @@ export interface LangPairWithVariables<V = LangVariable> {
   'ButtonSensitiveAlways': {
     'years': V;
   };
+  'DialogTitlePremiumGiftSentTo': {
+    'user': V;
+    'amount': V;
+  };
+  'DialogTitlePremiumGiftReceivedFrom': {
+    'user': V;
+    'amount': V;
+  };
   'DescriptionComposerGiftMinimumCurrencyPrice': {
     'amount': V;
   };
@@ -3159,10 +3197,22 @@ export interface LangPairPluralWithVariables<V = LangVariable> {
   'LastSeenHoursAgo': {
     'count': V;
   };
+  'MessageRepeatPeriodEveryMinutes': {
+    'count': V;
+  };
+  'MessageRepeatPeriodEveryMonths': {
+    'count': V;
+  };
   'StickerPackRemoveStickerCount': {
     'count': V;
   };
   'StickerPackAddStickerCount': {
+    'count': V;
+  };
+  'ScheduleRepeatEveryMinutes': {
+    'count': V;
+  };
+  'ScheduleRepeatEveryMonths': {
     'count': V;
   };
   'Years': {

@@ -100,7 +100,7 @@ export type ThreadId = string | number;
 
 export type ThemeKey = 'light' | 'dark';
 export type AnimationLevel = 0 | 1 | 2;
-export type TabsPosition = 'top' | 'left';
+export type FoldersPosition = 'top' | 'left';
 export type PerformanceTypeKey = (
   'pageTransitions' | 'messageSendingAnimations' | 'mediaViewerAnimations'
   | 'messageComposerAnimations' | 'contextMenuAnimations' | 'contextMenuBlur' | 'rightColumnAnimations'
@@ -723,6 +723,7 @@ export type SendMessageParams = {
   contact?: ApiContact;
   isSilent?: boolean;
   scheduledAt?: number;
+  scheduleRepeatPeriod?: number;
   groupedId?: string;
   noWebPage?: boolean;
   sendAs?: ApiPeer;
@@ -758,6 +759,7 @@ export type ForwardMessagesParams = {
   messages: ApiMessage[];
   isSilent?: boolean;
   scheduledAt?: number;
+  scheduleRepeatPeriod?: number;
   sendAs?: ApiPeer;
   withMyScore?: boolean;
   noAuthors?: boolean;
