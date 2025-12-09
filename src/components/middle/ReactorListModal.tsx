@@ -18,12 +18,15 @@ import buildClassName from '../../util/buildClassName';
 import { formatDateAtTime } from '../../util/dates/dateFormat';
 import { unique } from '../../util/iteratees';
 import { formatIntegerCompact } from '../../util/textFormat';
+import { REM } from '../common/helpers/mediaDimensions';
 
 import useFlag from '../../hooks/useFlag';
+import useHorizontalScroll from '../../hooks/useHorizontalScroll';
 import useInfiniteScroll from '../../hooks/useInfiniteScroll';
 import useLang from '../../hooks/useLang';
 import useLastCallback from '../../hooks/useLastCallback';
 import useOldLang from '../../hooks/useOldLang';
+import useScrollNotch from '../../hooks/useScrollNotch';
 
 import Avatar from '../common/Avatar';
 import FullNameTitle from '../common/FullNameTitle';
@@ -35,6 +38,7 @@ import InfiniteScroll from '../ui/InfiniteScroll';
 import ListItem from '../ui/ListItem';
 import Loading from '../ui/Loading';
 import Modal from '../ui/Modal';
+import Transition from '../ui/Transition';
 
 import './ReactorListModal.scss';
 
@@ -49,6 +53,8 @@ export type StateProps = Pick<ApiMessage, 'reactors' | 'reactions' | 'seenByDate
   messageId?: number;
   availableReactions?: ApiAvailableReaction[];
 };
+
+const DEFAULT_REACTION_SIZE = 1.5 * REM;
 
 const ReactorListModal: FC<OwnProps & StateProps> = ({
   isOpen,
@@ -76,6 +82,10 @@ const ReactorListModal: FC<OwnProps & StateProps> = ({
   const canShowFilters = reactors && reactions && reactors.count >= MIN_REACTIONS_COUNT_FOR_FILTERS
     && reactions.results.length > 1;
   const chatIdRef = useRef<string>();
+  const reactionsRef = useRef<HTMLDivElement>();
+  const containerRef = useRef<HTMLDivElement>();
+
+  useHorizontalScroll(reactionsRef, !canShowFilters || !isOpen);
 
   useEffect(() => {
     if (isOpen && !isClosing) {
@@ -121,6 +131,12 @@ const ReactorListModal: FC<OwnProps & StateProps> = ({
     return uniqueReactions;
   }, [reactors]);
 
+  const contentActiveKey = useMemo(() => {
+    if (!chosenTab) return 0;
+    const index = allReactions.findIndex((r) => isSameReaction(r, chosenTab));
+    return index + 1;
+  }, [chosenTab, allReactions]);
+
   const peerIds = useMemo(() => {
     if (chosenTab) {
       return reactors?.reactions
@@ -137,6 +153,11 @@ const ReactorListModal: FC<OwnProps & StateProps> = ({
     handleLoadMore, peerIds, reactors && reactors.nextOffset === undefined,
   );
 
+  useScrollNotch({
+    containerRef,
+    selector: '.reactor-list',
+  }, [contentActiveKey, isOpen]);
+
   useEffect(() => {
     getMore?.({ direction: LoadMoreDirection.Backwards });
   }, [getMore]);
@@ -148,14 +169,21 @@ const ReactorListModal: FC<OwnProps & StateProps> = ({
       className="ReactorListModal narrow"
       title={oldLang('Reactions')}
       onCloseAnimationEnd={handleCloseAnimationEnd}
+      hasCloseButton
     >
       {canShowFilters && (
-        <div className="Reactions" dir={lang.isRtl ? 'rtl' : undefined}>
+        <div
+          ref={reactionsRef}
+          className={buildClassName('Reactions', 'no-scrollbar')}
+          dir={lang.isRtl ? 'rtl' : undefined}
+        >
           <Button
-            className={buildClassName(!chosenTab && 'chosen')}
+            color={chosenTab ? 'adaptive' : 'primary'}
             size="tiny"
             ripple
             iconName="heart"
+            pill
+            fluid
             onClick={() => setChosenTab(undefined)}
           >
             {Boolean(reactors?.count) && formatIntegerCompact(lang, reactors.count)}
@@ -166,16 +194,18 @@ const ReactorListModal: FC<OwnProps & StateProps> = ({
             return (
               <Button
                 key={getReactionKey(reaction)}
-                className={buildClassName(isSameReaction(chosenTab, reaction) && 'chosen')}
+                color={isSameReaction(chosenTab, reaction) ? 'primary' : 'adaptive'}
                 size="tiny"
+                pill
+                fluid
                 ripple
-
                 onClick={() => setChosenTab(reaction)}
               >
                 <ReactionStaticEmoji
                   reaction={reaction}
                   className="reaction-filter-emoji"
                   availableReactions={availableReactions}
+                  size={DEFAULT_REACTION_SIZE}
                 />
                 {Boolean(count) && formatIntegerCompact(lang, count)}
               </Button>
@@ -184,81 +214,81 @@ const ReactorListModal: FC<OwnProps & StateProps> = ({
         </div>
       )}
 
-      <div dir={lang.isRtl ? 'rtl' : undefined} className="reactor-list-wrapper">
-        {viewportIds?.length ? (
-          <InfiniteScroll
-            className="reactor-list custom-scroll"
-            items={viewportIds}
-            onLoadMore={getMore}
-          >
-            {viewportIds?.flatMap(
-              (peerId) => {
-                const peer = usersById[peerId] || chatsById[peerId];
-
-                const peerReactions = reactors?.reactions.filter((reactor) => reactor.peerId === peerId);
-                const items: React.ReactNode[] = [];
-                const seenByUser = seenByDates?.[peerId];
-
-                peerReactions?.forEach((r) => {
-                  if (chosenTab && !isSameReaction(r.reaction, chosenTab)) return;
-
-                  items.push(
-                    <ListItem
-                      key={`${peerId}-${getReactionKey(r.reaction)}`}
-                      className="chat-item-clickable reactors-list-item"
-
-                      onClick={() => handleClick(peerId)}
-                    >
-                      <Avatar peer={peer} size="medium" />
-                      <div className="info">
-                        <FullNameTitle peer={peer} withEmojiStatus />
-                        <span className="status" dir="auto">
-                          <Icon name="heart-outline" className="status-icon" />
-                          {formatDateAtTime(oldLang, r.addedDate * 1000)}
-                        </span>
-                      </div>
-                      {r.reaction && (
-                        <ReactionStaticEmoji
-                          className="reactors-list-emoji"
-                          reaction={r.reaction}
-                          availableReactions={availableReactions}
-                        />
-                      )}
-                    </ListItem>,
-                  );
-                });
-
-                if (!chosenTab && !peerReactions?.length) {
-                  items.push(
-                    <ListItem
-                      key={`${peerId}-seen-by`}
-                      className="chat-item-clickable scroll-item small-icon"
-
-                      onClick={() => handleClick(peerId)}
-                    >
-                      <PrivateChatInfo
-                        userId={peerId}
-                        noStatusOrTyping
-                        avatarSize="medium"
-                        status={seenByUser ? formatDateAtTime(oldLang, seenByUser * 1000) : undefined}
-                        statusIcon="message-read"
-                      />
-                    </ListItem>,
-                  );
-                }
-                return items;
-              },
-            )}
-          </InfiniteScroll>
-        ) : <Loading />}
-      </div>
-      <Button
-        className="confirm-dialog-button"
-        isText
-        onClick={handleClose}
+      <div
+        ref={containerRef}
+        dir={lang.isRtl ? 'rtl' : undefined}
+        className="reactor-list-wrapper"
       >
-        {oldLang('Close')}
-      </Button>
+        <Transition activeKey={contentActiveKey} name="slide">
+          {viewportIds?.length ? (
+            <InfiniteScroll
+              className="reactor-list custom-scroll"
+              items={viewportIds}
+              onLoadMore={getMore}
+            >
+              {viewportIds?.flatMap(
+                (peerId) => {
+                  const peer = usersById[peerId] || chatsById[peerId];
+
+                  const peerReactions = reactors?.reactions.filter((reactor) => reactor.peerId === peerId);
+                  const items: React.ReactNode[] = [];
+                  const seenByUser = seenByDates?.[peerId];
+
+                  peerReactions?.forEach((r) => {
+                    if (chosenTab && !isSameReaction(r.reaction, chosenTab)) return;
+
+                    items.push(
+                      <ListItem
+                        key={`${peerId}-${getReactionKey(r.reaction)}`}
+                        className="chat-item-clickable reactors-list-item"
+
+                        onClick={() => handleClick(peerId)}
+                      >
+                        <Avatar peer={peer} size="medium" />
+                        <div className="info">
+                          <FullNameTitle peer={peer} withEmojiStatus />
+                          <span className="status" dir="auto">
+                            <Icon name="heart-outline" className="status-icon" />
+                            {formatDateAtTime(oldLang, r.addedDate * 1000)}
+                          </span>
+                        </div>
+                        {r.reaction && (
+                          <ReactionStaticEmoji
+                            className="reactors-list-emoji"
+                            reaction={r.reaction}
+                            availableReactions={availableReactions}
+                            size={DEFAULT_REACTION_SIZE}
+                          />
+                        )}
+                      </ListItem>,
+                    );
+                  });
+
+                  if (!chosenTab && !peerReactions?.length) {
+                    items.push(
+                      <ListItem
+                        key={`${peerId}-seen-by`}
+                        className="chat-item-clickable scroll-item small-icon"
+
+                        onClick={() => handleClick(peerId)}
+                      >
+                        <PrivateChatInfo
+                          userId={peerId}
+                          noStatusOrTyping
+                          avatarSize="medium"
+                          status={seenByUser ? formatDateAtTime(oldLang, seenByUser * 1000) : undefined}
+                          statusIcon="message-read"
+                        />
+                      </ListItem>,
+                    );
+                  }
+                  return items;
+                },
+              )}
+            </InfiniteScroll>
+          ) : <Loading />}
+        </Transition>
+      </div>
     </Modal>
   );
 };
