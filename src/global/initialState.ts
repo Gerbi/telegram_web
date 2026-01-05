@@ -106,6 +106,7 @@ export const INITIAL_GLOBAL_STATE: GlobalState = {
   appConfig: DEFAULT_APP_CONFIG,
 
   audioPlayer: {
+    volume: DEFAULT_VOLUME,
     lastPlaybackRate: DEFAULT_PLAYBACK_RATE,
   },
 
@@ -113,7 +114,9 @@ export const INITIAL_GLOBAL_STATE: GlobalState = {
     lastPlaybackRate: DEFAULT_PLAYBACK_RATE,
   },
 
-  authRememberMe: true,
+  auth: {
+    rememberMe: true,
+  },
   countryList: {
     phoneCodes: [],
     general: [],
@@ -424,7 +427,6 @@ export const INITIAL_TAB_STATE: TabState = {
   },
 
   audioPlayer: {
-    volume: DEFAULT_VOLUME,
     playbackRate: DEFAULT_PLAYBACK_RATE,
     isMuted: false,
   },

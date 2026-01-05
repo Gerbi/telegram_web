@@ -39,12 +39,13 @@ import type {
   ApiEmojiInteraction,
   ApiError,
   ApiNotifyPeerType,
+  ApiPasskeyOption,
   ApiPeerNotifySettings,
   ApiSessionData,
 } from './misc';
 import type { ApiEmojiStatusType, ApiPeerSettings } from './peers';
 import type { ApiPrivacyKey, LangPackStringValue, PrivacyVisibility } from './settings';
-import type { ApiTypeCurrencyAmount } from './stars';
+import type { ApiStarGiftAuctionUserState, ApiTypeCurrencyAmount, ApiTypeStarGiftAuctionState } from './stars';
 import type { ApiStealthMode, ApiStory, ApiStorySkipped } from './stories';
 import type {
   ApiUser, ApiUserFullInfo, ApiUserStatus,
@@ -85,6 +86,11 @@ export type ApiUpdateWebAuthTokenFailed = {
   '@type': 'updateWebAuthTokenFailed';
 };
 
+export type ApiUpdatePasskeyOption = {
+  '@type': 'updatePasskeyOption';
+  option: ApiPasskeyOption;
+};
+
 export type ApiUpdateSession = {
   '@type': 'updateSession';
   sessionData?: ApiSessionData;
@@ -93,6 +99,12 @@ export type ApiUpdateSession = {
 export type ApiUpdateAuthorizationError = {
   '@type': 'updateAuthorizationError';
   errorKey: RegularLangFnParameters;
+  errorCode?: string;
+};
+
+export type ApiUpdateUserAlreadyAuthorized = {
+  '@type': 'updateUserAlreadyAuthorized';
+  userId: string;
 };
 
 export type ApiUpdateConnectionState = {
@@ -822,6 +834,18 @@ export type ApiUpdateStarsBalance = {
   balance: ApiTypeCurrencyAmount;
 };
 
+export type ApiUpdateStarGiftAuctionState = {
+  '@type': 'updateStarGiftAuctionState';
+  giftId: string;
+  state: ApiTypeStarGiftAuctionState;
+};
+
+export type ApiUpdateStarGiftAuctionUserState = {
+  '@type': 'updateStarGiftAuctionUserState';
+  giftId: string;
+  userState: ApiStarGiftAuctionUserState;
+};
+
 export type ApiUpdateDeleteProfilePhoto = {
   '@type': 'updateDeleteProfilePhoto';
   peerId: string;
@@ -877,11 +901,11 @@ export type ApiUpdate = (
   ApiUpdateChat | ApiUpdateChatInbox | ApiUpdateChatTypingStatus | ApiUpdateChatFullInfo | ApiUpdatePinnedChatIds |
   ApiUpdateChatMembers | ApiUpdateChatJoin | ApiUpdateChatLeave | ApiUpdateChatPinned | ApiUpdatePinnedMessageIds |
   ApiUpdateChatListType | ApiUpdateChatFolder | ApiUpdateChatFoldersOrder | ApiUpdateRecommendedChatFolders |
-  ApiUpdateNewMessage | ApiUpdateMessage | ApiUpdateThreadInfo | ApiUpdateCommonBoxMessages |
+  ApiUpdateNewMessage | ApiUpdateMessage | ApiUpdateThreadInfo | ApiUpdateCommonBoxMessages | ApiUpdatePasskeyOption |
   ApiUpdateDeleteMessages | ApiUpdateMessagePoll | ApiUpdateMessagePollVote | ApiUpdateDeleteHistory |
   ApiDeleteParticipantHistory | ApiUpdateMessageSendSucceeded | ApiUpdateMessageSendFailed |
   ApiUpdateServiceNotification | ApiDeleteContact | ApiUpdateUser | ApiUpdateUserStatus |
-  ApiUpdateUserFullInfo | ApiUpdateVideoProcessingPending | ApiUpdatePeerSettings |
+  ApiUpdateUserFullInfo | ApiUpdateVideoProcessingPending | ApiUpdatePeerSettings | ApiUpdateUserAlreadyAuthorized |
   ApiUpdateAvatar | ApiUpdateMessageImage | ApiUpdateDraftMessage | ApiUpdateScheduledMessageSendFailed |
   ApiUpdateError | ApiUpdateResetContacts | ApiUpdateStartEmojiInteraction |
   ApiUpdateFavoriteStickers | ApiUpdateStickerSet | ApiUpdateStickerSets | ApiUpdateStickerSetsOrder |
@@ -903,10 +927,11 @@ export type ApiUpdate = (
   ApiRequestReconnectApi | ApiRequestSync | ApiUpdateFetchingDifference | ApiUpdateChannelMessages |
   ApiUpdateStealthMode | ApiUpdateAttachMenuBots | ApiUpdateNewAuthorization | ApiUpdateGroupInvitePrivacyForbidden |
   ApiUpdateViewForumAsMessages | ApiUpdateSavedDialogPinned | ApiUpdatePinnedSavedDialogIds | ApiUpdateChatLastMessage |
-  ApiUpdateDeleteSavedHistory | ApiUpdatePremiumFloodWait | ApiUpdateStarsBalance | ApiUpdateBotCommands |
-  ApiUpdateQuickReplyMessage | ApiUpdateQuickReplies | ApiDeleteQuickReply | ApiUpdateDeleteQuickReplyMessages |
-  ApiUpdateDeleteProfilePhoto | ApiUpdateNewProfilePhoto | ApiUpdateEntities | ApiUpdatePaidReactionPrivacy |
-  ApiUpdateLangPackTooLong | ApiUpdateLangPack | ApiUpdateNotSupportedInFrozenAccountError
+  ApiUpdateDeleteSavedHistory | ApiUpdatePremiumFloodWait | ApiUpdateStarsBalance | ApiUpdateStarGiftAuctionState
+  | ApiUpdateStarGiftAuctionUserState | ApiUpdateBotCommands | ApiUpdateQuickReplyMessage | ApiUpdateQuickReplies
+  | ApiDeleteQuickReply | ApiUpdateDeleteQuickReplyMessages | ApiUpdateDeleteProfilePhoto | ApiUpdateNewProfilePhoto
+  | ApiUpdateEntities | ApiUpdatePaidReactionPrivacy | ApiUpdateLangPackTooLong | ApiUpdateLangPack
+  | ApiUpdateNotSupportedInFrozenAccountError
 );
 
 export type OnApiUpdate = (update: ApiUpdate) => void;

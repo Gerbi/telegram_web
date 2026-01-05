@@ -262,6 +262,7 @@ export enum SettingsScreens {
   CustomEmoji,
   DoNotTranslate,
   FoldersShare,
+  Passkeys,
 }
 
 export type StickerSetOrReactionsSetOrRecent = Pick<ApiStickerSet, (
@@ -769,4 +770,5 @@ export type ForwardMessagesParams = {
   lastMessageId?: number;
   forwardedLocalMessagesSlice?: ForwardedLocalMessagesSlice;
   messagePriceInStars?: number;
+  effectId?: string;
 };

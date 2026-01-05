@@ -233,6 +233,10 @@ body:not(.is-ios) {
   touch-action: none;
 }
 
+.flex-grow {
+  flex-grow: 1;
+}
+
 .icon {
   @include iconsMixins.icon;
 }
@@ -393,6 +397,15 @@ body:not(.is-ios) {
     &::before {
       opacity: 1;
     }
+  }
+}
+
+.with-bottom-notch {
+  border-bottom: 1px solid var(--color-borders);
+  transition: border-color 0.2s ease-in-out;
+
+  &.scrolled-to-end {
+    border-bottom-color: transparent;
   }
 }
 

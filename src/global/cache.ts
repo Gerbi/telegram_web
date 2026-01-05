@@ -55,6 +55,7 @@ const updateCacheForced = () => updateCache(true);
 
 let isCaching = false;
 let isRemovingCache = false;
+let cacheUpdateSuspensionTimestamp = 0;
 let unsubscribeFromBeforeUnload: NoneToVoidFunction | undefined;
 
 export function cacheGlobal(global: GlobalState) {
@@ -362,18 +363,35 @@ function unsafeMigrateCache(cached: GlobalState, initialState: GlobalState) {
     cached.sharedState.settings.shouldWarnAboutFiles = true;
     untypedCached.sharedState.settings.shouldWarnAboutSvg = undefined;
   }
+
+  if (!cached.auth) {
+    cached.auth = initialState.auth;
+    cached.auth.rememberMe = untypedCached.rememberMe;
+  }
+
+  if (cached.audioPlayer.volume === undefined) {
+    cached.audioPlayer.volume = initialState.audioPlayer.volume;
+  }
 }
 
 function updateCache(force?: boolean) {
   const global = getGlobal();
-  if (isRemovingCache || !isCaching || global.isLoggingOut || (!force && getIsHeavyAnimating())) {
+  if (isRemovingCache || !isCaching || global.auth.isLoggingOut || (!force && getIsHeavyAnimating())) {
     return;
   }
 
   forceUpdateCache();
 }
 
+export function temporarilySuspendCacheUpdate() {
+  cacheUpdateSuspensionTimestamp = Date.now() + UPDATE_THROTTLE;
+}
+
 export function forceUpdateCache(noEncrypt = false) {
+  if (Date.now() < cacheUpdateSuspensionTimestamp) {
+    return;
+  }
+
   const global = getGlobal();
   const { hasPasscode, isScreenLocked } = global.passcode;
 
@@ -400,10 +418,7 @@ function reduceGlobal<T extends GlobalState>(global: T) {
     ...pick(global, [
       'appConfig',
       'config',
-      'authState',
-      'authPhoneNumber',
-      'authRememberMe',
-      'authNearestCountry',
+      'auth',
       'attachMenu',
       'currentUserId',
       'contactList',

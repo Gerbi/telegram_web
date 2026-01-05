@@ -1,6 +1,7 @@
 import type {
   ApiAttachBot,
   ApiAttachment,
+  ApiBirthday,
   ApiChat,
   ApiChatAdminRights,
   ApiChatBannedRights,
@@ -32,6 +33,7 @@ import type {
   ApiPaymentStatus,
   ApiPeer,
   ApiPhoto,
+  ApiPremiumGiftCodeOption,
   ApiPremiumSection,
   ApiPreparedInlineMessage,
   ApiPrivacyKey,
@@ -45,6 +47,7 @@ import type {
   ApiSessionData,
   ApiStarGift,
   ApiStarGiftAttributeOriginalDetails,
+  ApiStarGiftRegular,
   ApiStarGiftUnique,
   ApiStarGiftUpgradePrice,
   ApiStarsSubscription,
@@ -146,6 +149,7 @@ export interface ActionPayloads {
     tabId?: number;
   };
   goToAuthQrCode: undefined;
+  loginWithPasskey: undefined;
 
   // stickers & GIFs
   setStickerSearchQuery: { query?: string } & WithTabId;
@@ -249,7 +253,18 @@ export interface ActionPayloads {
     notificationSoundVolume?: number;
   };
   loadLanguages: undefined;
-  loadPrivacySettings: undefined;
+
+  loadPasskeys: undefined;
+  startPasskeyRegistration: WithTabId | undefined;
+  deletePasskey: {
+    id: string;
+  };
+  openPasskeyModal: WithTabId | undefined;
+  closePasskeyModal: WithTabId | undefined;
+
+  loadPrivacySettings: {
+    skipIfCached?: boolean;
+  };
   setPrivacyVisibility: {
     privacyKey: ApiPrivacyKey;
     visibility: PrivacyVisibility;
@@ -1640,6 +1655,9 @@ export interface ActionPayloads {
   openUniqueGiftBySlug: {
     slug: string;
   } & WithTabId;
+  openGiftAuctionBySlug: {
+    slug: string;
+  } & WithTabId;
   openPreviousStory: WithTabId | undefined;
   openNextStory: WithTabId | undefined;
   setStoryViewerMuted: {
@@ -1831,6 +1849,13 @@ export interface ActionPayloads {
     bio?: string;
     username?: string;
   } & WithTabId;
+  updateBirthday: {
+    birthday?: ApiBirthday;
+  };
+  openBirthdaySetupModal: {
+    currentBirthday?: ApiBirthday;
+  } & WithTabId;
+  closeBirthdaySetupModal: WithTabId | undefined;
   updateBotProfile: {
     photo?: File;
     firstName?: string;
@@ -2452,6 +2477,10 @@ export interface ActionPayloads {
   loadAppConfig: {
     hash: number;
   } | undefined;
+  loadPromoData: undefined;
+  dismissSuggestion: {
+    suggestion: string;
+  } & WithTabId;
   loadPeerColors: undefined;
   loadTimezones: undefined;
   openLeftColumnContent: {
@@ -2576,9 +2605,13 @@ export interface ActionPayloads {
 
   openGiftModal: {
     forUserId: string;
+    selectedGift?: ApiStarGift;
     selectedResaleGift?: ApiStarGift;
   } & WithTabId;
   closeGiftModal: WithTabId | undefined;
+  setGiftModalSelectedGift: {
+    gift: ApiPremiumGiftCodeOption | ApiStarGift | undefined;
+  } & WithTabId;
   sendStarGift: StarGiftInfo & WithTabId;
   buyStarGift: {
     peerId: string;
@@ -2662,6 +2695,45 @@ export interface ActionPayloads {
     gift: ApiStarGiftUnique;
   } & WithTabId;
   closeGiftInfoValueModal: WithTabId | undefined;
+  openGiftAuctionModal: {
+    gift: ApiStarGiftRegular;
+  } & WithTabId;
+  closeGiftAuctionModal: {
+    shouldKeepActiveAuction?: boolean;
+  } & WithTabId | undefined;
+  openGiftAuctionBidModal: {
+    peerId?: string;
+    message?: string;
+    shouldHideName?: boolean;
+  } & WithTabId | undefined;
+  closeGiftAuctionBidModal: WithTabId | undefined;
+  openGiftAuctionInfoModal: WithTabId | undefined;
+  closeGiftAuctionInfoModal: WithTabId | undefined;
+  openGiftAuctionChangeRecipientModal: {
+    oldPeerId: string;
+    newPeerId: string;
+    message?: string;
+    shouldHideName?: boolean;
+  } & WithTabId;
+  closeGiftAuctionChangeRecipientModal: WithTabId | undefined;
+  openGiftAuctionAcquiredModal: {
+    giftId: string;
+    giftTitle?: string;
+    giftSticker?: ApiSticker;
+  } & WithTabId;
+  closeGiftAuctionAcquiredModal: WithTabId | undefined;
+  sendStarGiftAuctionBid: {
+    giftId: string;
+    bidAmount: number;
+    peerId?: string;
+    message?: ApiFormattedText;
+    shouldHideName?: boolean;
+    isUpdateBid?: boolean;
+  } & WithTabId;
+  loadActiveGiftAuction: {
+    giftId: string;
+  } & WithTabId;
+  clearActiveGiftAuction: WithTabId | undefined;
   processStarGiftWithdrawal: {
     gift: ApiInputSavedStarGift;
     password: string;

@@ -1,5 +1,6 @@
 import type {
   ApiAttachBot,
+  ApiBirthday,
   ApiBoost,
   ApiBoostsStatus,
   ApiChannelMonetizationStatistics,
@@ -43,6 +44,8 @@ import type {
   ApiStarGiftAttribute,
   ApiStarGiftAttributeCounter,
   ApiStarGiftAttributeOriginalDetails,
+  ApiStarGiftAuctionAcquiredGift,
+  ApiStarGiftAuctionState,
   ApiStarGiftUnique,
   ApiStarGiftUpgradePrice,
   ApiStarGiveawayOption,
@@ -377,7 +380,6 @@ export type TabState = {
     messageId?: number;
     threadId?: ThreadId;
     origin?: AudioOrigin;
-    volume: number;
     playbackRate: number;
     isPlaybackRateActive?: boolean;
     timestamp?: number;
@@ -703,7 +705,9 @@ export type TabState = {
     forPeerId: string;
     gifts?: ApiPremiumGiftCodeOption[];
     selectedResaleGift?: ApiStarGift;
+    selectedGift?: ApiPremiumGiftCodeOption | ApiStarGift;
   };
+  activeGiftAuction?: ApiStarGiftAuctionState;
   chatRefundModal?: {
     userId: string;
     starsToRefund: number;
@@ -782,6 +786,10 @@ export type TabState = {
   };
 
   isAgeVerificationModalOpen?: boolean;
+
+  birthdaySetupModal?: {
+    currentBirthday?: ApiBirthday;
+  };
 
   paidReactionModal?: {
     chatId: string;
@@ -885,6 +893,36 @@ export type TabState = {
     emojiStatus: ApiEmojiStatusCollectible;
   };
 
+  giftAuctionModal?: {
+    isOpen?: boolean;
+  };
+
+  giftAuctionBidModal?: {
+    isOpen?: boolean;
+    peerId?: string;
+    message?: string;
+    shouldHideName?: boolean;
+  };
+
+  giftAuctionInfoModal?: {
+    isOpen?: boolean;
+  };
+
+  giftAuctionChangeRecipientModal?: {
+    isOpen?: boolean;
+    oldPeerId?: string;
+    newPeerId?: string;
+    message?: string;
+    shouldHideName?: boolean;
+  };
+
+  giftAuctionAcquiredModal?: {
+    giftId?: string;
+    giftTitle?: string;
+    giftSticker?: ApiSticker;
+    acquiredGifts?: ApiStarGiftAuctionAcquiredGift[];
+  };
+
   starGiftPriceDecreaseInfoModal?: {
     prices: ApiStarGiftUpgradePrice[];
     currentPrice: number;
@@ -914,6 +952,8 @@ export type TabState = {
     chatId: string;
     threadId?: ThreadId;
   };
+
+  isPasskeyModalOpen?: boolean;
 
   isWaitingForStarGiftUpgrade?: true;
   isWaitingForStarGiftTransfer?: true;
