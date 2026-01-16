@@ -831,6 +831,14 @@ export interface LangPair {
   'EditAdminBanUsers': undefined;
   'EditAdminPinMessages': undefined;
   'EditAdminAddAdmins': undefined;
+  'EditAdminManageDirect': undefined;
+  'EditAdminPostStories': undefined;
+  'EditAdminEditStories': undefined;
+  'EditAdminDeleteStories': undefined;
+  'EditAdminManageTopics': undefined;
+  'EditAdminUnavailable': undefined;
+  'EditAdminConfirmDismissText': undefined;
+  'EditAdminConfirmDismiss': undefined;
   'StartVoipChatPermission': undefined;
   'EditAdminSendAnonymously': undefined;
   'ChannelEditAdminCannotEdit': undefined;
@@ -1227,6 +1235,7 @@ export interface LangPair {
   'MenuArchivedChats': undefined;
   'MenuContacts': undefined;
   'MenuSettings': undefined;
+  'MenuMore': undefined;
   'MenuNightMode': undefined;
   'AriaMenuEnableNightMode': undefined;
   'AriaMenuDisableNightMode': undefined;
@@ -1822,6 +1831,16 @@ export interface LangPair {
   'GiftAuctionChangeRecipientTitle': undefined;
   'GiftAuctionAveragePrice': undefined;
   'GiftAuctionTapToBidMore': undefined;
+  'GiftAuctionLearnMoreAboutGifts': undefined;
+  'GiftAuctionLearnMoreMenuItem': undefined;
+  'StarGiftInfoTitle': undefined;
+  'StarGiftInfoSubtitle': undefined;
+  'StarGiftInfoUniqueTitle': undefined;
+  'StarGiftInfoUniqueSubtitle': undefined;
+  'StarGiftInfoTradableTitle': undefined;
+  'StarGiftInfoTradableSubtitle': undefined;
+  'StarGiftInfoWearableTitle': undefined;
+  'StarGiftInfoWearableSubtitle': undefined;
   'StarGift': undefined;
   'SettingsItemPrivacyPasskeys': undefined;
   'SettingsItemPrivacyOn': undefined;
@@ -1859,6 +1878,24 @@ export interface LangPair {
   'SettingsBirthday': undefined;
   'BotReadTextFromClipboardTitle': undefined;
   'BotReadTextFromClipboardConfirm': undefined;
+  'ChatTypePrivate': undefined;
+  'ChatTypeGroup': undefined;
+  'ChatTypeChannel': undefined;
+  'ChatTypeFallback': undefined;
+  'ChatInfoNoMessages': undefined;
+  'AttachmentMenuSendAsMedia': undefined;
+  'AttachmentMenuSendAllAsMedia': undefined;
+  'AttachmentMenuSendAsFiles': undefined;
+  'AttachmentMenuSendAllAsFiles': undefined;
+  'AttachmentMenuGroupAllMedia': undefined;
+  'AttachmentMenuUngroupAllMedia': undefined;
+  'AttachmentMenuEnableSpoiler': undefined;
+  'AttachmentMenuDisableSpoiler': undefined;
+  'AttachmentDragAddItems': undefined;
+  'AttachmentCaptionPlaceholder': undefined;
+  'SettingsDataClearMediaCache': undefined;
+  'SettingsDataClearMediaCacheDescription': undefined;
+  'SettingsDataClearMediaDone': undefined;
 }
 
 export interface LangPairWithVariables<V = LangVariable> {
@@ -2177,16 +2214,8 @@ export interface LangPairWithVariables<V = LangVariable> {
   'ProfileBirthdayValue': {
     'date': V;
   };
-  'ProfileBirthdayValueYear': {
-    'date': V;
-    'age': V;
-  };
   'ProfileBirthdayTodayValue': {
     'date': V;
-  };
-  'ProfileBirthdayTodayValueYear': {
-    'date': V;
-    'age': V;
   };
   'ChannelEarnLearnCoinAbout': {
     'link': V;
@@ -3137,6 +3166,12 @@ export interface LangPairWithVariables<V = LangVariable> {
   'RatingLevel': {
     'level': V;
   };
+  'GiftAuctionForSaleOnFragment': {
+    'count': V;
+  };
+  'GiftAuctionForSaleOnTelegram': {
+    'count': V;
+  };
   'GiftLockedMessage': {
     'relativeDate': V;
   };
@@ -3229,12 +3264,15 @@ export interface LangPairWithVariables<V = LangVariable> {
   'BotReadTextFromClipboardDescription': {
     'bot': V;
   };
+  'GroupStatusWithOnline': {
+    'status': V;
+    'onlineCount': V;
+  };
 }
 
 export interface LangPairPlural {
   'DeleteForMeChatHint': undefined;
   'DeleteForEveryoneHint': undefined;
-  'PreviewDraggingAddItems': undefined;
   'MediaReplaceInvalidError': undefined;
 }
 
@@ -3403,6 +3441,14 @@ export interface LangPairPluralWithVariables<V = LangVariable> {
   };
   'ShowMoreVoters': {
     'count': V;
+  };
+  'ProfileBirthdayValueAge': {
+    'date': V;
+    'age': V;
+  };
+  'ProfileBirthdayTodayValueAge': {
+    'date': V;
+    'age': V;
   };
   'GiftInfoDescription': {
     'amount': V;
@@ -3635,6 +3681,30 @@ export interface LangPairPluralWithVariables<V = LangVariable> {
     'count': V;
   };
   'GiftAuctionGifts': {
+    'count': V;
+  };
+  'AttachmentReplacePhoto': {
+    'count': V;
+  };
+  'AttachmentReplaceVideo': {
+    'count': V;
+  };
+  'AttachmentReplaceAudio': {
+    'count': V;
+  };
+  'AttachmentReplaceFile': {
+    'count': V;
+  };
+  'AttachmentSendPhoto': {
+    'count': V;
+  };
+  'AttachmentSendVideo': {
+    'count': V;
+  };
+  'AttachmentSendAudio': {
+    'count': V;
+  };
+  'AttachmentSendFile': {
     'count': V;
   };
 }
