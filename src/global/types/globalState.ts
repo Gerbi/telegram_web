@@ -70,6 +70,7 @@ import type {
   StarGiftCategory,
   StarsSubscriptions,
   StarsTransactionHistory,
+  TextSummary,
   ThemeKey,
   Thread,
   ThreadId,
@@ -245,6 +246,7 @@ export type GlobalState = {
   messages: {
     byChatId: Record<string, {
       byId: Record<number, ApiMessage>;
+      summaryById: Record<number, TextSummary>;
       threadsById: Record<ThreadId, Thread>;
     }>;
     playbackByChatId: Record<string, {
@@ -366,6 +368,7 @@ export type GlobalState = {
       stickers: ApiSticker[];
       emojis: ApiSticker[];
     };
+    diceSetIdByEmoji?: Record<string, string>;
   };
 
   customEmojis: {

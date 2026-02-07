@@ -304,6 +304,12 @@ export type ApiGame = {
   document?: ApiDocument;
 };
 
+export type ApiDice = {
+  mediaType: 'dice';
+  value: number;
+  emoticon: string;
+};
+
 export type ApiGiveaway = {
   mediaType: 'giveaway';
   quantity: number;
@@ -608,6 +614,7 @@ export type MediaContent = {
   giveaway?: ApiGiveaway;
   giveawayResults?: ApiGiveawayResults;
   paidMedia?: ApiPaidMedia;
+  dice?: ApiDice;
   ttlSeconds?: number;
 };
 export type MediaContainer = {
@@ -690,6 +697,7 @@ export interface ApiMessage {
   reportDeliveryUntilDate?: number;
   paidMessageStars?: number;
   restrictionReasons?: ApiRestrictionReason[];
+  summaryLanguageCode?: string;
 
   isTypingDraft?: boolean; // Local field
 }
@@ -943,6 +951,12 @@ export interface KeyboardButtonOpenThread {
   text: string;
 }
 
+export interface KeyboardButtonGiftOffer {
+  type: 'giftOffer';
+  text: string;
+  buttonType: 'accept' | 'reject';
+}
+
 export type ApiKeyboardButton = (
   ApiKeyboardButtonSimple
   | ApiKeyboardButtonReceipt
@@ -957,6 +971,7 @@ export type ApiKeyboardButton = (
   | ApiKeyboardButtonCopy
   | KeyboardButtonSuggestedMessage
   | KeyboardButtonOpenThread
+  | KeyboardButtonGiftOffer
 );
 
 export type ApiKeyboardButtons = ApiKeyboardButton[][];

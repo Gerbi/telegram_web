@@ -411,6 +411,7 @@ export type MiddleSearchParams = {
   requestedQuery?: string;
   savedTag?: ApiReaction;
   isHashtag?: boolean;
+  fromPeerId?: string;
   fetchingQuery?: string;
   type: MiddleSearchType;
   results?: MiddleSearchResults;
@@ -642,6 +643,15 @@ export interface TopicsInfo {
 export type TranslatedMessage = {
   isPending?: boolean;
   text?: ApiFormattedText;
+  summary?: TextSummary;
+};
+
+export type TextSummary = {
+  isPending?: false;
+  text: ApiFormattedText;
+} | {
+  isPending: true;
+  text?: undefined;
 };
 
 export type ChatTranslatedMessages = {
@@ -723,6 +733,7 @@ export type SendMessageParams = {
   gif?: ApiVideo;
   poll?: ApiNewPoll;
   todo?: ApiNewMediaTodo;
+  dice?: string;
   contact?: ApiContact;
   isSilent?: boolean;
   scheduledAt?: number;
