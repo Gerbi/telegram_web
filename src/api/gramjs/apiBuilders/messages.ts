@@ -2,7 +2,9 @@ import { Api as GramJs } from '../../../lib/gramjs';
 
 import type {
   ApiAttachment,
+  ApiBaseThreadInfo,
   ApiChat,
+  ApiCommentsInfo,
   ApiContact,
   ApiDice,
   ApiDraft,
@@ -14,12 +16,14 @@ import type {
   ApiMessage,
   ApiMessageEntity,
   ApiMessageForwardInfo,
+  ApiMessagePoll,
   ApiMessageReportResult,
+  ApiMessageThreadInfo,
   ApiNewMediaTodo,
   ApiNewPoll,
   ApiPeer,
   ApiPhoto,
-  ApiPoll,
+  ApiPollResult,
   ApiPreparedInlineMessage,
   ApiQuickReply,
   ApiReplyInfo,
@@ -46,7 +50,7 @@ import {
 } from '../../../config';
 import { getEmojiOnlyCountForMessage } from '../../../global/helpers/getEmojiOnlyCountForMessage';
 import { addTimestampEntities } from '../../../util/dates/timestamp';
-import { omitUndefined, pick } from '../../../util/iteratees';
+import { omitUndefined } from '../../../util/iteratees';
 import { toJSNumber } from '../../../util/numbers';
 import { getServerTime } from '../../../util/serverTime';
 import { interpolateArray } from '../../../util/waveform';
@@ -294,6 +298,7 @@ export function buildApiMessageWithChatId(
     paidMessageStars: toJSNumber(mtpMessage.paidMessageStars),
     restrictionReasons,
     summaryLanguageCode: mtpMessage.summaryFromLanguage,
+    fromRank: mtpMessage.fromRank,
   };
 }
 
@@ -414,16 +419,35 @@ export function buildApiFactCheck(factCheck: GramJs.FactCheck): ApiFactCheck {
   };
 }
 
-function buildNewPoll(poll: ApiNewPoll, localId: number): ApiPoll {
+function buildNewLocalPoll(poll: ApiNewPoll): ApiMessagePoll {
+  const resultByOption = poll.correctAnswers?.length
+    ? poll.summary.answers.reduce((acc, answer, index) => {
+      const isCorrect = poll.correctAnswers?.includes(index);
+
+      acc[answer.option] = {
+        option: answer.option,
+        votersCount: 0,
+        isCorrect: isCorrect ? true : undefined,
+      };
+
+      return acc;
+    }, {} as Record<string, ApiPollResult>)
+    : undefined;
+
   return {
     mediaType: 'poll',
-    id: String(localId),
-    summary: pick(poll.summary, ['question', 'answers']),
-    results: {},
+    summary: poll.summary,
+    results: {
+      resultByOption,
+      solution: poll.solution,
+      solutionEntities: poll.solutionEntities,
+      solutionMedia: poll.solutionMedia ? buildUploadingMedia(poll.solutionMedia) : undefined,
+    },
+    attachedMedia: poll.attachedMedia ? buildUploadingMedia(poll.attachedMedia) : undefined,
   };
 }
 
-function buildNewTodo(todo: ApiNewMediaTodo): ApiMediaTodo {
+function buildNewLocalTodo(todo: ApiNewMediaTodo): ApiMediaTodo {
   return {
     mediaType: 'todo',
     todo: todo.todo,
@@ -483,8 +507,8 @@ export function buildLocalMessage({
 
   const resultReplyInfo = replyInfo && buildReplyInfo(replyInfo, chat.isForum);
 
-  const localPoll = poll && buildNewPoll(poll, localId);
-  const localTodo = todo && buildNewTodo(todo);
+  const localPoll = poll && buildNewLocalPoll(poll);
+  const localTodo = todo && buildNewLocalTodo(todo);
 
   const localDice = dice ? {
     mediaType: 'dice',
@@ -506,7 +530,7 @@ export function buildLocalMessage({
       video: gif || media?.video,
       contact,
       storyData: story && { mediaType: 'storyData', ...story },
-      pollId: localPoll?.id,
+      pollId: localPoll?.summary.id,
       todo: localTodo,
       dice: localDice,
     }),
@@ -659,6 +683,10 @@ function buildReplyInfo(inputInfo: ApiInputReplyInfo, isForum?: boolean): ApiRep
 export function buildUploadingMedia(
   attachment: ApiAttachment,
 ): MediaContent {
+  if (attachment.gif) {
+    return { video: attachment.gif };
+  }
+
   const {
     filename: fileName,
     blobUrl,
@@ -759,44 +787,51 @@ export function buildApiThreadInfoFromMessage(
     return undefined;
   }
 
-  return buildApiThreadInfo(mtpMessage.replies, mtpMessage.id, chatId);
+  return buildApiThreadInfo(chatId, mtpMessage.id, mtpMessage.replies, mtpMessage.fwdFrom);
 }
 
 export function buildApiThreadInfo(
-  messageReplies: GramJs.TypeMessageReplies, messageId: number, chatId: string,
+  chatId: string,
+  messageId: number,
+  messageReplies: GramJs.TypeMessageReplies,
+  messageForwardInfo?: GramJs.MessageFwdHeader,
 ): ApiThreadInfo | undefined {
   const {
-    channelId, replies, maxId, readMaxId, recentRepliers, comments,
+    channelId, replies, maxId = messageId, recentRepliers, comments, readMaxId,
   } = messageReplies;
+
+  const { fromId, channelPost } = messageForwardInfo || {};
 
   const apiChannelId = channelId ? buildApiPeerId(channelId, 'channel') : undefined;
   if (apiChannelId === DELETED_COMMENTS_CHANNEL_ID) {
     return undefined;
   }
 
-  const baseThreadInfo = {
+  const baseThreadInfo: Partial<ApiBaseThreadInfo> = {
     messagesCount: replies,
-    ...(maxId && { lastMessageId: maxId }),
-    ...(readMaxId && { lastReadMessageId: readMaxId }),
-    ...(recentRepliers && { recentReplierIds: recentRepliers.map(getApiChatIdFromMtpPeer) }),
+    lastMessageId: maxId,
+    recentReplierIds: recentRepliers?.map(getApiChatIdFromMtpPeer),
   };
 
   if (comments) {
-    return {
+    return omitUndefined<ApiCommentsInfo>({
       ...baseThreadInfo,
       isCommentsInfo: true,
       chatId: apiChannelId!,
       originChannelId: chatId,
       originMessageId: messageId,
-    };
+      hasUnread: Boolean(readMaxId && maxId && readMaxId < maxId),
+    });
   }
 
-  return {
+  return omitUndefined<ApiMessageThreadInfo>({
     ...baseThreadInfo,
     isCommentsInfo: false,
     chatId,
     threadId: messageId,
-  };
+    fromChannelId: fromId && channelPost ? getApiChatIdFromMtpPeer(fromId) : undefined,
+    fromMessageId: channelPost,
+  });
 }
 
 export function buildApiQuickReply(reply: GramJs.TypeQuickReply): ApiQuickReply {

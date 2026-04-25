@@ -148,10 +148,22 @@ export class PasswordFreshError extends BadRequestError {
   }
 }
 
-export class PasskeyLoginRequestedError extends Error {
-  public credentialJson: PublicKeyCredentialJSON;
+export class SessionFreshError extends BadRequestError {
+  public seconds: number;
 
-  constructor(credentialJson: PublicKeyCredentialJSON) {
+  constructor(args: any) {
+    const seconds = Number(args.capture || 0);
+    super(`Session is fresh, please try again in ${seconds} seconds.`, args.request);
+
+    this.message = `Session is fresh, please try again in ${seconds} seconds.`;
+    this.seconds = seconds;
+  }
+}
+
+export class PasskeyLoginRequestedError extends Error {
+  public credentialJson: AuthenticationResponseJSON;
+
+  constructor(credentialJson: AuthenticationResponseJSON) {
     super('Passkey login requested');
     this.message = 'RESTART_AUTH_WITH_PASSKEY';
     this.credentialJson = credentialJson;
@@ -185,6 +197,7 @@ export const rpcErrorRe = new Map<RegExp, any>([
   [/NETWORK_MIGRATE_(\d+)/, NetworkMigrateError],
   [/EMAIL_UNCONFIRMED_(\d+)/, EmailUnconfirmedError],
   [/PASSWORD_TOO_FRESH_(\d+)/, PasswordFreshError],
+  [/SESSION_TOO_FRESH_(\d+)/, SessionFreshError],
   [/^Timeout$/, TimedOutError],
   [/PASSKEY_CREDENTIAL_NOT_FOUND/, PasskeyCredentialNotFoundError],
 ]);

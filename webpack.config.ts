@@ -164,7 +164,7 @@ export default function createConfig(
           ],
         },
         {
-          test: /\.(woff(2)?|ttf|eot|svg|png|jpg|tgs)(\?v=\d+\.\d+\.\d+)?$/,
+          test: /\.(woff(2)?|ttf|eot|svg|png|jpg|tgs|webp)(\?v=\d+\.\d+\.\d+)?$/,
           type: 'asset/resource',
         },
         {
@@ -183,6 +183,7 @@ export default function createConfig(
       alias: {
         '@teact$': path.resolve(__dirname, './src/lib/teact/teact.ts'),
         '@teact': path.resolve(__dirname, './src/lib/teact'),
+        '@gili': path.resolve(__dirname, './src/components/gili'),
       },
       fallback: {
         path: require.resolve('path-browserify'),

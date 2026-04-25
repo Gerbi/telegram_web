@@ -9,6 +9,7 @@ import type {
   ApiStarGiftAttribute,
   ApiStarGiftAttributeCounter,
   ApiStarGiftAttributeId,
+  ApiStarGiftAttributeRarity,
   ApiStarGiftAuctionAcquiredGift,
   ApiStarGiftAuctionState,
   ApiStarGiftAuctionUserState,
@@ -22,11 +23,9 @@ import type {
 import { int2hex } from '../../../util/colors';
 import { toJSNumber } from '../../../util/numbers';
 import { buildApiChatFromPreview } from '../apiBuilders/chats';
-import { addDocumentToLocalDb } from '../helpers/localDb';
 import { buildApiFormattedText } from './common';
 import { buildApiCurrencyAmount } from './payments';
-import { buildApiPeerId } from './peers';
-import { getApiChatIdFromMtpPeer } from './peers';
+import { buildApiPeerId, getApiChatIdFromMtpPeer } from './peers';
 import { buildStickerFromDocument } from './symbols';
 import { buildApiUser } from './users';
 
@@ -35,7 +34,7 @@ export function buildApiStarGift(starGift: GramJs.TypeStarGift): ApiStarGift {
     const {
       id, num, ownerId, ownerName, title, attributes, availabilityIssued, availabilityTotal, slug, ownerAddress,
       giftAddress, resellAmount, releasedBy, resaleTonOnly, requirePremium, valueCurrency, valueAmount, giftId,
-      valueUsdAmount,
+      valueUsdAmount, burned, crafted, craftChancePermille,
     } = starGift;
 
     return {
@@ -60,6 +59,9 @@ export function buildApiStarGift(starGift: GramJs.TypeStarGift): ApiStarGift {
       valueUsdAmount: toJSNumber(valueUsdAmount),
       regularGiftId: giftId.toString(),
       offerMinStars: starGift.offerMinStars,
+      isBurned: burned,
+      isCrafted: crafted,
+      craftChancePermille,
     };
   }
 
@@ -69,8 +71,6 @@ export function buildApiStarGift(starGift: GramJs.TypeStarGift): ApiStarGift {
     requirePremium, limitedPerUser, perUserTotal, perUserRemains, lockedUntilDate, auction, auctionSlug, giftsPerRound,
     background,
   } = starGift;
-
-  addDocumentToLocalDb(starGift.sticker);
 
   const sticker = buildStickerFromDocument(starGift.sticker)!;
 
@@ -108,6 +108,26 @@ export function buildApiStarGift(starGift: GramJs.TypeStarGift): ApiStarGift {
   };
 }
 
+function buildApiStarGiftAttributeRarity(rarity: GramJs.TypeStarGiftAttributeRarity): ApiStarGiftAttributeRarity {
+  if (rarity instanceof GramJs.StarGiftAttributeRarityUncommon) {
+    return { type: 'uncommon' };
+  }
+
+  if (rarity instanceof GramJs.StarGiftAttributeRarityRare) {
+    return { type: 'rare' };
+  }
+
+  if (rarity instanceof GramJs.StarGiftAttributeRarityEpic) {
+    return { type: 'epic' };
+  }
+
+  if (rarity instanceof GramJs.StarGiftAttributeRarityLegendary) {
+    return { type: 'legendary' };
+  }
+
+  return { type: 'regular', rarityPercent: rarity.permille / 10 };
+}
+
 export function buildApiStarGiftAttribute(attribute: GramJs.TypeStarGiftAttribute): ApiStarGiftAttribute | undefined {
   if (attribute instanceof GramJs.StarGiftAttributeModel) {
     const sticker = buildStickerFromDocument(attribute.document);
@@ -115,13 +135,11 @@ export function buildApiStarGiftAttribute(attribute: GramJs.TypeStarGiftAttribut
       return undefined;
     }
 
-    addDocumentToLocalDb(attribute.document);
-
     return {
       type: 'model',
       name: attribute.name,
-      rarityPercent: attribute.rarityPermille / 10,
       sticker,
+      rarity: buildApiStarGiftAttributeRarity(attribute.rarity),
     };
   }
 
@@ -131,30 +149,28 @@ export function buildApiStarGiftAttribute(attribute: GramJs.TypeStarGiftAttribut
       return undefined;
     }
 
-    addDocumentToLocalDb(attribute.document);
-
     return {
       type: 'pattern',
       name: attribute.name,
-      rarityPercent: attribute.rarityPermille / 10,
       sticker,
+      rarity: buildApiStarGiftAttributeRarity(attribute.rarity),
     };
   }
 
   if (attribute instanceof GramJs.StarGiftAttributeBackdrop) {
     const {
-      name, rarityPermille, centerColor, edgeColor, patternColor, textColor, backdropId,
+      name, rarity, centerColor, edgeColor, patternColor, textColor, backdropId,
     } = attribute;
 
     return {
       type: 'backdrop',
       backdropId,
       name,
-      rarityPercent: rarityPermille / 10,
       centerColor: int2hex(centerColor),
       edgeColor: int2hex(edgeColor),
       patternColor: int2hex(patternColor),
       textColor: int2hex(textColor),
+      rarity: buildApiStarGiftAttributeRarity(rarity),
     };
   }
 
@@ -179,7 +195,7 @@ export function buildApiSavedStarGift(userStarGift: GramJs.SavedStarGift, peerId
   const {
     gift, date, convertStars, fromId, message, msgId, nameHidden, unsaved, refunded, upgradeStars, transferStars,
     canUpgrade, savedId, canExportAt, pinnedToTop, canResellAt, canTransferAt, prepaidUpgradeHash,
-    dropOriginalDetailsStars,
+    dropOriginalDetailsStars, canCraftAt,
   } = userStarGift;
 
   const inputGift: ApiInputSavedStarGift | undefined = savedId && peerId
@@ -207,6 +223,7 @@ export function buildApiSavedStarGift(userStarGift: GramJs.SavedStarGift, peerId
     isPinned: pinnedToTop,
     dropOriginalDetailsStars: dropOriginalDetailsStars !== undefined ? toJSNumber(dropOriginalDetailsStars) : undefined,
     prepaidUpgradeHash,
+    canCraftAt,
   };
 }
 
@@ -325,10 +342,6 @@ export function buildApiStarGiftCollection(collection: GramJs.StarGiftCollection
 
   const { collectionId, title, icon, giftsCount, hash } = collection;
 
-  if (icon) {
-    addDocumentToLocalDb(icon);
-  }
-
   return {
     collectionId,
     title,
@@ -425,7 +438,7 @@ export function buildApiStarGiftAuctionUserState(
 }
 
 export function buildApiStarGiftAuctionState(
-  result: GramJs.payments.StarGiftAuctionState,
+  result: GramJs.payments.StarGiftAuctionState | GramJs.StarGiftActiveAuctionState,
 ): ApiStarGiftAuctionState | undefined {
   const gift = buildApiStarGift(result.gift);
   if (gift.type !== 'starGift') return undefined;
@@ -437,7 +450,7 @@ export function buildApiStarGiftAuctionState(
     gift,
     state,
     userState: buildApiStarGiftAuctionUserState(result.userState),
-    timeout: result.timeout,
+    timeout: 'timeout' in result ? result.timeout : undefined,
   };
 }
 

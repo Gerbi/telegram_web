@@ -31,9 +31,8 @@ import {
   selectPinnedIds,
   selectScheduledIds,
   selectTabState,
-  selectThreadInfo,
-  selectThreadParam,
 } from '../../global/selectors';
+import { selectThreadInfo, selectThreadLocalStateParam } from '../../global/selectors/threads';
 import { IS_TAURI } from '../../util/browser/globalEnvironment';
 import { IS_MAC_OS } from '../../util/browser/windowEnvironment';
 import buildClassName from '../../util/buildClassName';
@@ -130,7 +129,7 @@ const MiddleHeader: FC<OwnProps & StateProps> = ({
   } = getActions();
 
   const lang = useOldLang();
-  const isBackButtonActive = useRef(true);
+  const isBackButtonActiveRef = useRef(true);
   const { isDesktop, isTablet } = useAppLayout();
 
   const { width: windowWidth } = useWindowSize();
@@ -165,7 +164,7 @@ const MiddleHeader: FC<OwnProps & StateProps> = ({
 
   const setBackButtonActive = useLastCallback(() => {
     setTimeout(() => {
-      isBackButtonActive.current = true;
+      isBackButtonActiveRef.current = true;
     }, BACK_BUTTON_INACTIVE_TIME);
   });
 
@@ -188,10 +187,10 @@ const MiddleHeader: FC<OwnProps & StateProps> = ({
   });
 
   const handleBackClick = useLastCallback((e: React.MouseEvent<HTMLElement, MouseEvent>) => {
-    if (!isBackButtonActive.current) return;
+    if (!isBackButtonActiveRef.current) return;
 
     // Workaround for missing UI when quickly clicking the Back button
-    isBackButtonActive.current = false;
+    isBackButtonActiveRef.current = false;
     if (isMobile) {
       const messageInput = document.querySelector<HTMLDivElement>(EDITABLE_INPUT_CSS_SELECTOR);
       messageInput?.blur();
@@ -240,7 +239,7 @@ const MiddleHeader: FC<OwnProps & StateProps> = ({
 
     return (
       <>
-        {renderBackButton()}
+        {renderBackButton(currentTransitionKey === 0)}
         <h3>
           {messagesCount !== undefined ? (
             messageListType === 'thread' ? (
@@ -400,7 +399,7 @@ export default memo(withGlobal<OwnProps>(
       messagesCount = threadInfo?.messagesCount || 0;
     }
 
-    const typingStatus = selectThreadParam(global, chatId, threadId, 'typingStatus');
+    const typingStatus = selectThreadLocalStateParam(global, chatId, threadId, 'typingStatus');
 
     const emojiStatus = peer?.emojiStatus;
     const emojiStatusSticker = emojiStatus && selectCustomEmoji(global, emojiStatus.documentId);

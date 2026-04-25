@@ -7,7 +7,7 @@ import { toJSNumber } from '../../../util/numbers';
 import { buildApiBotApp } from './bots';
 import { buildApiFormattedText, buildApiPhoto } from './common';
 import { buildApiStarGift } from './gifts';
-import { buildTodoItem } from './messageContent';
+import { buildPollAnswer, buildTodoItem } from './messageContent';
 import { buildApiCurrencyAmount } from './payments';
 import { buildApiPeerId, getApiChatIdFromMtpPeer } from './peers';
 
@@ -426,7 +426,7 @@ export function buildApiMessageAction(action: GramJs.TypeMessageAction): ApiMess
   if (action instanceof GramJs.MessageActionStarGiftUnique) {
     const {
       upgrade, transferred, saved, refunded, gift, canExportAt, transferStars, fromId, peer, savedId,
-      resaleAmount, prepaidUpgrade, dropOriginalDetailsStars, fromOffer,
+      resaleAmount, prepaidUpgrade, dropOriginalDetailsStars, fromOffer, canCraftAt,
     } = action;
 
     const starGift = buildApiStarGift(gift);
@@ -451,6 +451,7 @@ export function buildApiMessageAction(action: GramJs.TypeMessageAction): ApiMess
       dropOriginalDetailsStars: dropOriginalDetailsStars !== undefined
         ? toJSNumber(dropOriginalDetailsStars)
         : undefined,
+      canCraftAt,
     };
   }
   if (action instanceof GramJs.MessageActionPaidMessagesPrice) {
@@ -524,6 +525,26 @@ export function buildApiMessageAction(action: GramJs.TypeMessageAction): ApiMess
       items: list.map(buildTodoItem),
     };
   }
+  if (action instanceof GramJs.MessageActionPollAppendAnswer) {
+    const answer = buildPollAnswer(action.answer);
+    if (!answer) return UNSUPPORTED_ACTION;
+
+    return {
+      mediaType: 'action',
+      type: 'pollAppendAnswer',
+      answer,
+    };
+  }
+  if (action instanceof GramJs.MessageActionPollDeleteAnswer) {
+    const answer = buildPollAnswer(action.answer);
+    if (!answer) return UNSUPPORTED_ACTION;
+
+    return {
+      mediaType: 'action',
+      type: 'pollDeleteAnswer',
+      answer,
+    };
+  }
   if (action instanceof GramJs.MessageActionStarGiftPurchaseOffer) {
     const {
       accepted, declined, gift, price, expiresAt,
@@ -554,6 +575,41 @@ export function buildApiMessageAction(action: GramJs.TypeMessageAction): ApiMess
       isExpired: expired,
       gift: starGift,
       price: buildApiCurrencyAmount(price),
+    };
+  }
+  if (action instanceof GramJs.MessageActionNewCreatorPending) {
+    const { newCreatorId } = action;
+    return {
+      mediaType: 'action',
+      type: 'newCreatorPending',
+      newCreatorId: buildApiPeerId(newCreatorId, 'user'),
+    };
+  }
+  if (action instanceof GramJs.MessageActionChangeCreator) {
+    const { newCreatorId } = action;
+    return {
+      mediaType: 'action',
+      type: 'changeCreator',
+      newCreatorId: buildApiPeerId(newCreatorId, 'user'),
+    };
+  }
+  if (action instanceof GramJs.MessageActionNoForwardsToggle) {
+    const { prevValue, newValue } = action;
+    return {
+      mediaType: 'action',
+      type: 'noForwardsToggle',
+      prevValue: Boolean(prevValue),
+      newValue: Boolean(newValue),
+    };
+  }
+  if (action instanceof GramJs.MessageActionNoForwardsRequest) {
+    const { expired, prevValue, newValue } = action;
+    return {
+      mediaType: 'action',
+      type: 'noForwardsRequest',
+      isExpired: expired,
+      prevValue: Boolean(prevValue),
+      newValue: Boolean(newValue),
     };
   }
 

@@ -78,6 +78,7 @@ import type {
   CallSound,
   ChatListType,
   ConfettiParams,
+  ForwardTarget,
   GiftProfileFilterOptions,
   GlobalSearchContent,
   IAnchorPosition,
@@ -106,6 +107,7 @@ import type {
   StoryViewerOrigin,
   ThemeKey,
   ThreadId,
+  TranslationTone,
   WebPageMediaSize,
 } from '../../types';
 import type { WebApp, WebAppModalStateType, WebAppOutboundEvent } from '../../types/webapp';
@@ -182,8 +184,13 @@ export interface ActionPayloads {
     chatId: string;
     userId: string;
     adminRights: ApiChatAdminRights;
-    customTitle?: string;
+    rank?: string;
   } & WithTabId;
+  editChatParticipantRank: {
+    chatId: string;
+    userId: string;
+    rank: string;
+  };
 
   checkChatInvite: {
     hash: string;
@@ -310,6 +317,11 @@ export interface ActionPayloads {
   markBotVerificationInfoShown: {
     peerId: string;
   };
+  toggleNoForwards: {
+    userId: string;
+    isEnabled: boolean;
+    requestMsgId?: number;
+  };
 
   // Message search
   openMiddleSearch: {
@@ -401,7 +413,14 @@ export interface ActionPayloads {
   joinChannel: {
     chatId: string;
   } & WithTabId;
-  leaveChannel: { chatId: string } & WithTabId;
+  leaveChannel: {
+    chatId: string;
+    shouldSkipOwnershipCheck?: boolean;
+  } & WithTabId;
+  leaveBasicGroup: {
+    chatId: string;
+    shouldSkipOwnershipCheck?: boolean;
+  } & WithTabId;
   deleteChannel: { chatId: string } & WithTabId;
   toggleChatPinned: {
     id: string;
@@ -529,17 +548,13 @@ export interface ActionPayloads {
     maxId: number;
   } & WithTabId;
   markMessagesRead: {
+    chatId: string;
     messageIds: number[];
-    shouldFetchUnreadReactions?: boolean;
-  } & WithTabId;
+  };
   loadMessage: {
     chatId: string;
     messageId: number;
     replyOriginForId?: number;
-    threadUpdate?: {
-      lastMessageId: number;
-      isDeleting?: boolean;
-    };
   };
   loadMessagesById: {
     chatId: string;
@@ -1403,6 +1418,17 @@ export interface ActionPayloads {
     isEnabled: boolean;
   };
 
+  setChatTranslationTone: {
+    chatId: string;
+    tone: TranslationTone;
+  } & WithTabId;
+
+  setMessageTranslationTone: {
+    chatId: string;
+    messageId: number;
+    tone: TranslationTone;
+  } & WithTabId;
+
   // Messages
   setEditingDraft: {
     text?: ApiFormattedText;
@@ -1410,12 +1436,19 @@ export interface ActionPayloads {
     threadId: ThreadId;
     type: MessageListType;
   };
-  fetchUnreadMentions: {
+  loadUnreadMentions: {
     chatId: string;
+    threadId?: ThreadId;
     offsetId?: number;
   };
-  fetchUnreadReactions: {
+  loadUnreadReactions: {
     chatId: string;
+    threadId?: ThreadId;
+    offsetId?: number;
+  };
+  loadUnreadPollVotes: {
+    chatId: string;
+    threadId?: ThreadId;
     offsetId?: number;
   };
   scheduleForViewsIncrement: {
@@ -1441,10 +1474,21 @@ export interface ActionPayloads {
     quickReplyId: number;
   };
   animateUnreadReaction: {
+    chatId: string;
     messageIds: number[];
   } & WithTabId;
-  focusNextReaction: WithTabId | undefined;
-  focusNextMention: WithTabId | undefined;
+  focusNextReaction: {
+    chatId: string;
+    threadId?: ThreadId;
+  } & WithTabId;
+  focusNextMention: {
+    chatId: string;
+    threadId?: ThreadId;
+  } & WithTabId;
+  focusNextPollVote: {
+    chatId: string;
+    threadId?: ThreadId;
+  } & WithTabId;
   readAllReactions: {
     chatId: string;
     threadId?: ThreadId;
@@ -1453,10 +1497,18 @@ export interface ActionPayloads {
     chatId: string;
     threadId?: ThreadId;
   };
+  readAllPollVotes: {
+    chatId: string;
+    threadId?: ThreadId;
+  };
   markMentionsRead: {
     chatId: string;
     messageIds: number[];
-  } & WithTabId;
+  };
+  markPollVotesRead: {
+    chatId: string;
+    messageIds: number[];
+  };
   copyMessageLink: {
     chatId: string;
     messageId: number;
@@ -1500,6 +1552,7 @@ export interface ActionPayloads {
     chatId: string;
     id: number;
     toLanguageCode?: string;
+    tone?: TranslationTone;
   } & WithTabId;
 
   showOriginalMessage: {
@@ -1511,11 +1564,13 @@ export interface ActionPayloads {
     chatId: string;
     messageIds: number[];
     toLanguageCode?: string;
+    tone?: TranslationTone;
   };
   translateMessages: {
     chatId: string;
     messageIds: number[];
     toLanguageCode?: string;
+    tone?: TranslationTone;
   };
   summarizeMessage: {
     chatId: string;
@@ -1921,11 +1976,31 @@ export interface ActionPayloads {
     userId: string;
   } & WithTabId;
   closeChatRefundModal: WithTabId | undefined;
+  openDisableSharingAboutModal: {
+    userId: string;
+  } & WithTabId;
+  closeDisableSharingAboutModal: WithTabId | undefined;
   openProfileRatingModal: {
     userId: string;
     level: number;
   } & WithTabId;
   closeProfileRatingModal: WithTabId | undefined;
+  openRankModal: {
+    chatId: string;
+    userId: string;
+    isAdmin?: boolean;
+    isOwner?: boolean;
+    rank?: string;
+  } & WithTabId;
+  closeRankModal: WithTabId | undefined;
+  openEditRankModal: {
+    chatId: string;
+    userId: string;
+    isAdmin?: boolean;
+    isOwner?: boolean;
+    rank?: string;
+  } & WithTabId;
+  closeEditRankModal: WithTabId | undefined;
   loadMoreProfilePhotos: {
     peerId: string;
     isPreload?: boolean;
@@ -1981,7 +2056,13 @@ export interface ActionPayloads {
   } & WithTabId;
   exitForwardMode: WithTabId | undefined;
   changeRecipient: WithTabId | undefined;
-  forwardToSavedMessages: WithTabId | undefined;
+  forwardToMultipleChats: {
+    targets: ForwardTarget[];
+    comment?: string;
+  } & WithTabId;
+  forwardToSavedMessages: {
+    scheduledAt?: number;
+  } & WithTabId;
   forwardStory: {
     toChatId: string;
   } & WithTabId;
@@ -2260,6 +2341,8 @@ export interface ActionPayloads {
 
   acceptBotUrlAuth: {
     isWriteAllowed?: boolean;
+    wasPhoneShared?: boolean;
+    matchCode?: string;
   } & WithTabId;
 
   requestLinkUrlAuth: {
@@ -2268,7 +2351,15 @@ export interface ActionPayloads {
 
   acceptLinkUrlAuth: {
     isWriteAllowed?: boolean;
+    wasPhoneShared?: boolean;
+    matchCode?: string;
   } & WithTabId;
+
+  checkUrlAuthMatchCode: {
+    matchCode: string;
+  } & WithTabId;
+
+  declineUrlAuth: WithTabId | undefined;
 
   // Settings
   loadAuthorizations: undefined;
@@ -2541,6 +2632,41 @@ export interface ActionPayloads {
   } & WithTabId) | undefined;
   closePremiumModal: WithTabId | undefined;
 
+  openAiMessageEditorModal: {
+    chatId: string;
+    text: ApiFormattedText;
+    initialTab?: 'translate' | 'style' | 'fix';
+    isFromAttachment?: boolean;
+  } & WithTabId;
+  closeAiMessageEditorModal: WithTabId | undefined;
+  setAiMessageEditorTab: {
+    tab: 'translate' | 'style' | 'fix';
+  } & WithTabId;
+  setAiMessageEditorTranslateOptions: {
+    selectedLanguage?: string;
+    selectedTone?: string;
+    shouldEmojify?: boolean;
+    clearResult?: boolean;
+  } & WithTabId;
+  setAiMessageEditorStyleOptions: {
+    selectedTone?: string;
+    shouldEmojify?: boolean;
+    clearResult?: boolean;
+  } & WithTabId;
+  composeWithAiMessageEditor: {
+    shouldProofread?: boolean;
+    isEmojify?: boolean;
+    translateToLang?: string;
+    changeTone?: string;
+  } & WithTabId;
+  applyAiMessageEditorResult: WithTabId | undefined;
+  sendAiMessageEditorResult: ({
+    isSilent?: boolean;
+    scheduledAt?: number;
+    scheduleRepeatPeriod?: number;
+  } & WithTabId) | undefined;
+  clearAiMessageEditorPendingResult: WithTabId | undefined;
+
   openGiveawayModal: ({
     chatId: string;
     gifts?: number[] | undefined;
@@ -2550,6 +2676,32 @@ export interface ActionPayloads {
 
   openGiftRecipientPicker: WithTabId | undefined;
   closeGiftRecipientPicker: WithTabId | undefined;
+
+  openLeaveGroupModal: {
+    chatId: string;
+    nextOwnerId?: string;
+  } & WithTabId;
+  closeLeaveGroupModal: WithTabId | undefined;
+
+  openTwoFaCheckModal: WithTabId | undefined;
+  closeTwoFaCheckModal: WithTabId | undefined;
+
+  verifyTransferOwnership: {
+    chatId: string;
+    userId: string;
+    onSuccess?: VoidFunction;
+    onPasswordMissing?: VoidFunction;
+    onPasswordTooFresh?: VoidFunction;
+    onSessionTooFresh?: VoidFunction;
+  };
+  transferChatOwnership: {
+    chatId: string;
+    userId: string;
+    password: string;
+    onSuccess?: VoidFunction;
+  } & WithTabId;
+  openQuickChatPicker: WithTabId | undefined;
+  closeQuickChatPicker: WithTabId | undefined;
 
   openWebAppsCloseConfirmationModal: WithTabId | undefined;
 
@@ -2606,6 +2758,9 @@ export interface ActionPayloads {
   updateResaleGiftsFilter: {
     filter: ResaleGiftsFilterOptions;
   } & WithTabId;
+  updateCraftGiftsFilter: {
+    filter: ResaleGiftsFilterOptions;
+  } & WithTabId;
   loadResaleGifts: {
     giftId: string;
     shouldRefresh?: boolean;
@@ -2644,8 +2799,10 @@ export interface ActionPayloads {
     peerId: string;
     recipientId?: string;
     gift: ApiSavedStarGift;
+    craftSlotIndex?: number;
   } | {
     gift: ApiStarGift;
+    craftSlotIndex?: number;
   }) & WithTabId;
   openLockedGiftModalInfo: {
     untilDate?: number;
@@ -2674,6 +2831,31 @@ export interface ActionPayloads {
   } & WithTabId;
   closeGiftUpgradeModal: WithTabId | undefined;
   shiftGiftUpgradeNextPrice: WithTabId | undefined;
+
+  openGiftCraftModal: {
+    gift: ApiSavedStarGift;
+  } & WithTabId;
+  closeGiftCraftModal: WithTabId | undefined;
+  resetGiftCraftResult: WithTabId | undefined;
+  openGiftCraftSelectModal: {
+    slotIndex: number;
+  } & WithTabId;
+  closeGiftCraftSelectModal: WithTabId | undefined;
+  openGiftCraftInfoModal: {
+    gift: ApiStarGiftUnique;
+  } & WithTabId;
+  closeGiftCraftInfoModal: WithTabId | undefined;
+  selectGiftForCraft: {
+    gift?: ApiSavedStarGift;
+    slotIndex: number;
+  } & WithTabId;
+  selectPurchasedGiftForCraft: {
+    giftId: string;
+    slotIndex: number;
+  } & WithTabId;
+  loadMoreCraftableGifts: WithTabId | undefined;
+  loadMoreMarketCraftableGifts: WithTabId | undefined;
+  craftStarGift: WithTabId | undefined;
 
   openStarGiftPriceDecreaseInfoModal: {
     prices: ApiStarGiftUpgradePrice[];
@@ -2706,6 +2888,14 @@ export interface ActionPayloads {
     gift: ApiStarGiftUnique;
   } & WithTabId;
   closeGiftInfoValueModal: WithTabId | undefined;
+  openGiftPreviewModal: {
+    originGift: ApiStarGift;
+    shouldShowCraftableOnStart?: boolean;
+  } & WithTabId;
+  closeGiftPreviewModal: WithTabId | undefined;
+  loadActiveGiftAuctions: undefined;
+  openActiveGiftAuctionsModal: WithTabId | undefined;
+  closeActiveGiftAuctionsModal: WithTabId | undefined;
   openGiftAuctionModal: {
     gift: ApiStarGiftRegular;
   } & WithTabId;
@@ -2952,6 +3142,11 @@ export interface ActionPayloads {
   } & WithTabId;
   closeEditTopicPanel: WithTabId | undefined;
 
+  loadDiscussion: {
+    chatId: string;
+    threadId: number;
+  };
+
   uploadContactProfilePhoto: {
     userId: string;
     file?: File;
@@ -2985,6 +3180,12 @@ export interface ActionPayloads {
     chatId: string;
     messageId: number;
   };
+
+  openCocoonModal: WithTabId | undefined;
+  closeCocoonModal: WithTabId | undefined;
+
+  requestMessageMediaEditor: WithTabId | undefined;
+  resetMessageMediaEditorRequest: WithTabId | undefined;
 }
 
 export interface RequiredActionPayloads {

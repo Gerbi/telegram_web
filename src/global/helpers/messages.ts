@@ -2,6 +2,7 @@ import type { TeactNode } from '../../lib/teact/teact';
 
 import type {
   ApiAttachment,
+  ApiInputMessageReplyInfo,
   ApiMessage,
   ApiMessageEntityTextUrl,
   ApiPeer,
@@ -9,8 +10,7 @@ import type {
   ApiTypeStory,
 } from '../../api/types';
 import type {
-  ApiFormattedText,
-  ApiPoll, ApiReplyInfo, ApiWebPage, MediaContainer, StatefulMediaContent,
+  ApiFormattedText, ApiMessagePoll, ApiReplyInfo, ApiWebPage, MediaContainer, StatefulMediaContent,
 } from '../../api/types/messages';
 import type { ThreadId } from '../../types';
 import type { LangFn } from '../../util/localization';
@@ -35,7 +35,13 @@ import { areSortedArraysIntersecting, unique } from '../../util/iteratees';
 import { isLocalMessageId } from '../../util/keys/messageKey';
 import { getServerTime } from '../../util/serverTime';
 import { getGlobal } from '../index';
-import { selectPollFromMessage, selectWebPageFromMessage } from '../selectors';
+import {
+  selectChatMessage,
+  selectPollFromMessage,
+  selectScheduledMessage,
+  selectWebPageFromMessage,
+} from '../selectors';
+import { selectThreadIdFromMessage } from '../selectors/threads';
 import { getMainUsername } from './users';
 
 const RE_LINK = new RegExp(RE_LINK_TEMPLATE, 'i');
@@ -67,6 +73,8 @@ export function hasMessageText(message: MediaContainer) {
     webPage, contact, invoice, location, game, storyData, giveaway, giveawayResults, paidMedia,
   } = message.content;
 
+  if (pollId) return false;
+
   return Boolean(text) || !(
     sticker || photo || video || audio || voice || document || contact || pollId || todo || webPage
     || invoice || location || game || storyData || giveaway || giveawayResults || dice
@@ -89,7 +97,7 @@ export function groupStatefulContent({
   story,
   webPage,
 }: {
-  poll?: ApiPoll;
+  poll?: ApiMessagePoll;
   story?: ApiTypeStory;
   webPage?: ApiWebPage;
 }) {
@@ -544,5 +552,40 @@ export function createApiMessageFromTypingDraft({
     isSilent: true,
     isTypingDraft: true,
     editDate: getServerTime(),
+  };
+}
+
+export function groupMessageIdsByThreadId(
+  global: GlobalState, chatId: string, messageIds: number[], isScheduled: boolean, notShared?: boolean,
+): Record<ThreadId, number[]> {
+  const grouped = messageIds.reduce<Record<ThreadId, number[]>>((acc, messageId) => {
+    const message = isScheduled ? selectScheduledMessage(global, chatId, messageId)
+      : selectChatMessage(global, chatId, messageId);
+    if (!message) return acc;
+
+    const threadId = selectThreadIdFromMessage(global, message);
+    acc[threadId] = acc[threadId] || [];
+    acc[threadId].push(messageId);
+    return acc;
+  }, {});
+
+  if (!notShared) {
+    grouped[MAIN_THREAD_ID] = messageIds;
+  }
+
+  return grouped;
+}
+
+export function prepareMessageReplyInfo(
+  threadId: ThreadId, additionalReplyInfo?: ApiInputMessageReplyInfo,
+): ApiInputMessageReplyInfo | undefined {
+  const isMainThread = threadId === MAIN_THREAD_ID;
+  if (!additionalReplyInfo && isMainThread) return undefined;
+
+  return {
+    type: 'message',
+    ...additionalReplyInfo,
+    replyToMsgId: additionalReplyInfo?.replyToMsgId || Number(threadId),
+    replyToTopId: additionalReplyInfo?.replyToTopId || (!isMainThread ? Number(threadId) : undefined),
   };
 }

@@ -100,6 +100,7 @@ export interface GramJsAppConfig extends LimitsConfig {
   stars_stargift_resale_amount_max?: number;
   stars_stargift_resale_amount_min?: number;
   stars_stargift_resale_commission_permille?: number;
+  stargifts_craft_attribute_permilles?: number[];
   ton_stargift_resale_amount_min?: number;
   ton_stargift_resale_amount_max?: number;
   ton_stargift_resale_commission_permille?: number;
@@ -109,6 +110,7 @@ export interface GramJsAppConfig extends LimitsConfig {
   stars_suggested_post_age_min?: number;
   stars_suggested_post_future_max?: number;
   stars_suggested_post_future_min?: number;
+  no_forwards_request_expire_period?: number;
   ton_suggested_post_commission_permille?: number;
   ton_suggested_post_amount_max?: number;
   ton_suggested_post_amount_min?: number;
@@ -128,6 +130,7 @@ export interface GramJsAppConfig extends LimitsConfig {
   whitelisted_bots?: string[];
   settings_display_passkeys?: boolean;
   passkeys_account_passkeys_max?: number;
+  ai_compose_styles?: [string, string, string][];
 }
 
 function buildEmojiSounds(appConfig: GramJsAppConfig) {
@@ -157,6 +160,11 @@ function buildDiceEmojiesSuccess(appConfig: GramJsAppConfig) {
     };
     return acc;
   }, {} as ApiAppConfig['diceEmojiesSuccess']) : {};
+}
+
+function buildAiComposeStyles(appConfig: GramJsAppConfig) {
+  const { ai_compose_styles } = appConfig;
+  return ai_compose_styles?.map(([tone, documentId, title]) => ({ tone, documentId, title }));
 }
 
 function getLimit(appConfig: GramJsAppConfig, key: Limit, fallbackKey: ApiLimitType) {
@@ -239,6 +247,7 @@ export function buildAppConfig(json: GramJs.TypeJSONValue, hash: number): ApiApp
     starsStargiftResaleAmountMin: appConfig.stars_stargift_resale_amount_min,
     starsStargiftResaleAmountMax: appConfig.stars_stargift_resale_amount_max,
     starsStargiftResaleCommissionPermille: appConfig.stars_stargift_resale_commission_permille,
+    stargiftsCraftAttributePermilles: appConfig.stargifts_craft_attribute_permilles,
     tonStargiftResaleAmountMin: appConfig.ton_stargift_resale_amount_min,
     tonStargiftResaleAmountMax: appConfig.ton_stargift_resale_amount_max,
     tonStargiftResaleCommissionPermille: appConfig.ton_stargift_resale_commission_permille,
@@ -248,6 +257,7 @@ export function buildAppConfig(json: GramJs.TypeJSONValue, hash: number): ApiApp
     starsSuggestedPostAgeMin: appConfig.stars_suggested_post_age_min,
     starsSuggestedPostFutureMax: appConfig.stars_suggested_post_future_max,
     starsSuggestedPostFutureMin: appConfig.stars_suggested_post_future_min,
+    noForwardsRequestExpirePeriod: appConfig.no_forwards_request_expire_period,
     tonSuggestedPostCommissionPermille: appConfig.ton_suggested_post_commission_permille,
     tonSuggestedPostAmountMax: appConfig.ton_suggested_post_amount_max,
     tonSuggestedPostAmountMin: appConfig.ton_suggested_post_amount_min,
@@ -268,6 +278,7 @@ export function buildAppConfig(json: GramJs.TypeJSONValue, hash: number): ApiApp
     passkeysMaxCount: appConfig.passkeys_account_passkeys_max,
     diceEmojies: appConfig.emojies_send_dice,
     diceEmojiesSuccess: buildDiceEmojiesSuccess(appConfig),
+    aiComposeStyles: buildAiComposeStyles(appConfig),
   };
 
   return {

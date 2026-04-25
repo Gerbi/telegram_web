@@ -119,18 +119,20 @@
     .icon-view-once,
     .media-loading {
       --color-primary: var(--color-text-green);
-      --color-primary-shade: var(--color-green);
-      --color-primary-shade-darker: var(--color-green-darker);
+      --color-primary-shade: var(--color-active);
+      --color-primary-shade-darker: var(--color-active-darker);
       --color-white: var(--color-background-own);
-
-      &:hover, &:active, &:focus {
-        opacity: 0.8;
-        background-color: var(--color-primary) !important;
-      }
 
       .theme-dark & {
         --color-primary-shade: #fff;
         --color-primary-shade-darker: #fff;
+      }
+    }
+
+    .Button {
+      &:hover, &:active, &:focus {
+        opacity: 0.8;
+        background-color: var(--color-primary) !important;
       }
     }
   }

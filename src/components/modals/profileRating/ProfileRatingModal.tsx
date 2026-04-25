@@ -7,7 +7,8 @@ import type { TabState } from '../../../global/types';
 import { getPeerTitle } from '../../../global/helpers/peers';
 import { selectUser, selectUserFullInfo } from '../../../global/selectors';
 import buildClassName from '../../../util/buildClassName';
-import { formatShortDuration } from '../../../util/dates/dateFormat';
+import { formatShortDuration } from '../../../util/dates/oldDateFormat';
+import { NEXT_ARROW_REPLACEMENT } from '../../../util/localization/format';
 import { getServerTime } from '../../../util/serverTime';
 
 import useCurrentOrPrev from '../../../hooks/useCurrentOrPrev';
@@ -96,7 +97,7 @@ const ProfileRatingModal = ({
     const pendingLevel = !showFutureRating && renderingPendingRating
       ? renderingPendingRating.level : renderingStarsRating.level;
 
-    let levelProgress = 0;
+    let levelProgress;
 
     if (!nextLevelStars) {
       levelProgress = 1;
@@ -130,7 +131,8 @@ const ProfileRatingModal = ({
                 points: Math.abs(pendingPoints),
                 link: (
                   <span className={styles.backLink} onClick={handleShowCurrent}>
-                    {lang('LinkDescriptionRatingBack')}
+                    {lang('LinkDescriptionRatingBack',
+                      undefined, { withNodes: true, specialReplacement: NEXT_ARROW_REPLACEMENT })}
                   </span>
                 ),
               }, {
@@ -145,7 +147,8 @@ const ProfileRatingModal = ({
                 points: Math.abs(pendingPoints),
                 link: (
                   <span className={styles.previewLink} onClick={handleShowFuture}>
-                    {lang('LinkDescriptionRatingPreview')}
+                    {lang('LinkDescriptionRatingPreview',
+                      undefined, { withNodes: true, specialReplacement: NEXT_ARROW_REPLACEMENT })}
                   </span>
                 ),
               }, {
