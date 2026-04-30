@@ -18,6 +18,7 @@ export interface LangPair {
   'AccDescrGroup': undefined;
   'AccDescrChannel': undefined;
   'Nothing': undefined;
+  'Typing': undefined;
   'SendActionRecordVideo': undefined;
   'SendActionUploadVideo': undefined;
   'SendActionRecordAudio': undefined;
@@ -27,7 +28,6 @@ export interface LangPair {
   'PlayingGame': undefined;
   'SendActionRecordRound': undefined;
   'SendActionUploadRound': undefined;
-  'SendActionChooseSticker': undefined;
   'SetUrlInUse': undefined;
   'UsernameInUse': undefined;
   'CreateGroupError': undefined;
@@ -549,6 +549,7 @@ export interface LangPair {
   'AboutPremiumDescription2': undefined;
   'OpenUrlTitle': undefined;
   'OpenUrlConfirm': undefined;
+  'BotAuthAppSubtitle': undefined;
   'BotAuthSiteSubtitle': undefined;
   'BotAuthAllowMessages': undefined;
   'BotAuthInfo': undefined;
@@ -686,6 +687,8 @@ export interface LangPair {
   'PinnedMessageTitleSingle': undefined;
   'AccPinnedMessages': undefined;
   'AccUnpinMessage': undefined;
+  'CommentsTitle': undefined;
+  'RepliesTitle': undefined;
   'LeaveAComment': undefined;
   'PollsStopWarning': undefined;
   'PollsStopSure': undefined;
@@ -1540,6 +1543,7 @@ export interface LangPair {
   'ActionFallbackSomeone': undefined;
   'ActionUnsupported': undefined;
   'ActionPinnedNotFoundYou': undefined;
+  'PinnedMessagesNotifications': undefined;
   'ActionPinnedMediaPhoto': undefined;
   'ActionPinnedMediaVideo': undefined;
   'ActionPinnedMediaAudio': undefined;
@@ -1587,6 +1591,7 @@ export interface LangPair {
   'NoForwardsRequestSaving': undefined;
   'NoForwardsRequestCopying': undefined;
   'ActionBotAppPlaceholder': undefined;
+  'BotAuthUnverifiedApp': undefined;
   'ActionGiftTextUnknown': undefined;
   'ActionGiftTextUnknownYou': undefined;
   'ActionGiftUniqueSent': undefined;
@@ -2106,7 +2111,44 @@ export interface LangPairWithVariables<V = LangVariable> {
   'UserTyping': {
     'user': V;
   };
-  'UserActionWatchingAnimations': {
+  'UserTypingSeveral': {
+    'users': V;
+  };
+  'UserActionRecordVideo': {
+    'user': V;
+  };
+  'UserActionUploadVideo': {
+    'user': V;
+  };
+  'UserActionRecordAudio': {
+    'user': V;
+  };
+  'UserActionUploadAudio': {
+    'user': V;
+  };
+  'UserActionUploadPhoto': {
+    'user': V;
+  };
+  'UserActionUploadFile': {
+    'user': V;
+  };
+  'UserPlayingGame': {
+    'user': V;
+  };
+  'UserActionRecordRound': {
+    'user': V;
+  };
+  'UserActionUploadRound': {
+    'user': V;
+  };
+  'SendActionChooseSticker': {
+    'eyes': V;
+  };
+  'UserActionChooseSticker': {
+    'user': V;
+    'eyes': V;
+  };
+  'ActionWatchingAnimations': {
     'emoji': V;
   };
   'SetUrlAvailable': {
@@ -3698,6 +3740,10 @@ export interface LangPairPlural {
 }
 
 export interface LangPairPluralWithVariables<V = LangVariable> {
+  'UserTypingMany': {
+    'user': V;
+    'count': V;
+  };
   'Participants': {
     'count': V;
   };
@@ -3747,6 +3793,9 @@ export interface LangPairPluralWithVariables<V = LangVariable> {
     'index': V;
   };
   'Comments': {
+    'count': V;
+  };
+  'Replies': {
     'count': V;
   };
   'ChatContextReactionCount': {

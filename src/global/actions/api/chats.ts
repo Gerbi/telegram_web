@@ -272,6 +272,27 @@ addActionHandler('openSavedDialog', (global, actions, payload): ActionReturnType
   });
 });
 
+// Refetch topic if thread info is missing
+addActionHandler('openThread', (global, actions, payload): ActionReturnType => {
+  if (payload.isComments || payload.threadId === MAIN_THREAD_ID) {
+    return;
+  }
+
+  const { chatId, threadId, tabId = getCurrentTabId() } = payload;
+  const chat = selectChat(global, chatId);
+  if (!chat?.isForum) {
+    return;
+  }
+
+  const topic = selectTopic(global, chatId, threadId);
+  const threadInfo = selectThreadInfo(global, chatId, threadId);
+  if (!topic || threadInfo) {
+    return;
+  }
+
+  actions.loadTopicById({ chatId, topicId: Number(threadId), tabId });
+});
+
 addActionHandler('openThread', async (global, actions, payload): Promise<void> => {
   const {
     type, isComments, noForumTopicPanel, shouldReplaceHistory, shouldReplaceLast,
@@ -684,7 +705,18 @@ addActionHandler('requestSavedDialogUpdate', async (global, actions, payload): P
   global = addMessages(global, result.messages);
 
   if (result.messages.length) {
-    global = updateChatLastMessageId(global, chatId, result.messages[0].id, 'saved');
+    const currentUserId = global.currentUserId!;
+    const messagesCount = result.count ?? result.messages.length;
+    const lastMessageId = result.messages[0].id;
+
+    global = updateThreadInfo(global, {
+      isCommentsInfo: false,
+      chatId: currentUserId,
+      threadId: chatId,
+      lastMessageId,
+      messagesCount,
+    });
+    global = updateChatLastMessageId(global, chatId, lastMessageId, 'saved');
     global = addChatListIds(global, 'saved', [chatId]);
 
     setGlobal(global);
