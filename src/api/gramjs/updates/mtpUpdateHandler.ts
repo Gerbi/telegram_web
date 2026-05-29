@@ -1,7 +1,7 @@
 import { Api as GramJs, type Update } from '../../../lib/gramjs';
 import { UpdateConnectionState, UpdateServerTimeOffset } from '../../../lib/gramjs/network';
 
-import type { GroupCallConnectionData } from '../../../lib/secret-sauce';
+import type { GroupCallConnectionData } from '../../../lib/vibecalls';
 import {
   type ApiMessage,
   type ApiMessagePoll,
@@ -514,6 +514,7 @@ export function updater(update: Update) {
       readState: {
         lastReadInboxMessageId: update.maxId,
         unreadCount: update.stillUnreadCount,
+        hasUnreadMark: undefined,
       },
     });
   } else if (update instanceof GramJs.UpdateReadHistoryOutbox) {
@@ -533,6 +534,7 @@ export function updater(update: Update) {
       readState: {
         lastReadInboxMessageId: update.maxId,
         unreadCount: update.stillUnreadCount,
+        hasUnreadMark: undefined,
       },
     });
   } else if (update instanceof GramJs.UpdateReadChannelOutbox) {

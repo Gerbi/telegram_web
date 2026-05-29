@@ -162,6 +162,7 @@ export async function fetchMessages({
   const RequestClass = threadId === MAIN_THREAD_ID
     ? GramJs.messages.GetHistory : isSavedDialog
       ? GramJs.messages.GetSavedHistory : GramJs.messages.GetReplies;
+  const isChannel = getEntityTypeById(chat.id) === 'channel';
   let result;
 
   try {
@@ -201,6 +202,10 @@ export async function fetchMessages({
     || !result.messages
   ) {
     return undefined;
+  }
+
+  if (isChannel && 'pts' in result) {
+    updateChannelState(chat.id, result.pts);
   }
 
   const messages = result.messages.map(buildApiMessage).filter(Boolean);
@@ -259,7 +264,7 @@ export async function fetchMessage({ chat, messageId }: { chat: ApiChat; message
     return undefined;
   }
 
-  if ('pts' in result) {
+  if (isChannel && 'pts' in result) {
     updateChannelState(chat.id, result.pts);
   }
 
@@ -374,9 +379,10 @@ export function sendApiMessage(
 
   if (!chat) return undefined;
 
-  // This is expected to arrive after `updateMessageSendSucceeded` which replaces the local ID,
-  // so in most cases this will be simply ignored
+  let isSendCompleted = false;
   const timeout = setTimeout(() => {
+    if (isSendCompleted) return;
+
     sendApiUpdate({
       '@type': localMessage.isScheduled ? 'updateScheduledMessage' : 'updateMessage',
       id: localMessage.id,
@@ -387,6 +393,10 @@ export function sendApiMessage(
       isFull: false,
     });
   }, FAST_SEND_TIMEOUT);
+  const cancelSendingStatusTimeout = () => {
+    isSendCompleted = true;
+    clearTimeout(timeout);
+  };
 
   const randomId = generateRandomBigInt();
 
@@ -403,7 +413,7 @@ export function sendApiMessage(
       scheduledAt,
       scheduleRepeatPeriod,
       messagePriceInStars,
-    }, randomId, localMessage, onProgress);
+    }, randomId, localMessage, onProgress, cancelSendingStatusTimeout);
   }
 
   const messagePromise = (async () => {
@@ -559,8 +569,11 @@ export function sendApiMessage(
         });
       }
 
+      cancelSendingStatusTimeout();
       if (update) handleLocalMessageUpdate(localMessage, update);
     } catch (error: any) {
+      cancelSendingStatusTimeout();
+
       if (error.errorMessage === 'PRIVACY_PREMIUM_REQUIRED') {
         sendApiUpdate({ '@type': 'updateRequestUserUpdate', id: chat.id });
       }
@@ -571,7 +584,6 @@ export function sendApiMessage(
         localId: localMessage.id,
         error: error.errorMessage,
       });
-      clearTimeout(timeout);
     }
   })();
 
@@ -590,6 +602,7 @@ const groupedUploads: Record<string, {
   counter: number;
   singleMediaByIndex: Record<number, GramJs.InputSingleMedia>;
   localMessages: Record<string, ApiMessage>;
+  cancelSendingStatusTimeouts: Record<string, NoneToVoidFunction>;
 }> = {};
 
 function sendGroupedMedia(
@@ -622,7 +635,8 @@ function sendGroupedMedia(
   },
   randomId: GramJs.long,
   localMessage: ApiMessage,
-  onProgress?: ApiOnProgress,
+  onProgress: ApiOnProgress | undefined,
+  cancelSendingStatusTimeout: NoneToVoidFunction,
 ) {
   let groupIndex = -1;
   if (!groupedUploads[groupedId]) {
@@ -630,6 +644,7 @@ function sendGroupedMedia(
       counter: 0,
       singleMediaByIndex: {},
       localMessages: {},
+      cancelSendingStatusTimeouts: {},
     };
   }
 
@@ -684,12 +699,13 @@ function sendGroupedMedia(
       entities: entities ? entities.map(buildMtpMessageEntity) : undefined,
     });
     groupedUploads[groupedId].localMessages[randomId.toString()] = localMessage;
+    groupedUploads[groupedId].cancelSendingStatusTimeouts[randomId.toString()] = cancelSendingStatusTimeout;
 
     if (Object.keys(groupedUploads[groupedId].singleMediaByIndex).length < groupedUploads[groupedId].counter) {
       return;
     }
 
-    const { singleMediaByIndex, localMessages } = groupedUploads[groupedId];
+    const { singleMediaByIndex, localMessages, cancelSendingStatusTimeouts } = groupedUploads[groupedId];
     delete groupedUploads[groupedId];
     const count = Object.values(singleMediaByIndex).length;
 
@@ -708,7 +724,10 @@ function sendGroupedMedia(
       shouldIgnoreUpdates: true,
     });
 
-    if (update) handleMultipleLocalMessagesUpdate(localMessages, update);
+    if (!update) return;
+
+    Object.values(cancelSendingStatusTimeouts).forEach((cancel) => cancel());
+    handleMultipleLocalMessagesUpdate(localMessages, update);
   })();
 
   return mediaQueue;
@@ -1855,6 +1874,24 @@ export async function sendPollVote({
     peer: buildInputPeer(id, accessHash),
     msgId: messageId,
     options: options.map(deserializeBytes),
+  }));
+}
+
+export async function appendPollAnswer({
+  chat, messageId, text,
+}: {
+  chat: ApiChat;
+  messageId: number;
+  text: string;
+}) {
+  const { id, accessHash } = chat;
+
+  await invokeRequest(new GramJs.messages.AddPollAnswer({
+    peer: buildInputPeer(id, accessHash),
+    msgId: messageId,
+    answer: new GramJs.InputPollAnswer({
+      text: buildInputTextWithEntities({ text }),
+    }),
   }));
 }
 
